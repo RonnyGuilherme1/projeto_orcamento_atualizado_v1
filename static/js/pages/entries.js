@@ -125,6 +125,32 @@
     });
   }
 
+  const MESES = [
+    "janeiro", "fevereiro", "marco",
+    "abril", "maio", "junho",
+    "julho", "agosto", "setembro",
+    "outubro", "novembro", "dezembro"
+  ];
+
+  function formatarMesAno(anoMes) {
+    if (!anoMes || anoMes.length < 7) return "Sem data";
+    const ano = anoMes.slice(0, 4);
+    const mes = Number(anoMes.slice(5, 7));
+    const nome = MESES[mes - 1] || "mes";
+    return `${nome} ${ano}`;
+  }
+
+  function agruparPorMes(lista) {
+    const ordenadas = [...(lista || [])].sort((a, b) => String(b.data).localeCompare(String(a.data)));
+    const grupos = new Map();
+    ordenadas.forEach(item => {
+      const chave = item?.data ? String(item.data).slice(0, 7) : "sem-data";
+      if (!grupos.has(chave)) grupos.set(chave, []);
+      grupos.get(chave).push(item);
+    });
+    return grupos;
+  }
+
   function statusLabel(status) {
     if (!status) return "";
     if (status === "pago") return "Pago";
@@ -177,7 +203,13 @@
       return;
     }
 
-    container.innerHTML = lista.map(e => linhaHTML(e, isDespesa)).join("");
+    const grupos = agruparPorMes(lista);
+    const partes = [];
+    grupos.forEach((itens, chave) => {
+      partes.push(`<div class="mes-header">${formatarMesAno(chave)}</div>`);
+      partes.push(itens.map(e => linhaHTML(e, isDespesa)).join(""));
+    });
+    container.innerHTML = partes.join("");
   }
 
   function renderHistoricos() {

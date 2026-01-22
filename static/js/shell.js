@@ -32,7 +32,11 @@
 
   function syncSidebarStateOnResize() {
     // Mobile: sidebar-open controla drawer; sidebar-collapsed não importa (fica neutro).
-    if (!isDesktop()) return;
+    if (!isDesktop()) {
+      body.classList.remove('sidebar-open');
+      body.classList.remove('sidebar-collapsed');
+      return;
+    }
 
     // Desktop: garante exclusividade entre estados.
     if (body.classList.contains('sidebar-open')) {

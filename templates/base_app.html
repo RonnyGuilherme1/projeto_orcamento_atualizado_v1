@@ -4,7 +4,7 @@
   Sidebar em modo "drawer" por padrão (menu recolhido). O usuário abre/fecha pelo botão hamburger.
   Isso mantém a interface mais limpa no desktop e no mobile.
 #}
-{% set body_class = 'app-body sidebar-collapsed ' ~ (page_class|default('')) %}
+{% set body_class = 'app-body sidebar-open ' ~ (page_class|default('')) %}
 {% set css_bundle = (page_css|default([])) %}
 {% set js_bundle  = ['/static/js/shell.js'] %}
 

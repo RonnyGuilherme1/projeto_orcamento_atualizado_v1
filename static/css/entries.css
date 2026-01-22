@@ -150,6 +150,8 @@ body.app-body input[type="number"]::-webkit-inner-spin-button, body.app-body inp
   border-right: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(0, 0, 0, 0.18);
   backdrop-filter: blur(14px);
+  overflow-y: auto;
+  overflow-x: hidden;
   position: sticky;
 }
 
@@ -654,6 +656,18 @@ body.app-body .panel-actions{
   display: inline-flex;
 }
 
+body.app-body .panel-actions .field-inline{
+  min-width: 150px;
+}
+
+body.app-body .panel-actions .field-inline .select{
+  width: clamp(150px, 22vw, 220px);
+}
+
+body.app-body .panel-actions .field-inline .control{
+  width: 100%;
+}
+
 body.app-body .field{
   gap: 6px;
   min-width: 0;
@@ -849,6 +863,13 @@ body.app-body .history-grid{
 
 }
 
+@media (max-width: 1600px){
+body.sidebar-open .history-grid{
+  grid-template-columns: 1fr;
+}
+
+}
+
 body.app-body .lista-header, body.app-body .linha{
   grid-template-columns: 110px 1fr 120px 120px 110px;
   gap: 12px;
@@ -1003,6 +1024,17 @@ body.app-body .modal-actions{
 @media (max-width: 520px){
 body.app-body .modal-body{
   grid-template-columns: 1fr;
+}
+
+}
+
+@media (max-width: 900px){
+body.app-body .linha .acoes{
+  position: sticky;
+  right: 6px;
+  padding-left: 6px;
+  border-radius: 10px;
+  background: rgba(11, 15, 20, 0.85);
 }
 
 }
