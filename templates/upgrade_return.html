@@ -1,4 +1,6 @@
 {% extends "base_app.html" %}
+{% set page_class = 'page-upgrade' %}
+{% set page_css = ['/static/css/upgrade.css'] %}
 
 {% block title %}Pagamento em processamento | Controle Financeiro{% endblock %}
 {% block page_title %}Pagamento{% endblock %}
@@ -10,18 +12,67 @@
     <h2>Estamos confirmando o seu pagamento</h2>
     <p class="muted">Assim que a confirmação chegar, o seu plano será atualizado automaticamente.</p>
 
-    <div class="app-card" style="margin:14px 0 0;">
-      <p style="margin:8px 0;">Plano: <strong>{{ plan['name'] }}</strong></p>
-      <p style="margin:8px 0;">Status: <strong>{{ order.status }}</strong></p>
+    <div class="app-card upgrade-return-status">
+      <div class="status-grid">
+        <div class="status-item">
+          <span class="status-label">Plano</span>
+          <strong>{{ plan['name'] }}</strong>
+        </div>
+        <div class="status-item">
+          <span class="status-label">Status</span>
+          <span id="status-text" class="status-pill {% if order.status == 'PAID' %}status-paid{% else %}status-pending{% endif %}">
+            {{ order.status }}
+          </span>
+        </div>
+      </div>
     </div>
 
-    <div class="app-row" style="gap:10px; margin-top:16px;">
-      <a class="btn-secondary" href="{{ url_for('analytics.upgrade') }}">Voltar</a>
-      <a class="btn-primary" href="{{ url_for('analytics.upgrade_return', token=order.token) }}">Atualizar status</a>
+    <div class="upgrade-return-actions">
+      <a class="btn-secondary btn-pill" href="{{ url_for('analytics.upgrade') }}">Voltar</a>
+      <button class="btn-primary btn-pill" type="button" id="refresh-status">Atualizar status</button>
     </div>
 
     <p class="muted" style="margin-top:12px;">
       Se você já pagou e o status não atualizar, aguarde alguns minutos e tente novamente.
     </p>
   </div>
+
+  <script>
+    (function () {
+      const token = {{ order.token|tojson }};
+      const statusText = document.getElementById('status-text');
+      const refreshBtn = document.getElementById('refresh-status');
+
+      async function refreshStatus() {
+        if (!token || !refreshBtn) return;
+        refreshBtn.disabled = true;
+        refreshBtn.classList.add('is-loading');
+        try {
+          const res = await fetch(`/app/upgrade/status?token=${encodeURIComponent(token)}`);
+          if (!res.ok) return;
+          const data = await res.json();
+          if (!data.ok) return;
+
+          if (data.status && statusText) {
+            statusText.textContent = data.status;
+            statusText.classList.toggle('status-paid', data.status === 'PAID');
+            statusText.classList.toggle('status-pending', data.status !== 'PAID');
+          }
+
+          if (data.redirect) {
+            window.location.href = data.redirect;
+          }
+        } catch (e) {
+          // silencioso
+        } finally {
+          refreshBtn.disabled = false;
+          refreshBtn.classList.remove('is-loading');
+        }
+      }
+
+      refreshBtn?.addEventListener('click', refreshStatus);
+      refreshStatus();
+      setInterval(refreshStatus, 4000);
+    })();
+  </script>
 {% endblock %}

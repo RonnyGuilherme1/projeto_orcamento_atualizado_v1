@@ -849,3 +849,81 @@ body.app-body .pricing-grid{
 }
 
 }
+
+.upgrade-return-status{
+  margin: 14px 0 0;
+}
+
+.status-grid{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 22px;
+  align-items: center;
+}
+
+.status-item{
+  display: grid;
+  gap: 6px;
+  min-width: 160px;
+}
+
+.status-label{
+  color: rgba(255, 255, 255, 0.70);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.status-pill{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-weight: 900;
+  font-size: 12px;
+  border: 1px solid transparent;
+  letter-spacing: 0.02em;
+}
+
+.status-pill.status-pending{
+  background: rgba(245, 166, 35, 0.12);
+  border-color: rgba(245, 166, 35, 0.35);
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.status-pill.status-paid{
+  background: rgba(76, 175, 80, 0.18);
+  border-color: rgba(76, 175, 80, 0.35);
+  color: rgba(255, 255, 255, 0.96);
+}
+
+.upgrade-return-actions{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.btn-pill{
+  border-radius: 999px;
+  padding: 0 18px;
+  height: 40px;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+  letter-spacing: 0.01em;
+}
+
+.btn-pill.btn-primary{
+  background: linear-gradient(135deg, rgba(76, 175, 80, 0.95), rgba(46, 139, 87, 0.95));
+  border-color: rgba(76, 175, 80, 0.85);
+}
+
+.btn-pill.btn-secondary{
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.btn-pill.is-loading::after{
+  content: " ...";
+}

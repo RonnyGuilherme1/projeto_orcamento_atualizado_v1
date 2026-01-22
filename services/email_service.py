@@ -16,7 +16,7 @@ def send_verification_email(user: User) -> bool:
     """
 
     app_base_url = (current_app.config.get("APP_BASE_URL") or "").rstrip("/")
-    token = user.get_verification_token()
+    token = user.generate_verify_token()
     verify_link = f"{app_base_url}/verify/{token}"
 
     api_key = (current_app.config.get("RESEND_API_KEY") or "").strip()

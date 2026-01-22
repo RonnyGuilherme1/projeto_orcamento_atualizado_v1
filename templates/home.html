@@ -151,7 +151,11 @@
 
               <div style="height:16px"></div>
               <div class="hero-actions" style="gap:10px;">
-                <a class="btn btn-primary" href="/buy?plan={{ key }}">Escolher {{ plan['name'] }}</a>
+                {% if current_user.is_authenticated %}
+                  <a class="btn btn-primary" href="/buy?plan={{ key }}">Escolher {{ plan['name'] }}</a>
+                {% else %}
+                  <a class="btn btn-primary" href="/register?plan={{ key }}">Escolher {{ plan['name'] }}</a>
+                {% endif %}
                 <a class="btn btn-ghost" href="/pricing?plan={{ key }}">Ver detalhes</a>
               </div>
             </div>

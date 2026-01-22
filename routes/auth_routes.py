@@ -48,6 +48,8 @@ def login():
 @auth_bp.get("/register")
 def register_page():
     if current_user.is_authenticated:
+        if not current_user.is_verified:
+            return redirect(url_for("auth.verify_pending"))
         return redirect(url_for("index"))
     selected_plan = (request.args.get("plan") or "basic").strip().lower()
     token = (request.args.get("token") or "").strip()

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required, current_user
 
 from models.extensions import db
@@ -10,8 +10,9 @@ from services.checkout_store import (
     create_order,
     set_order_billing_id,
     get_order_by_token,
+    mark_order_paid_by_billing_id,
 )
-from services.abacatepay import create_plan_billing, AbacatePayError
+from services.abacatepay import create_plan_billing, get_billing_status, AbacatePayError
 
 
 analytics_bp = Blueprint("analytics", __name__)
@@ -113,6 +114,39 @@ def upgrade_return():
 
     flash("Pagamento em processamento. Se você já pagou, aguarde alguns instantes e atualize a página.", "info")
     return render_template("upgrade_return.html", order=order)
+
+
+@analytics_bp.get("/app/upgrade/status")
+@login_required
+def upgrade_status():
+    token = (request.args.get("token") or "").strip()
+    order = get_order_by_token(token)
+    if not order:
+        return jsonify({"ok": False, "error": "not_found"}), 404
+    if order.user_id and int(order.user_id) != int(current_user.id):
+        return jsonify({"ok": False, "error": "forbidden"}), 403
+
+    if order.status == "PAID":
+        current_user.set_plan(order.plan)
+        db.session.commit()
+        return jsonify({"ok": True, "status": "PAID", "redirect": url_for("index")})
+
+    status = order.status
+    if order.billing_id:
+        try:
+            remote_status = get_billing_status(order.billing_id)
+        except AbacatePayError as exc:
+            return jsonify({"ok": False, "error": "provider_error", "message": str(exc)}), 502
+
+        if remote_status:
+            status = remote_status
+            if remote_status == "PAID":
+                mark_order_paid_by_billing_id(order.billing_id)
+                current_user.set_plan(order.plan)
+                db.session.commit()
+                return jsonify({"ok": True, "status": "PAID", "redirect": url_for("index")})
+
+    return jsonify({"ok": True, "status": status})
 
 
 @analytics_bp.post("/app/subscribe")

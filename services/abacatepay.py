@@ -112,3 +112,63 @@ def create_plan_billing(
         raise AbacatePayError("AbacatePay não retornou billing_id/url.")
 
     return {"billing_id": billing_id, "url": pay_url}
+
+
+def _normalize_billing_status(status: str | None) -> str | None:
+    if not status:
+        return None
+    s = status.strip().upper()
+    if s in {"PAID", "CONFIRMED", "APPROVED", "SUCCESS"}:
+        return "PAID"
+    if s in {"PENDING", "WAITING", "CREATED", "PROCESSING"}:
+        return "PENDING"
+    return s
+
+
+def get_billing_status(billing_id: str) -> str | None:
+    if not billing_id:
+        return None
+
+    headers = {"Authorization": f"Bearer {_api_key()}", "Content-Type": "application/json"}
+    url = "https://api.abacatepay.com/v1/billing/get"
+
+    attempts = [
+        ("GET", {"id": billing_id}),
+        ("GET", {"billingId": billing_id}),
+        ("POST", {"id": billing_id}),
+        ("POST", {"billingId": billing_id}),
+    ]
+    last_error: str | None = None
+
+    for method, payload in attempts:
+        try:
+            if method == "GET":
+                resp = requests.get(url, params=payload, headers=headers, timeout=20)
+            else:
+                resp = requests.post(url, json=payload, headers=headers, timeout=20)
+        except requests.RequestException as exc:
+            last_error = str(exc)
+            continue
+
+        try:
+            body = resp.json()
+        except Exception:
+            last_error = f"Resposta invalida da AbacatePay (HTTP {resp.status_code})."
+            continue
+
+        if (not resp.ok) or (body.get("success") is False):
+            err = body.get("error") or body.get("message") or f"HTTP {resp.status_code}"
+            last_error = str(err)
+            continue
+
+        data = body.get("data") or body
+        if isinstance(data, dict) and isinstance(data.get("billing"), dict):
+            data = data["billing"]
+
+        status = _normalize_billing_status(data.get("status") or data.get("paymentStatus"))
+        if status:
+            return status
+
+    if last_error:
+        raise AbacatePayError(f"Erro AbacatePay: {last_error}")
+    return None

@@ -9,27 +9,134 @@
 
 {% block subhead %}
   {% set p = (selected_plan or 'basic') %}
+  {% set plan = PLANS.get(p, PLANS['basic']) %}
   <p class="public-subtitle">
     Você está criando uma conta no plano
-    <strong class="plan-badge plan-{{ p }}">{{ p|capitalize }}</strong>.
+    <strong id="selected-plan-badge" class="plan-badge plan-{{ p }}">{{ plan['name'] }}</strong>.
     Você poderá alterar depois.
   </p>
 {% endblock %}
 
 {% block content %}
+  {% set p = (selected_plan or 'basic') %}
+  {% set selected = PLANS.get(p, PLANS['basic']) %}
   <form class="public-form" method="post" action="/register">
-    <input type="hidden" name="plan" value="{{ selected_plan or 'basic' }}">
     <input type="hidden" name="checkout_token" value="{{ checkout_token or '' }}">
 
-    {{ input_text('username', 'username', 'Usuário', autocomplete='username', required=true) }}
-    {{ input_text('email', 'email', 'E-mail', type='email', autocomplete='email', required=true) }}
-    {{ input_text('password', 'password', 'Senha', type='password', autocomplete='new-password', required=true) }}
-    {{ input_text('confirm_password', 'confirm_password', 'Confirmar senha', type='password', autocomplete='new-password', required=true) }}
+    <div class="register-grid">
+      <div class="register-left">
+        <div class="plan-picker">
+          <p class="plan-picker-title">Escolha seu plano</p>
+          <div class="plan-grid">
+            {% for key, plan in PLANS.items() %}
+              <label class="plan-card {% if plan.get('popular') %}is-popular{% endif %}">
+                <input
+                  class="plan-radio"
+                  type="radio"
+                  name="plan"
+                  value="{{ key }}"
+                  {% if (selected_plan or 'basic') == key %}checked{% endif %}>
+                <div class="plan-card-body">
+                  {% if plan.get('popular') %}
+                    <span class="plan-badge">Mais vendido</span>
+                  {% endif %}
+                  <h3>{{ plan['name'] }}</h3>
+                  <div class="price">
+                    <span class="value">R$ {{ '%.2f'|format(plan['price_month']) }}</span>
+                    <span class="period">/ mês</span>
+                  </div>
+                  <ul class="plan-list">
+                    {% for item in plan['highlights'] %}
+                      <li>{{ item }}</li>
+                    {% endfor %}
+                  </ul>
+                </div>
+              </label>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
 
-    {{ btn('Criar conta', 'primary', type='submit') }}
+      <div class="register-right">
+        <div class="plan-summary">
+          <p class="plan-summary-title">Resumo do plano</p>
+          <div class="plan-summary-card">
+            <div class="plan-summary-header">
+              <strong id="selected-plan-name">{{ selected['name'] }}</strong>
+              <span class="plan-summary-price"><span id="selected-plan-price">R$ {{ '%.2f'|format(selected['price_month']) }}</span> / mês</span>
+            </div>
+            <ul id="selected-plan-highlights" class="plan-summary-list">
+              {% for item in selected['highlights'] %}
+                <li>{{ item }}</li>
+              {% endfor %}
+            </ul>
+          </div>
+        </div>
+
+        {{ input_text('username', 'username', 'Usuário', autocomplete='username', required=true) }}
+        {{ input_text('email', 'email', 'E-mail', type='email', autocomplete='email', required=true) }}
+        {{ input_text('password', 'password', 'Senha', type='password', autocomplete='new-password', required=true) }}
+        {{ input_text('confirm_password', 'confirm_password', 'Confirmar senha', type='password', autocomplete='new-password', required=true) }}
+
+        {{ btn('Criar conta', 'primary', type='submit') }}
+      </div>
+    </div>
   </form>
 
   <p class="public-footer-links">
     Já tem conta? <a href="/login{% if checkout_token %}?token={{ checkout_token }}{% endif %}">Entrar</a>
   </p>
+
+  <script>
+    (function () {
+      const plans = {
+        {% for key, plan in PLANS.items() %}
+          "{{ key }}": {
+            name: {{ plan['name']|tojson }},
+            price_month: {{ plan['price_month'] }},
+            highlights: {{ plan['highlights']|tojson }}
+          }{% if not loop.last %},{% endif %}
+        {% endfor %}
+      };
+      const badge = document.getElementById('selected-plan-badge');
+      const nameEl = document.getElementById('selected-plan-name');
+      const priceEl = document.getElementById('selected-plan-price');
+      const highlightsEl = document.getElementById('selected-plan-highlights');
+
+      function formatPrice(value) {
+        const amount = Number(value);
+        if (!Number.isFinite(amount)) return '';
+        return `R$ ${amount.toFixed(2).replace('.', ',')}`;
+      }
+
+      function applyPlan(key) {
+        const plan = plans[key] || plans.basic;
+        if (badge) {
+          badge.textContent = plan.name || key;
+          badge.className = `plan-badge plan-${key}`;
+        }
+        if (nameEl) {
+          nameEl.textContent = plan.name || key;
+        }
+        if (priceEl) {
+          priceEl.textContent = formatPrice(plan.price_month);
+        }
+        if (highlightsEl) {
+          highlightsEl.innerHTML = '';
+          (plan.highlights || []).forEach((item) => {
+            const li = document.createElement('li');
+            li.textContent = item;
+            highlightsEl.appendChild(li);
+          });
+        }
+      }
+
+      document.querySelectorAll('input[name="plan"]').forEach((radio) => {
+        if (radio.checked) {
+          applyPlan(radio.value);
+        }
+        radio.addEventListener('change', () => applyPlan(radio.value));
+      });
+    })();
+  </script>
 {% endblock %}

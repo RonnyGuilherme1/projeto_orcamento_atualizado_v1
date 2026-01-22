@@ -73,6 +73,10 @@ class User(UserMixin, db.Model):
         s = self._serializer()
         return s.dumps({"uid": self.id, "email": self.email})
 
+    def get_verification_token(self) -> str:
+        # Backwards compatibility for older callers.
+        return self.generate_verify_token()
+
     @staticmethod
     def verify_token(token: str, max_age_seconds: int = 60 * 60 * 24) -> int | None:
         s = User._serializer()
