@@ -1,0 +1,24 @@
+{% extends "base_public.html" %}
+{% set page_class = 'page-message' %}
+{% set page_css = ['/static/css/message.css'] %}
+
+{% block title %}{{ title or 'Aviso' }} | Controle Financeiro{% endblock %}
+
+{% block headline %}{{ title or 'Aviso' }}{% endblock %}
+
+{% block subhead %}
+  {% if subtitle %}
+    <p class="public-subtitle">{{ subtitle }}</p>
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+  <div class="info-box">
+    <p>{{ message }}</p>
+  </div>
+
+  <div class="public-actions">
+    <a class="btn-secondary" href="/pricing">Ver planos</a>
+    <a class="btn-link" href="/">Pagina inicial</a>
+  </div>
+{% endblock %}

@@ -1,0 +1,26 @@
+{% extends "layouts/base.html" %}
+
+{% set body_class = 'public-body ' ~ (page_class|default('')) %}
+{% set css_bundle = (page_css|default([])) %}
+{% set js_bundle  = [] %}
+
+{% block shell %}
+  <div class="public-shell">
+    {% include "partials/public_header.html" %}
+
+    <main class="public-main">
+      <section class="public-card">
+        <div class="public-card-head">
+          <h1 class="public-title">{% block headline %}{% endblock %}</h1>
+          {% block subhead %}{% endblock %}
+        </div>
+
+        {% include "partials/flash.html" %}
+
+        {% block content %}{% endblock %}
+      </section>
+
+      {% include "partials/public_footer.html" %}
+    </main>
+  </div>
+{% endblock %}

@@ -1,0 +1,34 @@
+{% extends "base_public.html" %}
+{% set page_class = 'page-verify' %}
+{% set page_css = ['/static/css/verify_pending.css'] %}
+
+{% block title %}Confirme seu e-mail | LinkGestor{% endblock %}
+
+{% block headline %}Confirme seu e-mail{% endblock %}
+
+{% block subhead %}
+  <p class="public-subtitle">
+    Para concluir o cadastro, precisamos validar seu endereço de e-mail.
+  </p>
+{% endblock %}
+
+{% block content %}
+  <div class="info-box">
+    <p>
+      Enviamos um link de confirmação para:
+      <strong>{{ current_user.email }}</strong>
+    </p>
+    <p class="muted">
+      Se não encontrar na caixa de entrada, verifique a pasta de spam.
+    </p>
+  </div>
+
+  <form method="post" action="/resend-verification">
+    <button class="btn-primary" type="submit">Reenviar e-mail de verificação</button>
+  </form>
+
+  <div class="public-actions">
+    <a class="btn-secondary" href="/logout">Sair</a>
+    <a class="btn-link" href="/login">Voltar ao login</a>
+  </div>
+{% endblock %}

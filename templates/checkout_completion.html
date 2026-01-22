@@ -1,0 +1,72 @@
+{% extends "base_public.html" %}
+{% set page_class = 'page-checkout-complete' %}
+{% set page_css = ['/static/css/checkout_completion.css'] %}
+{% from 'components/ui.html' import btn %}
+
+{% block title %}Checkout | Controle Financeiro{% endblock %}
+
+{% block headline %}Checkout do plano{% endblock %}
+
+{% block subhead %}
+  {% if plan %}
+    <p class="public-subtitle">
+      Plano selecionado: <strong class="plan-badge plan-{{ order.plan }}">{{ plan['name'] }}</strong>.
+    </p>
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+  <div class="public-stack" style="gap: 14px;">
+    <div id="status-box" class="public-alert public-alert-warning">
+      <strong>Status:</strong> <span id="status-text">{{ order.status }}</span>
+      <div id="pending-hint" style="margin-top: 8px;">
+        Se você concluiu o pagamento agora, pode levar alguns segundos para confirmarmos.
+      </div>
+    </div>
+
+    <div id="paid-actions" class="public-stack" style="display: none; gap: 10px;">
+      <p style="margin: 0; color: var(--muted);">
+        Pagamento confirmado. Agora crie sua conta (ou entre) para ativar o plano.
+      </p>
+      <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+        <a class="btn btn-primary" href="/register?plan={{ order.plan }}&token={{ order.token }}">Criar conta e ativar</a>
+        <a class="btn btn-ghost" href="/login?token={{ order.token }}">Ja tenho conta</a>
+      </div>
+    </div>
+
+    <div style="display:flex; gap:10px; flex-wrap: wrap;">
+      <a class="btn btn-ghost" href="/pricing?plan={{ order.plan }}">Voltar aos planos</a>
+      <a class="btn btn-ghost" href="/">Pagina inicial</a>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const token = {{ order.token|tojson }};
+      const statusText = document.getElementById('status-text');
+      const statusBox = document.getElementById('status-box');
+      const paidActions = document.getElementById('paid-actions');
+      const pendingHint = document.getElementById('pending-hint');
+
+      async function refreshStatus() {
+        try {
+          const res = await fetch(`/checkout/status?token=${encodeURIComponent(token)}`);
+          if (!res.ok) return;
+          const data = await res.json();
+          if (!data.ok) return;
+          statusText.textContent = data.status;
+          if (data.status === 'PAID') {
+            statusBox.className = 'public-alert public-alert-success';
+            if (pendingHint) pendingHint.style.display = 'none';
+            paidActions.style.display = 'flex';
+          }
+        } catch (e) {
+          // silencioso
+        }
+      }
+
+      refreshStatus();
+      setInterval(refreshStatus, 2500);
+    })();
+  </script>
+{% endblock %}

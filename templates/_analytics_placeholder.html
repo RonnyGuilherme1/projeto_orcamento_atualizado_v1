@@ -1,0 +1,33 @@
+{% extends "base_app.html" %}
+{% set page_css = ['/static/css/app_shell.css', '/static/css/app_base.css', '/static/css/analytics.css'] %}
+
+{% block title %}{{ title }} | Controle Financeiro{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+  <div class="app-card">
+    <h2>{{ title }}</h2>
+    <p class="muted">
+      Esta é a estrutura da tela (menu, bloqueio por plano e rota). A lógica de dados pode ser incrementada.
+    </p>
+
+    {% if description %}
+      <p>{{ description }}</p>
+    {% endif %}
+  </div>
+
+  <div class="feature-grid">
+    <div class="feature-card">
+      <h3>Próximo passo</h3>
+      <p>Eu posso conectar estes dados com seu banco (Neon) e alimentar gráficos e relatórios automaticamente.</p>
+    </div>
+    <div class="feature-card">
+      <h3>Foco</h3>
+      <p>Começamos com filtros por mês/ano, agregação por tipo e categoria, e comparação de períodos.</p>
+    </div>
+    <div class="feature-card">
+      <h3>Performance</h3>
+      <p>Otimizamos queries com índices e agregações para manter custo baixo e resposta rápida.</p>
+    </div>
+  </div>
+{% endblock %}

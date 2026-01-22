@@ -1,0 +1,26 @@
+{% extends "base_public.html" %}
+{% set page_class = 'page-login' %}
+{% set page_css = ['/static/css/login.css'] %}
+{% from 'components/ui.html' import btn, input_text %}
+
+{% block title %}Entrar | LinkGestor{% endblock %}
+
+{% block headline %}Entrar{% endblock %}
+
+{% block subhead %}
+  <p class="public-subtitle">Acesse sua conta para gerenciar suas receitas e despesas.</p>
+{% endblock %}
+
+{% block content %}
+  <form class="public-form" action="/login" method="POST">
+    <input type="hidden" name="checkout_token" value="{{ checkout_token or '' }}">
+    {{ input_text('login_id', 'login_id', 'Usuário ou e-mail', autocomplete='username', required=true) }}
+    {{ input_text('password', 'password', 'Senha', type='password', autocomplete='current-password', required=true) }}
+
+    {{ btn('Entrar', 'primary', type='submit') }}
+  </form>
+
+  <p class="public-footer-links">
+    Não tem conta? <a href="/register{% if checkout_token %}?plan=basic&token={{ checkout_token }}{% endif %}">Criar agora</a>
+  </p>
+{% endblock %}

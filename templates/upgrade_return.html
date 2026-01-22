@@ -1,0 +1,27 @@
+{% extends "base_app.html" %}
+
+{% block title %}Pagamento em processamento | Controle Financeiro{% endblock %}
+{% block page_title %}Pagamento{% endblock %}
+
+{% block content %}
+  {% set plan = PLANS.get(order.plan, PLANS['basic']) %}
+
+  <div class="app-card">
+    <h2>Estamos confirmando o seu pagamento</h2>
+    <p class="muted">Assim que a confirmação chegar, o seu plano será atualizado automaticamente.</p>
+
+    <div class="app-card" style="margin:14px 0 0;">
+      <p style="margin:8px 0;">Plano: <strong>{{ plan['name'] }}</strong></p>
+      <p style="margin:8px 0;">Status: <strong>{{ order.status }}</strong></p>
+    </div>
+
+    <div class="app-row" style="gap:10px; margin-top:16px;">
+      <a class="btn-secondary" href="{{ url_for('analytics.upgrade') }}">Voltar</a>
+      <a class="btn-primary" href="{{ url_for('analytics.upgrade_return', token=order.token) }}">Atualizar status</a>
+    </div>
+
+    <p class="muted" style="margin-top:12px;">
+      Se você já pagou e o status não atualizar, aguarde alguns minutos e tente novamente.
+    </p>
+  </div>
+{% endblock %}

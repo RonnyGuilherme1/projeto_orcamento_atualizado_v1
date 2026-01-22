@@ -1,0 +1,53 @@
+{% extends "base_public.html" %}
+{% set page_class = 'page-pricing' %}
+{% set page_css = ['/static/css/pricing.css'] %}
+
+{% block title %}Planos e Preços | LinkGestor{% endblock %}
+
+{% block headline %}Planos que crescem com você{% endblock %}
+
+{% block subhead %}
+<p class="public-subtitle">
+  Comece no Básico e evolua para análises avançadas com o Plus e Pro. O plano fica associado ao seu login.
+  Você pode trocar a qualquer momento.
+</p>
+{% endblock %}
+
+{% block content %}
+  <div class="pricing-grid">
+    {% for key, plan in PLANS.items() %}
+      <div class="pricing-card {% if plan.get('popular') %}popular{% endif %}">
+        {% if plan.get('popular') %}
+          <div class="badge">Mais vendido</div>
+        {% endif %}
+        <h3>{{ plan['name'] }}</h3>
+        <div class="price">
+          <span class="value">R$ {{ '%.2f'|format(plan['price_month']) }}</span>
+          <span class="period">/ mês</span>
+        </div>
+        <ul class="plan-list">
+          {% for item in plan['highlights'] %}
+            <li>{{ item }}</li>
+          {% endfor %}
+        </ul>
+
+        <div class="pricing-actions">
+          <a class="btn-primary" href="/buy?plan={{ key }}">Escolher {{ plan['name'] }}</a>
+          {% if current_user.is_authenticated %}
+            <a class="btn-secondary" href="/app/upgrade">Já tenho conta</a>
+          {% else %}
+            <a class="btn-secondary" href="/login">Entrar</a>
+          {% endif %}
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+
+  <div class="pricing-note">
+    <strong>Como funciona a compra agora?</strong>
+    <p class="muted">
+      Você escolhe um plano, faz o pagamento via PIX (AbacatePay) e, em seguida, cria sua conta ou entra
+      para ativar o plano automaticamente.
+    </p>
+  </div>
+{% endblock %}

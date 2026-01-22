@@ -1,0 +1,10 @@
+<header class="app-topbar">
+  <div class="topbar-left">
+    <h1 class="page-title">{% block page_title %}{% endblock %}</h1>
+  </div>
+  <div class="topbar-right">
+    {% if not current_user.is_verified %}
+      <span class="status-warning">Verificação pendente</span>
+    {% endif %}
+  </div>
+</header>

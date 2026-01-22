@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" type="image/png" href="/static/img/logo-recorte2.png">
+
+  <title>{% block title %}Controle Financeiro{% endblock %}</title>
+
+  {#
+    Base layout reutilizado por base_public.html e base_app.html.
+    Suporta css_bundle/js_bundle como string unica ou lista de strings.
+  #}
+  {% if css_bundle %}
+    {% if css_bundle is string %}
+      <link rel="stylesheet" href="{{ css_bundle }}" />
+    {% else %}
+      {% for href in css_bundle %}
+        <link rel="stylesheet" href="{{ href }}" />
+      {% endfor %}
+    {% endif %}
+  {% endif %}
+
+  {% block head %}{% endblock %}
+</head>
+
+<body class="{{ body_class|default('') }}">
+  {% block shell %}{% endblock %}
+
+  {% if js_bundle %}
+    {% if js_bundle is string %}
+      <script src="{{ js_bundle }}"></script>
+    {% else %}
+      {% for src in js_bundle %}
+        <script src="{{ src }}"></script>
+      {% endfor %}
+    {% endif %}
+  {% endif %}
+  {% block scripts %}{% endblock %}
+</body>
+</html>

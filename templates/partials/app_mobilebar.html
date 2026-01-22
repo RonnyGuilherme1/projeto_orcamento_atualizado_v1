@@ -1,0 +1,13 @@
+<header class="app-mobilebar" role="banner">
+  <button class="icon-btn" type="button" aria-label="Abrir menu" data-sidebar-toggle>
+    <span class="icon-bars" aria-hidden="true"></span>
+  </button>
+
+  <div class="mobilebar-title">Controle Financeiro</div>
+
+  <div class="mobilebar-right">
+    {% if not current_user.is_verified %}
+      <span class="status-warning">Verificação pendente</span>
+    {% endif %}
+  </div>
+</header>

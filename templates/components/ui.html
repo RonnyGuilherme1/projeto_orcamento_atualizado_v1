@@ -1,0 +1,50 @@
+{#
+  Small UI helpers for server-rendered templates.
+  These macros intentionally map to existing legacy CSS classes,
+  so we can standardize markup without breaking the current look.
+
+  Usage:
+    {% from 'components/ui.html' import btn, input_text, card, badge %}
+ #}
+
+{% macro btn(label, variant='primary', type='button', extra_class='', attrs={}) -%}
+  {%- set base = 'btn-' ~ variant -%}
+  <button type="{{ type }}" class="{{ base }} {{ extra_class }}"
+    {%- for k,v in attrs.items() %} {{ k }}="{{ v }}"{%- endfor %}>
+    {{ label }}
+  </button>
+{%- endmacro %}
+
+{% macro link_btn(label, href, variant='primary', extra_class='', attrs={}) -%}
+  {%- set base = 'btn-' ~ variant -%}
+  <a href="{{ href }}" class="{{ base }} {{ extra_class }}"
+    {%- for k,v in attrs.items() %} {{ k }}="{{ v }}"{%- endfor %}>
+    {{ label }}
+  </a>
+{%- endmacro %}
+
+{% macro badge(label, tone='neutral', extra_class='') -%}
+  {# tone: neutral | ok | warn | err #}
+  <span class="pill {{ 'pill-' ~ tone }} {{ extra_class }}">{{ label }}</span>
+{%- endmacro %}
+
+{% macro card(title='', extra_class='', body_class='') -%}
+  <section class="card {{ extra_class }}">
+    {% if title %}<h2 class="card-title">{{ title }}</h2>{% endif %}
+    <div class="{{ body_class }}">{{ caller() }}</div>
+  </section>
+{%- endmacro %}
+
+{% macro input_text(id, name, label, type='text', value='', required=false, autocomplete='', placeholder='', extra_class='') -%}
+  <div class="form-row {{ extra_class }}">
+    <label for="{{ id }}">{{ label }}</label>
+    <input
+      id="{{ id }}"
+      name="{{ name }}"
+      type="{{ type }}"
+      value="{{ value }}"
+      {% if placeholder %}placeholder="{{ placeholder }}"{% endif %}
+      {% if autocomplete %}autocomplete="{{ autocomplete }}"{% endif %}
+      {% if required %}required{% endif %} />
+  </div>
+{%- endmacro %}

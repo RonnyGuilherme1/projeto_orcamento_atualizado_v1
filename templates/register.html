@@ -1,0 +1,35 @@
+{% extends "base_public.html" %}
+{% set page_class = 'page-register' %}
+{% set page_css = ['/static/css/register.css'] %}
+{% from 'components/ui.html' import btn, input_text %}
+
+{% block title %}Criar conta | LinkGestor{% endblock %}
+
+{% block headline %}Criar conta{% endblock %}
+
+{% block subhead %}
+  {% set p = (selected_plan or 'basic') %}
+  <p class="public-subtitle">
+    Você está criando uma conta no plano
+    <strong class="plan-badge plan-{{ p }}">{{ p|capitalize }}</strong>.
+    Você poderá alterar depois.
+  </p>
+{% endblock %}
+
+{% block content %}
+  <form class="public-form" method="post" action="/register">
+    <input type="hidden" name="plan" value="{{ selected_plan or 'basic' }}">
+    <input type="hidden" name="checkout_token" value="{{ checkout_token or '' }}">
+
+    {{ input_text('username', 'username', 'Usuário', autocomplete='username', required=true) }}
+    {{ input_text('email', 'email', 'E-mail', type='email', autocomplete='email', required=true) }}
+    {{ input_text('password', 'password', 'Senha', type='password', autocomplete='new-password', required=true) }}
+    {{ input_text('confirm_password', 'confirm_password', 'Confirmar senha', type='password', autocomplete='new-password', required=true) }}
+
+    {{ btn('Criar conta', 'primary', type='submit') }}
+  </form>
+
+  <p class="public-footer-links">
+    Já tem conta? <a href="/login{% if checkout_token %}?token={{ checkout_token }}{% endif %}">Entrar</a>
+  </p>
+{% endblock %}

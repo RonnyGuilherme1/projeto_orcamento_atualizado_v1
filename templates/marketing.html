@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" type="image/png" href="/static/img/logo-recorte2.png">
+  <title>Controle de Orçamento - Sistema financeiro simples e moderno</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/marketing.css">
+</head>
+<body>
+  <div class="page">
+    <header class="container header">
+      <div class="brand">
+        <img src="/static/img/logo-recorte2.png" alt="Logo do sistema">
+        <img src="/static/img/nome_logo-recorte2.png" alt="Controle de Orçamento">
+      </div>
+      <nav class="nav">
+        <a href="#recursos">Recursos</a>
+        <a href="#fluxo">Como funciona</a>
+        <a href="#seguranca">Segurança</a>
+        <a href="#contato">Contato</a>
+        <div class="nav-actions">
+          <a class="btn btn-ghost btn-sm" href="/login">Login</a>
+          <a class="btn btn-primary btn-sm" href="/register">Cadastro</a>
+        </div>
+      </nav>
+    </header>
+
+    <main class="container">
+      <section class="hero">
+        <div class="fade-in">
+          <div class="tagline"><span></span>Controle real do seu dinheiro</div>
+          <h1>Seu orçamento pessoal com visão clara de receitas, despesas e saldo projetado.</h1>
+          <p>
+            O Controle de Orçamento foi desenhado para quem precisa registrar entradas, organizar
+            despesas e entender o saldo do ciclo com rapidez. Tudo em uma interface limpa,
+            focada no essencial.
+          </p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="/login">Entrar no sistema</a>
+            <a class="btn btn-ghost" href="mailto:contato@seudominio.com.br">Agendar demonstração</a>
+          </div>
+        </div>
+        <div class="hero-card rise">
+          <div class="hero-card-header">
+            <strong>Visão geral do mês</strong>
+            <span class="pill">Saldo carregado</span>
+          </div>
+          <div class="card-grid">
+            <div class="mini-card">
+              <h4>Receitas</h4>
+              <strong>R$ 6.820</strong>
+              <span>Últimos 30 dias</span>
+            </div>
+            <div class="mini-card">
+              <h4>Despesas</h4>
+              <strong>R$ 4.130</strong>
+              <span>Pagas + pendentes</span>
+            </div>
+            <div class="mini-card">
+              <h4>Saldo do ciclo</h4>
+              <strong>R$ 2.690</strong>
+              <span>Projeção automática</span>
+            </div>
+            <div class="mini-card">
+              <h4>Status</h4>
+              <strong>12 em dia</strong>
+              <span>4 aguardando</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="recursos">
+        <h2 class="section-title">Tudo que você precisa para gerir seu orçamento</h2>
+        <p class="section-subtitle">
+          Cadastre receitas e despesas, acompanhe o pagamento real e tenha um resumo claro por data,
+          trimestre e ciclo financeiro.
+        </p>
+        <div class="feature-grid">
+          <div class="feature-card">
+            <h3>Lançamentos rápidos</h3>
+            <p>Registre receitas e despesas em poucos cliques com data, descrição, valor e status.</p>
+          </div>
+          <div class="feature-card">
+            <h3>Resumo por data</h3>
+            <p>Veja totais diários de entradas e saídas com saldo atualizado automaticamente.</p>
+          </div>
+          <div class="feature-card">
+            <h3>Status inteligente</h3>
+            <p>Controle despesas em andamento, não pagas e pagas com histórico completo.</p>
+          </div>
+          <div class="feature-card">
+            <h3>Saldo carregado</h3>
+            <p>Quando uma despesa é paga, o sistema grava a data real e carrega o saldo correto.</p>
+          </div>
+          <div class="feature-card">
+            <h3>Visão trimestral</h3>
+            <p>Cards por trimestre para enxergar evolução de receita, despesa e saldo.</p>
+          </div>
+          <div class="feature-card">
+            <h3>Acesso seguro</h3>
+            <p>Login com verificação de e-mail e acesso protegido aos dados do usuário.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="fluxo">
+        <h2 class="section-title">Fluxo simples, resultados claros</h2>
+        <p class="section-subtitle">
+          O sistema organiza o que entra, o que sai e o que ainda está pendente, permitindo decisões
+          rápidas sem planilhas complexas.
+        </p>
+        <div class="steps">
+          <div class="step">
+            <span>Passo 1</span>
+            <h3>Registre entradas</h3>
+            <p>Adicione receitas com data e descrição para manter o histórico completo.</p>
+          </div>
+          <div class="step">
+            <span>Passo 2</span>
+            <h3>Controle despesas</h3>
+            <p>Defina status e data de pagamento real para acompanhar o ciclo com precisão.</p>
+          </div>
+          <div class="step">
+            <span>Passo 3</span>
+            <h3>Veja o saldo projetado</h3>
+            <p>O resumo de ciclo mostra o saldo anterior, despesas pendentes e projeção final.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="seguranca">
+        <h2 class="section-title">Confiabilidade para uso diário</h2>
+        <p class="section-subtitle">
+          Estrutura pronta para produção com banco Postgres, autenticação segura e
+          disponibilidade contínua para você acessar quando precisar.
+        </p>
+        <div class="stats">
+          <div class="stat">
+            <strong>Login protegido</strong>
+            <span>Verificação de e-mail para impedir acessos indevidos.</span>
+          </div>
+          <div class="stat">
+            <strong>Banco robusto</strong>
+            <span>Postgres com backups automáticos e conexões seguras.</span>
+          </div>
+          <div class="stat">
+            <strong>Deploy estável</strong>
+            <span>Hospedagem escalável para manter o app rápido e sempre online.</span>
+          </div>
+        </div>
+
+        <div class="cta" id="contato">
+          <div>
+            <h2>Pronto para organizar seu dinheiro com clareza?</h2>
+            <p>Entre em contato e veja o Controle de Orçamento funcionando no seu fluxo real.</p>
+          </div>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="mailto:contato@seudominio.com.br">Falar com a equipe</a>
+            <a class="btn btn-ghost" href="/login">Entrar no sistema</a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="container footer">
+      <span>Controle de Orçamento · seudominio.com.br · contato@seudominio.com.br</span>
+    </footer>
+  </div>
+</body>
+</html>

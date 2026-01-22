@@ -1,0 +1,58 @@
+{% extends "base_app.html" %}
+{% set page_class = 'page-dashboard' %}
+{% set page_css = ['/static/css/dashboard.css'] %}
+
+{% block title %}Dashboard | Controle Financeiro{% endblock %}
+
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+  <div class="page dashboard-page">
+    <!-- CARDS (TRIMESTRES) -->
+    <div id="cards" class="cards-trimestres"></div>
+
+    <!-- RESUMO POR DATA (DETALHADO) -->
+    <section class="panel resumo-panel">
+      <div class="panel-head">
+        <div>
+          <h2 class="panel-title">Resumo por Data</h2>
+          <p class="panel-subtitle">Visão de caixa: saldo anterior, receitas do dia e despesas pendentes até o fim do mês.</p>
+        </div>
+        <div class="panel-actions">
+          <label class="field">
+            <span class="field-label">Data</span>
+            <input type="date" id="filtro-data" class="control" />
+          </label>
+        </div>
+      </div>
+
+      <div class="resumo-grid">
+        <div id="lista-dia" class="lista-dia"></div>
+
+        <div class="resumo-totais">
+          <div class="totais-row">
+            <span>Receitas (no dia)</span>
+            <strong id="total-receita">R$ 0,00</strong>
+          </div>
+          <div class="totais-row">
+            <span>Despesas pendentes</span>
+            <strong id="total-despesa">R$ 0,00</strong>
+          </div>
+          <div class="totais-sep"></div>
+          <div class="totais-row totals-saldo">
+            <span>Saldo projetado</span>
+            <strong id="saldo-dia">R$ 0,00</strong>
+          </div>
+
+          <div class="hint">
+            Dica: ajuste a data para simular o fluxo até o fim do mês.
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+{% endblock %}
+
+{% block scripts %}
+  <script src="/static/js/pages/dashboard.js"></script>
+{% endblock %}

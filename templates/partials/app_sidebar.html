@@ -1,0 +1,52 @@
+<aside class="sidebar">
+  <button class="sidebar-brand" type="button" data-sidebar-toggle aria-label="Abrir/fechar menu">
+    <img class="sidebar-logo" src="/static/img/logo-recorte2.png" alt="Logo">
+    <div class="sidebar-title">
+      <span class="sidebar-name">Controle</span>
+      <span class="sidebar-sub">Financeiro</span>
+    </div>
+  </button>
+
+  <a class="sidebar-user sidebar-user-link" href="/app/account" aria-label="Abrir configurações da conta">
+    <div class="sidebar-user-avatar" aria-hidden="true">
+      {{ (current_user.username[:2] if current_user.username else 'U')|upper }}
+    </div>
+    <div class="sidebar-user-meta">
+      <div class="sidebar-user-name">{{ current_user.username }}</div>
+      <div class="sidebar-user-plan">Plano: {{ PLANS.get(current_user.plan, PLANS['basic'])['name'] }}</div>
+    </div>
+  </a>
+
+  <nav class="sidebar-nav" aria-label="Menu">
+    <a class="nav-item" href="/app" data-sidebar-close title="Dashboard"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/></svg></span><span class="nav-text">Dashboard</span></a>
+    <a class="nav-item" href="/app/entradas" data-sidebar-close title="Entradas"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3 6h.01"/><path d="M3 12h.01"/><path d="M3 18h.01"/></svg></span><span class="nav-text">Entradas</span></a>
+
+
+    <div class="nav-section">Análises</div>
+
+    <a class="nav-item {% if not has_feature('charts') %}locked{% endif %}" href="{% if has_feature('charts') %}/app/charts{% else %}/app/upgrade{% endif %}" title="Gráficos" data-sidebar-close>
+      <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14v4"/><path d="M12 10v8"/><path d="M17 6v12"/></svg></span><span class="nav-text">Gráficos</span>
+      {% if not has_feature('charts') %}<span class="pill">Plus</span>{% endif %}
+    </a>
+    <a class="nav-item {% if not has_feature('compare') %}locked{% endif %}" href="{% if has_feature('compare') %}/app/compare{% else %}/app/upgrade{% endif %}" title="Comparação" data-sidebar-close>
+      <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3H5a2 2 0 0 0-2 2v5"/><path d="M14 21h5a2 2 0 0 0 2-2v-5"/><path d="M21 10V5a2 2 0 0 0-2-2h-5"/><path d="M3 14v5a2 2 0 0 0 2 2h5"/><path d="M8 8h8v8H8z"/></svg></span><span class="nav-text">Comparação</span>
+      {% if not has_feature('compare') %}<span class="pill">Plus</span>{% endif %}
+    </a>
+    <a class="nav-item {% if not has_feature('filters') %}locked{% endif %}" href="{% if has_feature('filters') %}/app/filters{% else %}/app/upgrade{% endif %}" title="Filtros" data-sidebar-close>
+      <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 3H2l8 9v7l4 2v-9z"/></svg></span><span class="nav-text">Filtros</span>
+      {% if not has_feature('filters') %}<span class="pill">Plus</span>{% endif %}
+    </a>
+    <a class="nav-item {% if not has_feature('projection') %}locked{% endif %}" href="{% if has_feature('projection') %}/app/projection{% else %}/app/upgrade{% endif %}" title="Projeção" data-sidebar-close>
+      <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-7"/></svg></span><span class="nav-text">Projeção</span>
+      {% if not has_feature('projection') %}<span class="pill">Plus</span>{% endif %}
+    </a>
+    <a class="nav-item {% if not has_feature('reports') %}locked{% endif %}" href="{% if has_feature('reports') %}/app/reports{% else %}/app/upgrade{% endif %}" title="Relatórios" data-sidebar-close>
+      <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h10a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M8 7h8"/><path d="M8 11h8"/><path d="M8 15h5"/></svg></span><span class="nav-text">Relatórios</span>
+      {% if not has_feature('reports') %}<span class="pill">Plus</span>{% endif %}
+    </a>
+
+    <div class="nav-section">Conta</div>
+    <a class="nav-item" href="/app/upgrade" data-sidebar-close title="Gerenciar plano"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7H14a3.5 3.5 0 0 1 0 7H6"/></svg></span><span class="nav-text">Gerenciar plano</span></a>
+    <a class="nav-item danger" href="/logout" data-sidebar-close title="Sair"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg></span><span class="nav-text">Sair</span></a>
+  </nav>
+</aside>

@@ -1,0 +1,176 @@
+{% extends "base_app.html" %}
+{% set page_class = 'page-account' %}
+{% set page_css = ['/static/css/account.css'] %}
+
+{% block page_title %}Minha conta{% endblock %}
+
+{% set _plan = PLANS.get(current_user.plan, PLANS['basic']) %}
+
+{% block content %}
+  <section class="account-shell">
+    <header class="account-header">
+      <div class="account-title">
+        <div class="account-avatar" aria-hidden="true">
+          {{ (current_user.username[:2] if current_user.username else 'U')|upper }}
+        </div>
+        <div>
+          <h2 class="account-h">Minha conta</h2>
+          <p class="account-sub">Gerencie as informações de conta, dados pessoais e assinaturas</p>
+        </div>
+      </div>
+    </header>
+
+    <div class="account-grid">
+      <nav class="account-nav" aria-label="Menu da conta">
+        <a class="account-nav-item {% if section == 'overview' %}active{% endif %}" href="/app/account?section=overview">
+          Visão geral
+        </a>
+        <a class="account-nav-item {% if section == 'billing' %}active{% endif %}" href="/app/account?section=billing">
+          Assinaturas e compras
+        </a>
+        <a class="account-nav-item {% if section == 'access' %}active{% endif %}" href="/app/account?section=access">
+          Dados de acesso
+        </a>
+        <a class="account-nav-item {% if section == 'profile' %}active{% endif %}" href="/app/account?section=profile">
+          Dados pessoais
+        </a>
+        <a class="account-nav-item {% if section == 'notifications' %}active{% endif %}" href="/app/account?section=notifications">
+          Preferências de notificação
+        </a>
+      </nav>
+
+      <div class="account-main">
+        {% if section == 'overview' %}
+          <div class="account-card">
+            <div class="account-card-h">
+              <h3>Assinaturas e compras</h3>
+              <a class="account-link" href="/app/account?section=billing">Gerenciar</a>
+            </div>
+            <p class="account-muted">
+              Seu plano atual é <strong>{{ _plan['name'] }}</strong>.
+              {% if current_user.plan == 'basic' %}
+                Faça upgrade para liberar recursos avançados.
+              {% endif %}
+            </p>
+            <div class="account-actions">
+              <a class="btn" href="/app/upgrade">Ver planos</a>
+            </div>
+          </div>
+
+          <div class="account-card">
+            <div class="account-card-h">
+              <h3>Dados de acesso</h3>
+              <a class="account-link" href="/app/account?section=access">Alterar</a>
+            </div>
+            <div class="account-kv">
+              <div>
+                <div class="account-k">Usuário</div>
+                <div class="account-v">{{ current_user.username }}</div>
+              </div>
+              <div>
+                <div class="account-k">E-mail</div>
+                <div class="account-v">{{ current_user.email or '—' }}</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="account-card">
+            <div class="account-card-h">
+              <h3>Dados pessoais</h3>
+              <a class="account-link" href="/app/account?section=profile">Alterar</a>
+            </div>
+            <p class="account-muted">Mantenha seus dados atualizados. Esta seção pode ser ampliada depois (CPF, telefone, endereço, etc.).</p>
+          </div>
+
+        {% elif section == 'billing' %}
+          <div class="account-card">
+            <div class="account-card-h">
+              <h3>Assinaturas e compras</h3>
+              <span class="account-badge">Plano: {{ _plan['name'] }}</span>
+            </div>
+
+            {% if current_user.plan == 'basic' %}
+              <p class="account-muted">Você não possui nenhuma assinatura ativa. Conheça nossos planos para liberar recursos avançados.</p>
+              <div class="account-actions">
+                <a class="btn" href="/app/upgrade">Conhecer planos</a>
+              </div>
+            {% else %}
+              <p class="account-muted">Sua assinatura está ativa. Caso queira trocar de plano, acesse o gerenciador.</p>
+              <div class="account-actions">
+                <a class="btn" href="/app/upgrade">Gerenciar plano</a>
+              </div>
+            {% endif %}
+          </div>
+
+          <div class="account-card">
+            <div class="account-card-h">
+              <h3>Histórico</h3>
+            </div>
+            <p class="account-muted">Em breve: lista de pagamentos e comprovantes (integração com AbacatePay).</p>
+          </div>
+
+        {% elif section == 'access' %}
+          <div class="account-card">
+            <div class="account-card-h">
+              <h3>Dados de acesso</h3>
+            </div>
+            <div class="account-form-grid">
+              <div class="account-field">
+                <label class="account-label">Usuário</label>
+                <div class="account-value">{{ current_user.username }}</div>
+              </div>
+              <div class="account-field">
+                <label class="account-label">E-mail</label>
+                <div class="account-value">{{ current_user.email or '—' }}</div>
+              </div>
+            </div>
+            <p class="account-muted">Se você quiser, eu preparo o fluxo de alteração de senha e e-mail com validações e confirmação.</p>
+          </div>
+
+        {% elif section == 'profile' %}
+          <div class="account-card">
+            <div class="account-card-h">
+              <h3>Dados pessoais</h3>
+            </div>
+            <p class="account-muted">Esses dados são obrigatórios para iniciar o pagamento (PIX).</p>
+
+            <form method="post" action="/app/account/profile" class="account-form">
+              <div class="account-form-grid">
+                <div class="account-field">
+                  <label class="account-label">Nome completo</label>
+                  <input class="account-input" name="full_name" type="text" placeholder="Seu nome completo" value="{{ current_user.full_name or '' }}" required>
+                </div>
+
+                <div class="account-field">
+                  <label class="account-label">CPF</label>
+                  <input class="account-input" name="tax_id" type="text" placeholder="000.000.000-00" value="{{ current_user.tax_id or '' }}" required>
+                </div>
+
+                <div class="account-field">
+                  <label class="account-label">Telefone</label>
+                  <input class="account-input" name="cellphone" type="text" placeholder="(00) 00000-0000" value="{{ current_user.cellphone or '' }}" required>
+                </div>
+              </div>
+
+              <div class="account-actions">
+                <button class="btn" type="submit">Salvar</button>
+              </div>
+            </form>
+          </div>
+
+
+        {% elif section == 'notifications' %}
+          <div class="account-card">
+            <div class="account-card-h">
+              <h3>Preferências de notificação</h3>
+            </div>
+            <p class="account-muted">Base pronta para adicionar preferências (e-mail, vencimentos, alertas). Pode ser conectado a jobs/cron depois.</p>
+            <div class="account-actions">
+              <button class="btn" disabled>Salvar</button>
+            </div>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </section>
+{% endblock %}

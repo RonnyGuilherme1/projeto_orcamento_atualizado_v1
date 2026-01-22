@@ -1,0 +1,43 @@
+{% extends "base_app.html" %}
+{% set page_class = 'page-upgrade' %}
+{% set page_css = ['/static/css/upgrade.css'] %}
+
+{% block title %}Upgrade | Controle Financeiro{% endblock %}
+{% block page_title %}Upgrade de plano{% endblock %}
+
+{% block content %}
+  {% set plan = PLANS.get(selected_plan, PLANS['basic']) %}
+
+  <div class="app-card upgrade-checkout">
+    <h2>Confirmar upgrade</h2>
+    <p class="muted">Você está prestes a iniciar o checkout do plano <strong>{{ plan['name'] }}</strong>.</p>
+
+    <div class="checkout-grid">
+      <div class="app-card">
+        <h3 style="margin-top:0;">Resumo</h3>
+        <p style="margin:8px 0;">Plano: <strong>{{ plan['name'] }}</strong></p>
+        <p style="margin:8px 0;">Valor: <strong>R$ {{ '%.2f'|format(plan['price_month']) }}</strong> (1 mês)</p>
+        <p class="muted" style="margin:10px 0 0;">
+          O pagamento é feito via PIX. Após a confirmação, seu plano será atualizado automaticamente.
+        </p>
+      </div>
+
+      <div class="app-card">
+        <h3 style="margin-top:0;">O que muda</h3>
+        <ul class="plan-list" style="margin:8px 0 0;">
+          {% for item in plan['highlights'] %}
+            <li>{{ item }}</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+
+    <div class="checkout-actions">
+      <a class="btn-secondary" href="{{ url_for('analytics.upgrade') }}">Voltar</a>
+      <form method="post" action="{{ url_for('analytics.upgrade_checkout_start') }}" style="margin:0;">
+        <input type="hidden" name="plan" value="{{ selected_plan }}">
+        <button class="btn-primary" type="submit">Ir para pagamento (PIX)</button>
+      </form>
+    </div>
+  </div>
+{% endblock %}

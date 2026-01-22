@@ -1,0 +1,163 @@
+{% extends "base_app.html" %}
+{% set page_class = 'page-entries' %}
+{% set page_css = ['/static/css/entries.css'] %}
+
+{% block title %}Entradas | Controle Financeiro{% endblock %}
+
+{% block page_title %}Entradas{% endblock %}
+
+{% block content %}
+  <div class="page entries-page">
+    <!-- NOVA ENTRADA -->
+    <section class="panel">
+      <div class="panel-head compact">
+        <div>
+          <h2 class="panel-title">Nova Entrada</h2>
+          <p class="panel-subtitle">Cadastre receitas e despesas. Para despesas, defina o status.</p>
+        </div>
+      </div>
+
+      <form id="form" class="entry-form">
+        <div class="form-grid">
+          <label class="field field-date">
+            <span class="field-label">Data</span>
+            <input type="date" id="data" class="control" required>
+          </label>
+
+          <label class="field field-tipo">
+            <span class="field-label">Tipo</span>
+            <select id="tipo" class="control" required>
+              <option value="receita">Receita</option>
+              <option value="despesa">Despesa</option>
+            </select>
+          </label>
+
+          <label class="field field-status">
+            <span class="field-label">Status</span>
+            <select id="status" class="control">
+              <option value="em_andamento">Em andamento</option>
+              <option value="pago">Pago</option>
+              <option value="nao_pago">Não pago</option>
+            </select>
+          </label>
+
+          <label class="field field-descricao span-2">
+            <span class="field-label">Descrição</span>
+            <input type="text" id="descricao" class="control" placeholder="Ex: Salário, Mercado, Internet..." required>
+          </label>
+
+          <label class="field field-valor field-valor">
+            <span class="field-label">Valor</span>
+            <input type="number" step="0.01" id="valor" class="control" placeholder="0,00" required>
+          </label>
+
+          <div class="form-actions span-all">
+            <button type="submit" class="btn-primary btn-wide">Adicionar</button>
+          </div>
+        </div>
+      </form>
+    </section>
+
+    <!-- HISTÓRICO -->
+    <section class="history-grid">
+      <div class="panel">
+        <div class="panel-head compact row">
+          <h2 class="panel-title">Receitas</h2>
+          <div class="panel-actions">
+            <label class="field field-inline">
+              <span class="field-label">Trimestre</span>
+              <select id="filtro-trimestre-receitas" class="control" aria-label="Filtrar receitas por trimestre">
+                <option value="all">Todos</option>
+                <option value="1">1º</option>
+                <option value="2">2º</option>
+                <option value="3">3º</option>
+                <option value="4">4º</option>
+              </select>
+            </label>
+          </div>
+        </div>
+
+        <div class="lista-header">
+          <span>Data</span><span>Descrição</span><span>Valor</span><span></span><span>Ações</span>
+        </div>
+        <div id="receitas" class="lista"></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head compact row">
+          <h2 class="panel-title">Despesas</h2>
+          <div class="panel-actions">
+            <label class="field field-inline">
+              <span class="field-label">Trimestre</span>
+              <select id="filtro-trimestre-despesas" class="control" aria-label="Filtrar despesas por trimestre">
+                <option value="all">Todos</option>
+                <option value="1">1º</option>
+                <option value="2">2º</option>
+                <option value="3">3º</option>
+                <option value="4">4º</option>
+              </select>
+            </label>
+          </div>
+        </div>
+
+        <div class="lista-header">
+          <span>Data</span><span>Descrição</span><span>Valor</span><span>Status</span><span>Ações</span>
+        </div>
+        <div id="despesas" class="lista"></div>
+      </div>
+    </section>
+
+    <!-- MODAL EDITAR -->
+    <div id="modal-overlay" class="modal-overlay hidden">
+      <div class="modal">
+        <div class="modal-header">
+          <h3>Editar Entrada</h3>
+          <button id="modal-close" class="modal-close" type="button" aria-label="Fechar">×</button>
+        </div>
+
+        <form id="form-edit" class="modal-body">
+          <label class="field">
+            <span class="field-label">Data</span>
+            <input type="date" id="edit-data" class="control" required>
+          </label>
+
+          <label class="field">
+            <span class="field-label">Tipo</span>
+            <select id="edit-tipo" class="control">
+              <option value="receita">Receita</option>
+              <option value="despesa">Despesa</option>
+            </select>
+          </label>
+
+          <label class="field" id="edit-status-wrap">
+            <span class="field-label">Status</span>
+            <select id="edit-status" class="control">
+              <option value="em_andamento">Em andamento</option>
+              <option value="pago">Pago</option>
+              <option value="nao_pago">Não pago</option>
+            </select>
+          </label>
+
+          <label class="field span-all">
+            <span class="field-label">Descrição</span>
+            <input type="text" id="edit-descricao" class="control" required>
+          </label>
+
+          <label class="field">
+            <span class="field-label">Valor</span>
+            <input type="number" step="0.01" id="edit-valor" class="control" required>
+          </label>
+
+          <div class="modal-actions">
+            <button id="modal-cancel" type="button" class="btn-secondary">Cancelar</button>
+            <button type="submit" class="btn-primary">Salvar alterações</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block scripts %}
+  <script src="/static/js/pages/entries.js"></script>
+{% endblock %}

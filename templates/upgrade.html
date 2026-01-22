@@ -1,0 +1,37 @@
+{% extends "base_app.html" %}
+{% set page_class = 'page-upgrade' %}
+{% set page_css = ['/static/css/upgrade.css'] %}
+
+{% block title %}Gerenciar plano | Controle Financeiro{% endblock %}
+{% block page_title %}Gerenciar plano{% endblock %}
+
+{% block content %}
+  <div class="app-card">
+    <h2>Seu plano atual: <span class="pill">{{ PLANS.get(current_user.plan, PLANS['basic'])['name'] }}</span></h2>
+    <p class="muted">A troca de plano é feita via checkout (pagamento). Ao selecionar um plano, você será direcionado para a etapa de upgrade.</p>
+  </div>
+
+  <div class="pricing-grid app-pricing">
+    {% for key, plan in PLANS.items() %}
+      <div class="pricing-card {% if plan.get('popular') %}popular{% endif %}">
+        {% if plan.get('popular') %}<div class="badge">Mais vendido</div>{% endif %}
+        <h3>{{ plan['name'] }}</h3>
+        <div class="price">
+          <span class="value">R$ {{ '%.2f'|format(plan['price_month']) }}</span>
+          <span class="period">/ mês</span>
+        </div>
+        <ul class="plan-list">
+          {% for item in plan['highlights'] %}
+            <li>{{ item }}</li>
+          {% endfor %}
+        </ul>
+
+        {% if current_user.plan == key %}
+          <button class="btn-secondary" type="button" disabled>Plano atual</button>
+        {% else %}
+          <a class="btn-primary" href="{{ url_for('analytics.upgrade_checkout_page', plan=key) }}">Fazer upgrade para {{ plan['name'] }}</a>
+        {% endif %}
+      </div>
+    {% endfor %}
+  </div>
+{% endblock %}
