@@ -15,8 +15,15 @@ class AbacatePayError(RuntimeError):
 def _api_key() -> str:
     key = (current_app.config.get("ABACATEPAY_API_KEY") or "").strip()
     if not key:
-        raise AbacatePayError("ABACATEPAY_API_KEY não configurada.")
+        raise AbacatePayError("ABACATEPAY_API_KEY nÃ£o configurada.")
     return key
+
+
+def _api_base() -> str:
+    base = (current_app.config.get("ABACATEPAY_BASE_URL") or "").strip()
+    if base:
+        return base.rstrip("/")
+    return "https://api.abacatepay.com"
 
 
 def create_plan_billing(
@@ -35,9 +42,9 @@ def create_plan_billing(
     plan = (plan or "").strip().lower()
     plan_def = PLANS.get(plan)
     if not plan_def:
-        raise AbacatePayError(f"Plano inválido: {plan}")
+        raise AbacatePayError(f"Plano invÃ¡lido: {plan}")
 
-    # valida customer mínimo
+    # valida customer mÃ­nimo
     for k in ("name", "email", "cellphone", "taxId"):
         if not (customer.get(k) or "").strip():
             raise AbacatePayError(f"Dados do cliente incompletos: faltando {k}")
@@ -50,7 +57,7 @@ def create_plan_billing(
         "products": [
             {
                 "externalId": f"plan:{plan}",
-                "name": f"{plan_def['name']} (1 mês)",
+                "name": f"{plan_def['name']} (1 mÃªs)",
                 "description": "Acesso ao sistema de controle financeiro.",
                 "quantity": 1,
                 "price": amount_cents,
@@ -69,14 +76,14 @@ def create_plan_billing(
         },
     }
 
-    # AbacatePay aceita customerId (cliente já cadastrado) ou customer (cria caso não exista).
-    # Mantemos compatibilidade: se o caller enviar customer_id usamos; caso contrário, enviamos customer.
+    # AbacatePay aceita customerId (cliente jÃ¡ cadastrado) ou customer (cria caso nÃ£o exista).
+    # Mantemos compatibilidade: se o caller enviar customer_id usamos; caso contrÃ¡rio, enviamos customer.
     if customer_id:
         payload["customerId"] = customer_id
     elif customer:
         payload["customer"] = customer
 
-    url = "https://api.abacatepay.com/v1/billing/create"
+    url = f"{_api_base()}/v1/billing/create"
     resp = requests.post(
         url,
         json=payload,
@@ -87,7 +94,7 @@ def create_plan_billing(
     try:
         data = resp.json()
     except Exception:
-        raise AbacatePayError(f"Resposta inválida da AbacatePay (HTTP {resp.status_code}).")
+        raise AbacatePayError(f"Resposta invÃ¡lida da AbacatePay (HTTP {resp.status_code}).")
 
     # AbacatePay pode retornar 200 com success=false
     if (not resp.ok) or (data.get("success") is False):
@@ -101,7 +108,7 @@ def create_plan_billing(
 
     body = resp.json() or {}
     # A API retorna { data: ..., error: ... }.
-    # Em alguns cenários error pode vir preenchido mesmo com HTTP 200.
+    # Em alguns cenÃ¡rios error pode vir preenchido mesmo com HTTP 200.
     if body.get("error"):
         raise AbacatePayError(f"Erro AbacatePay: {body.get('error')}")
 
@@ -109,7 +116,7 @@ def create_plan_billing(
     billing_id = data.get("id")
     pay_url = data.get("url")
     if not billing_id or not pay_url:
-        raise AbacatePayError("AbacatePay não retornou billing_id/url.")
+        raise AbacatePayError("AbacatePay nÃ£o retornou billing_id/url.")
 
     return {"billing_id": billing_id, "url": pay_url}
 
@@ -125,22 +132,41 @@ def _normalize_billing_status(status: str | None) -> str | None:
     return s
 
 
-def get_billing_status(billing_id: str) -> str | None:
-    if not billing_id:
+def get_billing_status(billing_id: str | None, external_id: str | None = None) -> str | None:
+    if not billing_id and not external_id:
         return None
 
     headers = {"Authorization": f"Bearer {_api_key()}", "Content-Type": "application/json"}
-    url = "https://api.abacatepay.com/v1/billing/get"
+    base = _api_base()
 
-    attempts = [
-        ("GET", {"id": billing_id}),
-        ("GET", {"billingId": billing_id}),
-        ("POST", {"id": billing_id}),
-        ("POST", {"billingId": billing_id}),
-    ]
+    params_list = []
+    if billing_id:
+        params_list.extend(
+            [
+                {"id": billing_id},
+                {"billingId": billing_id},
+            ]
+        )
+    if external_id:
+        params_list.extend(
+            [
+                {"externalId": external_id},
+                {"external_id": external_id},
+            ]
+        )
+
+    attempts = []
+    for endpoint in ("/v1/billing/get", "/v1/billing/status", "/v1/billing"):
+        url = f"{base}{endpoint}"
+        for payload in params_list:
+            attempts.append(("GET", url, payload))
+            attempts.append(("POST", url, payload))
+    if billing_id:
+        attempts.append(("GET", f"{base}/v1/billing/{billing_id}", None))
+
     last_error: str | None = None
 
-    for method, payload in attempts:
+    for method, url, payload in attempts:
         try:
             if method == "GET":
                 resp = requests.get(url, params=payload, headers=headers, timeout=20)
@@ -164,8 +190,18 @@ def get_billing_status(billing_id: str) -> str | None:
         data = body.get("data") or body
         if isinstance(data, dict) and isinstance(data.get("billing"), dict):
             data = data["billing"]
+        if isinstance(data, dict) and isinstance(data.get("items"), list) and data["items"]:
+            data = data["items"][0]
 
-        status = _normalize_billing_status(data.get("status") or data.get("paymentStatus"))
+        status_raw = None
+        if isinstance(data, dict):
+            status_raw = data.get("status") or data.get("paymentStatus") or data.get("payment_status")
+            if not status_raw and data.get("paid") is True:
+                status_raw = "PAID"
+            if not status_raw and data.get("isPaid") is True:
+                status_raw = "PAID"
+
+        status = _normalize_billing_status(status_raw)
         if status:
             return status
 

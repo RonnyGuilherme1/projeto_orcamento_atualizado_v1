@@ -132,11 +132,11 @@ def upgrade_status():
         return jsonify({"ok": True, "status": "PAID", "redirect": url_for("index")})
 
     status = order.status
-    if order.billing_id:
+    if order.billing_id or order.token:
         try:
-            remote_status = get_billing_status(order.billing_id)
+            remote_status = get_billing_status(order.billing_id, external_id=order.token)
         except AbacatePayError as exc:
-            return jsonify({"ok": False, "error": "provider_error", "message": str(exc)}), 502
+            return jsonify({"ok": True, "status": status, "warning": str(exc)})
 
         if remote_status:
             status = remote_status
