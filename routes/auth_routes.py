@@ -1,10 +1,14 @@
+import re
+
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_user, logout_user, login_required, current_user
 
 from models.extensions import db
 from models.user_model import User
+from services.abacatepay import AbacatePayError, create_plan_billing
+from services.checkout_store import create_order, set_order_billing_id, try_apply_paid_order_to_user
 from services.email_service import send_verification_email
-from services.checkout_store import try_apply_paid_order_to_user
+from services.plans import is_valid_plan
 
 auth_bp = Blueprint("auth", __name__)
 
@@ -65,6 +69,9 @@ def register():
     password = request.form.get("password") or ""
     confirm = request.form.get("confirm_password") or ""
     plan = (request.form.get("plan") or "basic").strip().lower()
+    full_name = (request.form.get("full_name") or "").strip()
+    tax_id_raw = (request.form.get("tax_id") or "").strip()
+    cellphone_raw = (request.form.get("cellphone") or "").strip()
     checkout_token = (request.form.get("checkout_token") or "").strip()
 
     if not username or not email or not password or not confirm:
@@ -83,25 +90,66 @@ def register():
         flash("Esse e-mail já está em uso.", "error")
         return redirect(url_for("auth.register_page"))
 
+    if not is_valid_plan(plan):
+        flash("Plano inválido. Escolha outro plano.", "error")
+        return redirect(url_for("auth.register_page"))
+
+    tax_id = re.sub(r"\D+", "", tax_id_raw)
+    cellphone = re.sub(r"\D+", "", cellphone_raw)
+    errors = []
+    if len(full_name) < 3:
+        errors.append("Informe seu nome completo.")
+    if len(tax_id) not in {11, 14}:
+        errors.append("Informe um CPF/CNPJ válido.")
+    if len(cellphone) < 10:
+        errors.append("Informe um telefone válido.")
+    if errors:
+        for e in errors:
+            flash(e, "error")
+        return redirect(url_for("auth.register_page", plan=plan))
+
     user = User(username=username, email=email)
     user.set_password(password)
     user.is_verified = False
-    # Plano base: se houver um checkout pago, sera aplicado abaixo.
-    user.set_plan(plan)
+    # Plano base: sera atualizado somente apos pagamento.
+    user.set_plan("basic")
+    user.full_name = full_name
+    user.tax_id = tax_id
+    user.cellphone = cellphone
 
     db.session.add(user)
     db.session.commit()
 
     # Se o usuario pagou antes (checkout), aplica o plano do pedido pago
     if checkout_token:
-        try_apply_paid_order_to_user(checkout_token, user)
+        if try_apply_paid_order_to_user(checkout_token, user):
+            login_user(user)
+            send_verification_email(user)
+            flash("Conta criada. Verifique seu e-mail para confirmar.", "success")
+            return redirect(url_for("auth.verify_pending"))
 
-    # Para UX: loga e leva para a tela de "pendente"
+    order = create_order(plan=plan, user_id=user.id)
+
+    try:
+        billing = create_plan_billing(
+            plan=plan,
+            external_id=order.token,
+            return_url=url_for("auth.register_page", _external=True, plan=plan),
+            completion_url=url_for("checkout_completion", _external=True, token=order.token),
+            customer={
+                "name": full_name,
+                "email": email,
+                "cellphone": cellphone,
+                "taxId": tax_id,
+            },
+        )
+    except AbacatePayError as exc:
+        flash(str(exc), "error")
+        return redirect(url_for("auth.register_page", plan=plan))
+
+    set_order_billing_id(order.token, billing["billing_id"])
     login_user(user)
-    send_verification_email(user)
-
-    flash("Conta criada. Verifique seu e-mail para confirmar.", "success")
-    return redirect(url_for("auth.verify_pending"))
+    return redirect(billing["url"], code=302)
 
 
 @auth_bp.get("/verify-pending")
