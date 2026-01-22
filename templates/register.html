@@ -75,6 +75,9 @@
 
         {{ input_text('username', 'username', 'Usuário', autocomplete='username', required=true) }}
         {{ input_text('email', 'email', 'E-mail', type='email', autocomplete='email', required=true) }}
+        {{ input_text('full_name', 'full_name', 'Nome completo', autocomplete='name', required=true) }}
+        {{ input_text('tax_id', 'tax_id', 'CPF/CNPJ', placeholder='000.000.000-00', required=true) }}
+        {{ input_text('cellphone', 'cellphone', 'Telefone', placeholder='(00) 00000-0000', autocomplete='tel', required=true) }}
         {{ input_text('password', 'password', 'Senha', type='password', autocomplete='new-password', required=true) }}
         {{ input_text('confirm_password', 'confirm_password', 'Confirmar senha', type='password', autocomplete='new-password', required=true) }}
 

@@ -30,6 +30,7 @@ from services.checkout_store import (
     mark_order_paid_by_billing_id,
     get_order_by_billing_id,
 )
+from services.email_service import send_verification_email
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -182,6 +183,10 @@ def checkout_completion():
         if (order.user_id is None) or (int(order.user_id) == int(current_user.id)):
             current_user.set_plan(order.plan)
             db.session.commit()
+            if not current_user.is_verified:
+                send_verification_email(current_user)
+                flash("Pagamento confirmado. Verifique seu e-mail para ativar sua conta.", "success")
+                return redirect(url_for("auth.verify_pending"))
             flash(f"Pagamento confirmado. Seu plano foi atualizado para {PLANS[order.plan]['name']}.", "success")
             return redirect(url_for("index"))
 
