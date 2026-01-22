@@ -113,7 +113,7 @@ def create_plan_billing(
         raise AbacatePayError(f"Erro AbacatePay: {body.get('error')}")
 
     data = body.get("data") or {}
-    billing_id = data.get("id")
+    billing_id = data.get("pixQrCodeId") or data.get("pix_qr_code_id") or data.get("id")
     pay_url = data.get("url")
     if not billing_id or not pay_url:
         raise AbacatePayError("AbacatePay nÃ£o retornou billing_id/url.")
@@ -156,6 +156,9 @@ def get_billing_status(billing_id: str | None, external_id: str | None = None) -
         )
 
     attempts = []
+    if billing_id:
+        attempts.append(("GET", f"{base}/v1/pixQrCode/check", {"id": billing_id}))
+
     for endpoint in ("/v1/billing/get", "/v1/billing/status", "/v1/billing"):
         url = f"{base}{endpoint}"
         for payload in params_list:
