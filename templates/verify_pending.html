@@ -13,21 +13,33 @@
 {% endblock %}
 
 {% block content %}
-  <div class="info-box">
-    <p>
-      Enviamos um link de confirmação para:
+  <div class="verify-panel">
+    <div class="verify-top">
+      <div class="verify-orb" aria-hidden="true"></div>
+      <div>
+        <p class="verify-title">Verificação pendente</p>
+        <p class="verify-subtitle">Enviamos um link para confirmar seu cadastro.</p>
+      </div>
+    </div>
+
+    <div class="verify-email">
+      <span>E-mail enviado para</span>
       <strong>{{ current_user.email }}</strong>
-    </p>
-    <p class="muted">
-      Se não encontrar na caixa de entrada, verifique a pasta de spam.
-    </p>
+    </div>
+
+    <ul class="verify-steps">
+      <li>Abra sua caixa de entrada e clique no link de confirmação.</li>
+      <li>Se não encontrar, verifique as abas de spam ou promoções.</li>
+      <li>Precisa reenviar? Use o botão abaixo.</li>
+    </ul>
+
+    <form method="post" action="/resend-verification" class="verify-actions">
+      <button class="btn-primary" type="submit">Reenviar e-mail de verificação</button>
+      <span class="verify-hint">Se tiver acabado de solicitar, aguarde alguns minutos.</span>
+    </form>
   </div>
 
-  <form method="post" action="/resend-verification">
-    <button class="btn-primary" type="submit">Reenviar e-mail de verificação</button>
-  </form>
-
-  <div class="public-actions">
+  <div class="public-actions verify-footer-actions">
     <a class="btn-secondary" href="/logout">Sair</a>
     <a class="btn-link" href="/login">Voltar ao login</a>
   </div>

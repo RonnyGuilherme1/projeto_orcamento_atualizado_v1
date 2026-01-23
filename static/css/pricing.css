@@ -386,6 +386,15 @@ input:focus{
   margin-top: 14px;
 }
 
+.pricing-actions .btn-primary,
+.pricing-actions .btn-secondary{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  width: 100%;
+}
+
 .pricing-note{
   margin: 0 22px 22px;
   padding: 14px;

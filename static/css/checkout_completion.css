@@ -355,6 +355,135 @@ input:focus{
   border-color: rgba(108, 92, 231, 0.38);
 }
 
+.checkout-stack{
+  padding: 6px 22px 24px;
+  display: grid;
+  gap: 18px;
+}
+
+.checkout-status{
+  margin: 0;
+  padding: 16px 18px;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: linear-gradient(140deg, rgba(255, 255, 255, 0.06), rgba(11, 15, 20, 0.75));
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.35);
+  display: grid;
+  gap: 10px;
+}
+
+.status-row{
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.status-label{
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.status-pill{
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.status-pill.status-pending{
+  color: #f9d49a;
+  border-color: rgba(245, 166, 35, 0.55);
+  background: rgba(245, 166, 35, 0.16);
+  box-shadow: 0 12px 24px rgba(245, 166, 35, 0.18);
+}
+
+.status-pill.status-paid{
+  color: #c8f2cd;
+  border-color: rgba(76, 175, 80, 0.55);
+  background: rgba(76, 175, 80, 0.18);
+  box-shadow: 0 12px 24px rgba(76, 175, 80, 0.20);
+}
+
+.status-pill.status-expired{
+  color: #ffb0b1;
+  border-color: rgba(255, 77, 79, 0.55);
+  background: rgba(255, 77, 79, 0.16);
+  box-shadow: 0 12px 24px rgba(255, 77, 79, 0.18);
+}
+
+.status-hint{
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.status-warning{
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(245, 166, 35, 0.35);
+  background: rgba(245, 166, 35, 0.12);
+  color: #f9d49a;
+  font-size: 12px;
+}
+
+.status-actions{
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.checkout-actions{
+  display: none;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 4px;
+}
+
+.checkout-message{
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.checkout-action-buttons{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.checkout-footer-actions{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.btn.is-loading{
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+@media (max-width: 560px){
+  .checkout-stack{
+    padding: 6px 16px 20px;
+    gap: 16px;
+  }
+
+  .checkout-status{
+    padding: 14px;
+  }
+}
+
 .public-footer{
   padding: 12px 6px 0;
   color: var(--muted-2);

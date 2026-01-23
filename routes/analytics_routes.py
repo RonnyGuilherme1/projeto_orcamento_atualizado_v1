@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, current_app
 from flask_login import login_required, current_user
 
 from models.extensions import db
@@ -16,6 +16,12 @@ from services.abacatepay import create_plan_billing, get_billing_status, Abacate
 
 
 analytics_bp = Blueprint("analytics", __name__)
+
+
+def _payment_warning_message(raw: str) -> str:
+    if current_app.config.get("ABACATEPAY_DEV_MODE"):
+        return raw
+    return "Nao foi possivel validar o pagamento agora. Tente novamente em alguns minutos."
 
 
 @analytics_bp.get("/app/upgrade")
@@ -136,7 +142,8 @@ def upgrade_status():
         try:
             remote_status = get_billing_status(order.billing_id, external_id=order.token)
         except AbacatePayError as exc:
-            return jsonify({"ok": True, "status": status, "warning": str(exc)})
+            warning = _payment_warning_message(str(exc))
+            return jsonify({"ok": True, "status": status, "warning": warning})
 
         if remote_status:
             status = remote_status

@@ -16,25 +16,36 @@
 {% endblock %}
 
 {% block content %}
-  <div class="public-stack" style="gap: 14px;">
-    <div id="status-box" class="public-alert public-alert-warning">
-      <strong>Status:</strong> <span id="status-text">{{ order.status }}</span>
-      <div id="pending-hint" style="margin-top: 8px;">
+  {% set is_paid = order.status == 'PAID' %}
+  {% set status_label = 'Confirmado' if is_paid else 'Aguardando' %}
+  {% set status_class = 'status-paid' if is_paid else 'status-pending' %}
+
+  <div class="checkout-stack">
+    <div class="checkout-status">
+      <div class="status-row">
+        <div class="status-label">Status do pagamento</div>
+        <span id="status-pill" class="status-pill {{ status_class }}">{{ status_label }}</span>
+      </div>
+      <p id="pending-hint" class="status-hint">
         Se você concluiu o pagamento agora, pode levar alguns segundos para confirmarmos.
+      </p>
+      <div id="status-warning" class="status-warning" style="display: none;"></div>
+      <div class="status-actions">
+        <button class="btn btn-ghost" type="button" id="refresh-status">Revalidar pagamento</button>
       </div>
     </div>
 
-    <div id="paid-actions" class="public-stack" style="display: none; gap: 10px;">
-      <p style="margin: 0; color: var(--muted);">
+    <div id="paid-actions" class="checkout-actions">
+      <p class="checkout-message">
         Pagamento confirmado. Agora crie sua conta (ou entre) para ativar o plano.
       </p>
-      <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+      <div class="checkout-action-buttons">
         <a class="btn btn-primary" href="/register?plan={{ order.plan }}&token={{ order.token }}">Criar conta e ativar</a>
         <a class="btn btn-ghost" href="/login?token={{ order.token }}">Ja tenho conta</a>
       </div>
     </div>
 
-    <div style="display:flex; gap:10px; flex-wrap: wrap;">
+    <div class="checkout-footer-actions">
       <a class="btn btn-ghost" href="/pricing?plan={{ order.plan }}">Voltar aos planos</a>
       <a class="btn btn-ghost" href="/">Pagina inicial</a>
     </div>
@@ -43,28 +54,81 @@
   <script>
     (function () {
       const token = {{ order.token|tojson }};
-      const statusText = document.getElementById('status-text');
-      const statusBox = document.getElementById('status-box');
+      const statusPill = document.getElementById('status-pill');
       const paidActions = document.getElementById('paid-actions');
       const pendingHint = document.getElementById('pending-hint');
+      const warningBox = document.getElementById('status-warning');
+      const refreshBtn = document.getElementById('refresh-status');
+      let isLoading = false;
 
-      async function refreshStatus() {
+      function normalizeStatus(raw) {
+        const status = String(raw || '').toUpperCase();
+        if (status === 'PAID') {
+          return { label: 'Confirmado', className: 'status-paid' };
+        }
+        if (status === 'EXPIRED') {
+          return { label: 'Expirado', className: 'status-expired' };
+        }
+        if (status === 'CANCELLED') {
+          return { label: 'Cancelado', className: 'status-expired' };
+        }
+        return { label: 'Aguardando', className: 'status-pending' };
+      }
+
+      function setWarning(message) {
+        if (!warningBox) return;
+        if (message) {
+          warningBox.textContent = message;
+          warningBox.style.display = 'block';
+        } else {
+          warningBox.textContent = '';
+          warningBox.style.display = 'none';
+        }
+      }
+
+      function applyStatus(status) {
+        const view = normalizeStatus(status);
+        if (statusPill) {
+          statusPill.textContent = view.label;
+          statusPill.className = `status-pill ${view.className}`;
+        }
+        if (view.className === 'status-paid') {
+          if (pendingHint) pendingHint.style.display = 'none';
+          if (paidActions) paidActions.style.display = 'flex';
+          if (refreshBtn) refreshBtn.style.display = 'none';
+        } else {
+          if (pendingHint) pendingHint.style.display = 'block';
+          if (refreshBtn) refreshBtn.style.display = '';
+        }
+      }
+
+      async function refreshStatus(manual = false) {
+        if (isLoading) return;
+        isLoading = true;
+        if (refreshBtn && manual) {
+          refreshBtn.disabled = true;
+          refreshBtn.classList.add('is-loading');
+        }
         try {
           const res = await fetch(`/checkout/status?token=${encodeURIComponent(token)}`);
           if (!res.ok) return;
           const data = await res.json();
           if (!data.ok) return;
-          statusText.textContent = data.status;
-          if (data.status === 'PAID') {
-            statusBox.className = 'public-alert public-alert-success';
-            if (pendingHint) pendingHint.style.display = 'none';
-            paidActions.style.display = 'flex';
-          }
+          applyStatus(data.status);
+          setWarning(data.warning);
         } catch (e) {
           // silencioso
+        } finally {
+          isLoading = false;
+          if (refreshBtn && manual) {
+            refreshBtn.disabled = false;
+            refreshBtn.classList.remove('is-loading');
+          }
         }
       }
 
+      refreshBtn?.addEventListener('click', () => refreshStatus(true));
+      applyStatus({{ order.status|tojson }});
       refreshStatus();
       setInterval(refreshStatus, 2500);
     })();
