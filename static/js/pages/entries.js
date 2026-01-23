@@ -32,21 +32,65 @@
   let entradas = [];
   let editandoId = null;
 
-  const CATEGORY_LABELS = {};
-  if (inputCategoria) {
-    Array.from(inputCategoria.options).forEach((opt) => {
-      CATEGORY_LABELS[opt.value] = opt.textContent;
-    });
-  }
+  const CATEGORY_LABELS = {
+    salario: "Salário",
+    extras: "Extras",
+    moradia: "Moradia",
+    mercado: "Mercado",
+    transporte: "Transporte",
+    servicos: "Serviços",
+    outros: "Outros"
+  };
+
+  const CATEGORY_OPTIONS = {
+    receita: [
+      { value: "salario", label: "Salário" },
+      { value: "extras", label: "Extras" },
+      { value: "outros", label: "Outros" }
+    ],
+    despesa: [
+      { value: "moradia", label: "Moradia" },
+      { value: "mercado", label: "Mercado" },
+      { value: "transporte", label: "Transporte" },
+      { value: "servicos", label: "Serviços" },
+      { value: "outros", label: "Outros" }
+    ]
+  };
 
   function categoriaLabel(value) {
     const key = String(value || "outros");
     return CATEGORY_LABELS[key] || "Outros";
   }
 
+  function updateCategoryOptions(selectEl, tipo, selectedValue) {
+    if (!selectEl) return;
+    const normalized = (tipo || "receita").toLowerCase() === "despesa" ? "despesa" : "receita";
+    const options = CATEGORY_OPTIONS[normalized] || CATEGORY_OPTIONS.receita;
+    const desired = String(selectedValue || selectEl.value || "outros");
+    const allowedValues = options.map(opt => opt.value);
+    const finalValue = allowedValues.includes(desired) ? desired : "outros";
+
+    selectEl.innerHTML = "";
+    options.forEach(opt => {
+      const optionEl = document.createElement("option");
+      optionEl.value = opt.value;
+      optionEl.textContent = opt.label;
+      selectEl.appendChild(optionEl);
+    });
+    selectEl.value = finalValue;
+    rebuildCustomSelect(selectEl);
+    syncCustomSelect(selectEl);
+  }
+
   function syncCustomSelect(selectEl) {
     if (selectEl && typeof selectEl._customUpdate === "function") {
       selectEl._customUpdate();
+    }
+  }
+
+  function rebuildCustomSelect(selectEl) {
+    if (selectEl && typeof selectEl._customRebuild === "function") {
+      selectEl._customRebuild();
     }
   }
 
@@ -73,15 +117,18 @@
     list.setAttribute("role", "listbox");
     wrapper.appendChild(list);
 
-    Array.from(selectEl.options).forEach(opt => {
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "select-option";
-      btn.dataset.value = opt.value;
-      btn.textContent = opt.textContent;
-      btn.disabled = opt.disabled;
-      list.appendChild(btn);
-    });
+    function buildOptions() {
+      list.innerHTML = "";
+      Array.from(selectEl.options).forEach(opt => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "select-option";
+        btn.dataset.value = opt.value;
+        btn.textContent = opt.textContent;
+        btn.disabled = opt.disabled;
+        list.appendChild(btn);
+      });
+    }
 
     function updateFromSelect() {
       const current = selectEl.options[selectEl.selectedIndex];
@@ -94,6 +141,13 @@
     }
 
     selectEl._customUpdate = updateFromSelect;
+    selectEl._customRebuild = function () {
+      buildOptions();
+      updateFromSelect();
+    };
+    selectEl._custom = { wrapper, trigger, list };
+
+    buildOptions();
     updateFromSelect();
 
     trigger.addEventListener("click", (ev) => {
@@ -180,6 +234,7 @@
     inputStatus.disabled = !isDespesa;
     inputStatus.closest(".field")?.classList.toggle("hidden", !isDespesa);
     if (!isDespesa) inputStatus.value = "";
+    updateCategoryOptions(inputCategoria, inputTipo.value, inputCategoria?.value);
     syncCustomSelect(inputTipo);
     syncCustomSelect(inputStatus);
   }
@@ -190,6 +245,7 @@
     editStatus.disabled = !isDespesa;
     editStatus.closest(".field")?.classList.toggle("hidden", !isDespesa);
     if (!isDespesa) editStatus.value = "";
+    updateCategoryOptions(editCategoria, editTipo.value, editCategoria?.value);
     syncCustomSelect(editTipo);
     syncCustomSelect(editStatus);
   }
@@ -198,17 +254,31 @@
     const status = isDespesa ? (statusLabel(e.status) || "") : "";
     const categoria = String(e.categoria || "outros");
     const categoriaNome = categoriaLabel(categoria);
+    const actions = `
+      <span class="acoes">
+        <button class="btn-icon editar" type="button" data-action="edit" title="Editar">✏️</button>
+        <button class="btn-icon excluir" type="button" data-action="delete" title="Excluir">🗑️</button>
+      </span>
+    `;
+    if (!isDespesa) {
+      return `
+        <div class="linha" data-id="${e.id}">
+          <span class="cell cell-data">${e.data}</span>
+          <span class="cell cell-desc">${e.descricao}</span>
+          <span class="cell cell-cat"><span class="categoria-chip" data-category="${categoria}">${categoriaNome}</span></span>
+          <span class="cell cell-valor">${fmtBRL(e.valor)}</span>
+          ${actions}
+        </div>
+      `;
+    }
     return `
       <div class="linha" data-id="${e.id}">
-        <span>${e.data}</span>
-        <span>${e.descricao}</span>
-        <span><span class="categoria-chip" data-category="${categoria}">${categoriaNome}</span></span>
-        <span>${fmtBRL(e.valor)}</span>
-        <span>${status}</span>
-        <span class="acoes">
-          <button class="btn-icon editar" type="button" data-action="edit" title="Editar">✏️</button>
-          <button class="btn-icon excluir" type="button" data-action="delete" title="Excluir">🗑️</button>
-        </span>
+        <span class="cell cell-data">${e.data}</span>
+        <span class="cell cell-desc">${e.descricao}</span>
+        <span class="cell cell-cat"><span class="categoria-chip" data-category="${categoria}">${categoriaNome}</span></span>
+        <span class="cell cell-valor">${fmtBRL(e.valor)}</span>
+        <span class="cell cell-status">${status}</span>
+        ${actions}
       </div>
     `;
   }
@@ -260,7 +330,7 @@
 
     if (editData) editData.value = item.data || "";
     if (editTipo) editTipo.value = item.tipo || "receita";
-    if (editCategoria) editCategoria.value = item.categoria || "outros";
+    updateCategoryOptions(editCategoria, editTipo?.value, item.categoria || "outros");
     if (editDescricao) editDescricao.value = item.descricao || "";
     if (editValor) editValor.value = Number(item.valor) || 0;
 
@@ -268,7 +338,6 @@
 
     syncCustomSelect(editTipo);
     syncCustomSelect(editStatus);
-    syncCustomSelect(editCategoria);
     atualizarStatusModal();
     abrirModal();
   }
@@ -340,7 +409,7 @@
 
     form.reset();
     if (inputTipo) inputTipo.value = "receita";
-    if (inputCategoria) inputCategoria.value = "outros";
+    updateCategoryOptions(inputCategoria, inputTipo?.value, "outros");
     atualizarStatusFormPrincipal();
     syncCustomSelect(inputTipo);
     syncCustomSelect(inputCategoria);

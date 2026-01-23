@@ -35,6 +35,8 @@
           <label class="field field-categoria">
             <span class="field-label">Categoria</span>
             <select id="categoria" class="control">
+              <option value="salario">Salário</option>
+              <option value="extras">Extras</option>
               <option value="moradia">Moradia</option>
               <option value="mercado">Mercado</option>
               <option value="transporte">Transporte</option>
@@ -71,7 +73,7 @@
 
     <!-- HISTÓRICO -->
     <section class="history-grid">
-      <div class="panel">
+      <div class="panel panel-historico panel-receitas">
         <div class="panel-head compact row">
           <h2 class="panel-title">Receitas</h2>
           <div class="panel-actions">
@@ -88,13 +90,17 @@
           </div>
         </div>
 
-        <div class="lista-header">
-          <span>Data</span><span>Descrição</span><span>Categoria</span><span>Valor</span><span></span><span>Ações</span>
+        <div class="lista-header lista-header-receitas">
+          <span class="col-data">Data</span>
+          <span class="col-desc">Descrição</span>
+          <span class="col-cat">Categoria</span>
+          <span class="col-valor">Valor</span>
+          <span class="col-acao">Ações</span>
         </div>
-        <div id="receitas" class="lista"></div>
+        <div id="receitas" class="lista lista-receitas"></div>
       </div>
 
-      <div class="panel">
+      <div class="panel panel-historico panel-despesas">
         <div class="panel-head compact row">
           <h2 class="panel-title">Despesas</h2>
           <div class="panel-actions">
@@ -111,10 +117,15 @@
           </div>
         </div>
 
-        <div class="lista-header">
-          <span>Data</span><span>Descrição</span><span>Categoria</span><span>Valor</span><span>Status</span><span>Ações</span>
+        <div class="lista-header lista-header-despesas">
+          <span class="col-data">Data</span>
+          <span class="col-desc">Descrição</span>
+          <span class="col-cat">Categoria</span>
+          <span class="col-valor">Valor</span>
+          <span class="col-status">Status</span>
+          <span class="col-acao">Ações</span>
         </div>
-        <div id="despesas" class="lista"></div>
+        <div id="despesas" class="lista lista-despesas"></div>
       </div>
     </section>
 
@@ -152,6 +163,8 @@
           <label class="field">
             <span class="field-label">Categoria</span>
             <select id="edit-categoria" class="control">
+              <option value="salario">Salário</option>
+              <option value="extras">Extras</option>
               <option value="moradia">Moradia</option>
               <option value="mercado">Mercado</option>
               <option value="transporte">Transporte</option>

@@ -10,7 +10,13 @@ from models.entrada_model import Entrada
 
 entradas_bp = Blueprint("entradas", __name__)
 
-CATEGORIAS = {
+CATEGORIAS_RECEITA = {
+    "salario": "Salário",
+    "extras": "Extras",
+    "outros": "Outros",
+}
+
+CATEGORIAS_DESPESA = {
     "moradia": "Moradia",
     "mercado": "Mercado",
     "transporte": "Transporte",
@@ -19,9 +25,15 @@ CATEGORIAS = {
 }
 
 
-def _normalize_categoria(value: str | None) -> str:
+def _normalize_categoria(tipo: str | None, value: str | None) -> str:
     categoria = (value or "").strip().lower()
-    if categoria not in CATEGORIAS:
+    if (tipo or "").strip().lower() == "receita":
+        allowed = CATEGORIAS_RECEITA
+    elif (tipo or "").strip().lower() == "despesa":
+        allowed = CATEGORIAS_DESPESA
+    else:
+        allowed = CATEGORIAS_DESPESA
+    if categoria not in allowed:
         return "outros"
     return categoria
 
@@ -53,7 +65,7 @@ def dados():
                 "data": e.data.isoformat(),
                 "tipo": e.tipo,
                 "descricao": e.descricao,
-                "categoria": (e.categoria or "outros"),
+                "categoria": _normalize_categoria(e.tipo, e.categoria),
                 "valor": float(e.valor),
                 "status": e.status,
                 "paid_at": e.paid_at.isoformat() if e.paid_at else None,
@@ -74,7 +86,7 @@ def add():
     tipo = payload.get("tipo")
     data_str = payload.get("data")
     descricao = (payload.get("descricao") or "").strip()
-    categoria = _normalize_categoria(payload.get("categoria"))
+    categoria = _normalize_categoria(tipo, payload.get("categoria"))
     valor = float(payload.get("valor") or 0)
     status = payload.get("status")
 
@@ -131,7 +143,7 @@ def edit(entrada_id):
     tipo = payload.get("tipo")
     data_str = payload.get("data")
     descricao = (payload.get("descricao") or "").strip()
-    categoria = _normalize_categoria(payload.get("categoria"))
+    categoria = _normalize_categoria(tipo, payload.get("categoria"))
     valor = float(payload.get("valor") or 0)
     status = payload.get("status")
 
