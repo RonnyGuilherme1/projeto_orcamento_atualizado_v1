@@ -83,30 +83,97 @@
           </div>
 
         {% elif section == 'billing' %}
+          {% set sub = subscription or {} %}
+          {% set renew_blocked = sub.status == 'ACTIVE' and (sub.days_left or 0) > 5 %}
           <div class="account-card">
             <div class="account-card-h">
               <h3>Assinaturas e compras</h3>
-              <span class="account-badge">Plano: {{ _plan['name'] }}</span>
+              <span class="account-badge {% if sub.status == 'ACTIVE' %}is-active{% elif sub.status == 'OVERDUE' %}is-overdue{% else %}is-inactive{% endif %}">
+                {% if sub.status == 'ACTIVE' %}
+                  Ativa
+                {% elif sub.status == 'OVERDUE' %}
+                  Pagamento pendente
+                {% else %}
+                  Sem pagamento
+                {% endif %}
+              </span>
             </div>
 
-            {% if current_user.plan == 'basic' %}
-              <p class="account-muted">Você não possui nenhuma assinatura ativa. Conheça nossos planos para liberar recursos avançados.</p>
-              <div class="account-actions">
-                <a class="btn" href="/app/upgrade">Conhecer planos</a>
+            <div class="account-kv">
+              <div>
+                <div class="account-k">Plano</div>
+                <div class="account-v">{{ _plan['name'] }}</div>
               </div>
-            {% else %}
-              <p class="account-muted">Sua assinatura está ativa. Caso queira trocar de plano, acesse o gerenciador.</p>
-              <div class="account-actions">
-                <a class="btn" href="/app/upgrade">Gerenciar plano</a>
+              <div>
+                <div class="account-k">Valido ate</div>
+                <div class="account-v">{{ sub.expires_at_display }}</div>
               </div>
+              <div>
+                <div class="account-k">Ultimo pagamento</div>
+                <div class="account-v">{{ sub.last_paid_display }}</div>
+              </div>
+              <div>
+                <div class="account-k">Dias restantes</div>
+                <div class="account-v">{{ sub.days_left }}</div>
+              </div>
+            </div>
+
+            <p class="account-muted" style="margin-top:10px;">
+              {% if sub.status == 'ACTIVE' %}
+                Sua assinatura esta ativa. Voce pode renovar a qualquer momento.
+              {% elif sub.status == 'OVERDUE' %}
+                Seu pagamento venceu. O acesso fica bloqueado ate a confirmacao do pagamento.
+              {% else %}
+                Nenhum pagamento ativo. Conclua o pagamento para liberar o acesso.
+              {% endif %}
+            </p>
+
+            <div class="account-actions">
+              <a class="btn btn-ghost" href="/app/upgrade">Trocar plano</a>
+              <form method="post" action="{{ url_for('billing_renew') }}" style="margin:0;">
+                <button class="btn" type="submit" {% if renew_blocked %}disabled aria-disabled="true" title="Renovacao liberada quando faltarem 5 dias"{% endif %}>
+                  {% if sub.status == 'ACTIVE' %}Renovar agora{% else %}Pagar agora{% endif %}
+                </button>
+              </form>
+            </div>
+            {% if renew_blocked %}
+              <p class="account-muted" style="margin-top:8px;">
+                Renovacao liberada quando faltarem 5 dias ou menos.
+              </p>
             {% endif %}
           </div>
 
           <div class="account-card">
             <div class="account-card-h">
-              <h3>Histórico</h3>
+              <h3>Historico de pagamentos</h3>
             </div>
-            <p class="account-muted">Em breve: lista de pagamentos e comprovantes (integração com AbacatePay).</p>
+            {% if billing_orders %}
+              <div class="account-history">
+                <div class="history-row history-head">
+                  <div>Data</div>
+                  <div>Plano</div>
+                  <div>Status</div>
+                  <div>Valor</div>
+                </div>
+                {% for order in billing_orders %}
+                  {% set order_plan = PLANS.get(order.plan, PLANS['basic']) %}
+                  <div class="history-row">
+                    <div>
+                      {% if order.paid_at %}
+                        {{ order.paid_at.strftime('%d/%m/%Y') }}
+                      {% else %}
+                        {{ order.created_at.strftime('%d/%m/%Y') if order.created_at else '-' }}
+                      {% endif %}
+                    </div>
+                    <div>{{ order_plan['name'] }}</div>
+                    <div class="history-status history-{{ order.status|lower }}">{{ order.status }}</div>
+                    <div>R$ {{ '%.2f'|format(order_plan['price_month']) }}</div>
+                  </div>
+                {% endfor %}
+              </div>
+            {% else %}
+              <p class="account-muted">Nenhum pagamento encontrado.</p>
+            {% endif %}
           </div>
 
         {% elif section == 'access' %}
@@ -132,7 +199,13 @@
             <div class="account-card-h">
               <h3>Dados pessoais</h3>
             </div>
-            <p class="account-muted">Esses dados são obrigatórios para iniciar o pagamento (PIX).</p>
+            <p class="account-muted">
+              {% if abacatepay_card_enabled %}
+                Esses dados são obrigatórios para iniciar o pagamento (PIX ou cartão).
+              {% else %}
+                Esses dados são obrigatórios para iniciar o pagamento (PIX).
+              {% endif %}
+            </p>
 
             <form method="post" action="/app/account/profile" class="account-form">
               <div class="account-form-grid">

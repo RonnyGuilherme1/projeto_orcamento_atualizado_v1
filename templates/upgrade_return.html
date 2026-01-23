@@ -7,6 +7,8 @@
 
 {% block content %}
   {% set plan = PLANS.get(order.plan, PLANS['basic']) %}
+  {% set back_url = back_url or url_for('analytics.upgrade') %}
+  {% set status_url = status_url or url_for('analytics.upgrade_status', token=order.token) %}
 
   <div class="app-card">
     <h2>Estamos confirmando o seu pagamento</h2>
@@ -28,13 +30,43 @@
     </div>
 
     <div class="upgrade-return-actions">
-      <a class="btn-secondary btn-pill" href="{{ url_for('analytics.upgrade') }}">Voltar</a>
+      <a class="btn-secondary btn-pill" href="{{ back_url }}">Voltar</a>
       <button class="btn-primary btn-pill" type="button" id="refresh-status">Atualizar status</button>
     </div>
 
     <p class="muted" style="margin-top:12px;">
       Se você já pagou e o status não atualizar, aguarde alguns minutos e tente novamente.
     </p>
+    <p id="status-warning" class="muted" style="margin-top:8px; display:none;"></p>
+  </div>
+
+  <div class="app-card upgrade-history">
+    <h3>Historico de pagamentos</h3>
+    {% if billing_orders %}
+      <div class="history-row history-head">
+        <div>Data</div>
+        <div>Plano</div>
+        <div>Status</div>
+        <div>Valor</div>
+      </div>
+      {% for order in billing_orders %}
+        {% set order_plan = PLANS.get(order.plan, PLANS['basic']) %}
+        <div class="history-row">
+          <div>
+            {% if order.paid_at %}
+              {{ order.paid_at.strftime('%d/%m/%Y') }}
+            {% else %}
+              {{ order.created_at.strftime('%d/%m/%Y') if order.created_at else '-' }}
+            {% endif %}
+          </div>
+          <div>{{ order_plan['name'] }}</div>
+          <div class="history-status history-{{ order.status|lower }}">{{ order.status }}</div>
+          <div>R$ {{ '%.2f'|format(order_plan['price_month']) }}</div>
+        </div>
+      {% endfor %}
+    {% else %}
+      <p class="muted">Nenhum pagamento encontrado.</p>
+    {% endif %}
   </div>
 
   <script>
@@ -42,13 +74,16 @@
       const token = {{ order.token|tojson }};
       const statusText = document.getElementById('status-text');
       const refreshBtn = document.getElementById('refresh-status');
+      const warningEl = document.getElementById('status-warning');
+
+      const statusUrl = {{ status_url|tojson }};
 
       async function refreshStatus() {
         if (!token || !refreshBtn) return;
         refreshBtn.disabled = true;
         refreshBtn.classList.add('is-loading');
         try {
-          const res = await fetch(`/app/upgrade/status?token=${encodeURIComponent(token)}`);
+          const res = await fetch(statusUrl);
           if (!res.ok) return;
           const data = await res.json();
           if (!data.ok) return;
@@ -57,6 +92,16 @@
             statusText.textContent = data.status;
             statusText.classList.toggle('status-paid', data.status === 'PAID');
             statusText.classList.toggle('status-pending', data.status !== 'PAID');
+          }
+
+          if (warningEl) {
+            if (data.warning) {
+              warningEl.textContent = data.warning;
+              warningEl.style.display = 'block';
+            } else {
+              warningEl.textContent = '';
+              warningEl.style.display = 'none';
+            }
           }
 
           if (data.redirect) {

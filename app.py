@@ -28,8 +28,11 @@ from services.checkout_store import (
     get_order_by_token,
     set_order_billing_id,
     mark_order_paid_by_billing_id,
+    mark_order_paid_by_token,
     get_order_by_billing_id,
+    list_orders_by_user,
 )
+from services.subscription import apply_paid_order, is_subscription_active, subscription_context
 from services.email_service import send_verification_email
 
 app = Flask(__name__)
@@ -66,10 +69,41 @@ def inject_plan_helpers():
             return False
         return user_has_feature(current_user, feature)
 
+    card_enabled = bool(app.config.get("ABACATEPAY_CARD_ENABLED"))
+
     return {
         "PLANS": PLANS,
         "has_feature": has_feature,
+        "abacatepay_card_enabled": card_enabled,
     }
+
+
+@app.before_request
+def enforce_subscription():
+    if not current_user.is_authenticated:
+        return
+    if not request.path.startswith("/app"):
+        return
+
+    allowed_endpoints = {
+        "account_page",
+        "account_profile_save",
+        "analytics.upgrade",
+        "analytics.upgrade_checkout_page",
+        "analytics.upgrade_checkout_start",
+        "analytics.upgrade_return",
+        "analytics.upgrade_status",
+        "billing_renew",
+        "billing_return",
+    }
+    if request.endpoint in allowed_endpoints:
+        return
+
+    if is_subscription_active(current_user):
+        return
+
+    flash("Pagamento pendente. Regularize sua assinatura para continuar.", "warning")
+    return redirect(url_for("account_page", section="billing"))
 
 
 def _only_digits(s: str) -> str:
@@ -187,8 +221,8 @@ def checkout_completion():
     # Se estiver pago e o usuário estiver logado, aplica o plano imediatamente.
     if current_user.is_authenticated and order.status == "PAID":
         if (order.user_id is None) or (int(order.user_id) == int(current_user.id)):
-            current_user.set_plan(order.plan)
-            db.session.commit()
+            if apply_paid_order(current_user, order):
+                db.session.commit()
             if not current_user.is_verified:
                 send_verification_email(current_user)
                 flash("Pagamento confirmado. Verifique seu e-mail para ativar sua conta.", "success")
@@ -227,8 +261,16 @@ def checkout_status():
             return jsonify({"ok": True, "status": status, "plan": order.plan, "warning": warning})
         if remote_status:
             status = remote_status
-            if remote_status == "PAID" and order.billing_id:
-                mark_order_paid_by_billing_id(order.billing_id)
+            if remote_status == "PAID":
+                if order.billing_id:
+                    mark_order_paid_by_billing_id(order.billing_id)
+                else:
+                    mark_order_paid_by_token(order.token)
+                order = get_order_by_token(order.token)
+                if order and order.user_id:
+                    u = User.query.get(int(order.user_id))
+                    if u and apply_paid_order(u, order):
+                        db.session.commit()
     return jsonify({"ok": True, "status": status, "plan": order.plan})
 
 
@@ -253,8 +295,8 @@ def abacatepay_webhook():
             if order and order.user_id:
                 u = User.query.get(int(order.user_id))
                 if u:
-                    u.set_plan(order.plan)
-                    db.session.commit()
+                    if apply_paid_order(u, order):
+                        db.session.commit()
 
     return jsonify({"ok": True}), 200
 
@@ -289,11 +331,16 @@ def account_page():
         section = "overview"
 
     profile = UserProfile.query.filter_by(user_id=current_user.id).first()
+    billing_orders = list_orders_by_user(current_user.id, limit=10)
+
+    subscription = subscription_context(current_user)
 
     return render_template(
         "account.html",
         section=section,
         profile=profile,
+        subscription=subscription,
+        billing_orders=billing_orders,
     )
 
 
@@ -333,6 +380,91 @@ def account_profile_save():
     db.session.commit()
     flash("Dados pessoais atualizados.", "success")
     return redirect(url_for("account_page", section="profile"))
+
+
+@app.post("/app/billing/renew")
+@login_required
+def billing_renew():
+    if not current_user.is_verified:
+        return redirect(url_for("auth.verify_pending"))
+
+    plan = (current_user.plan or "basic").strip().lower()
+    if not is_valid_plan(plan):
+        plan = "basic"
+
+    if not (
+        getattr(current_user, "full_name", None)
+        and getattr(current_user, "tax_id", None)
+        and getattr(current_user, "cellphone", None)
+    ):
+        flash(
+            "Para iniciar o pagamento, preencha seus dados pessoais (nome, CPF e telefone).",
+            "info",
+        )
+        return redirect(url_for("account_page", section="profile"))
+
+    order = create_order(plan, user_id=current_user.id)
+
+    completion_url = url_for("billing_return", token=order.token, _external=True)
+    return_url = url_for("account_page", section="billing", _external=True)
+
+    customer = {
+        "name": current_user.full_name,
+        "email": current_user.email,
+        "cellphone": current_user.cellphone,
+        "taxId": current_user.tax_id,
+    }
+
+    try:
+        billing = create_plan_billing(
+            plan=plan,
+            external_id=order.token,
+            return_url=return_url,
+            completion_url=completion_url,
+            customer=customer,
+        )
+    except AbacatePayError as e:
+        flash(str(e), "error")
+        return redirect(url_for("account_page", section="billing"))
+    except Exception:
+        flash("Nao foi possivel iniciar o checkout agora. Tente novamente.", "error")
+        return redirect(url_for("account_page", section="billing"))
+
+    set_order_billing_id(order.token, billing["billing_id"])
+    return redirect(billing["url"], code=302)
+
+
+@app.get("/app/billing/return")
+@login_required
+def billing_return():
+    token = (request.args.get("token") or "").strip()
+    order = get_order_by_token(token)
+    if not order:
+        flash("Nao encontramos esse checkout.", "error")
+        return redirect(url_for("account_page", section="billing"))
+    if order.user_id and int(order.user_id) != int(current_user.id):
+        flash("Checkout nao encontrado para esta conta.", "error")
+        return redirect(url_for("account_page", section="billing"))
+
+    if order.status == "PAID":
+        if apply_paid_order(current_user, order):
+            db.session.commit()
+        flash("Pagamento confirmado. Sua assinatura foi renovada.", "success")
+        return redirect(url_for("account_page", section="billing"))
+
+    billing_orders = list_orders_by_user(current_user.id, limit=10)
+    status_url = url_for(
+        "analytics.upgrade_status",
+        token=order.token,
+        redirect=url_for("account_page", section="billing"),
+    )
+    return render_template(
+        "upgrade_return.html",
+        order=order,
+        back_url=url_for("account_page", section="billing"),
+        status_url=status_url,
+        billing_orders=billing_orders,
+    )
 
 
 @app.get("/healthz")

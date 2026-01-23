@@ -303,6 +303,11 @@ body.app-body a:hover { text-decoration: none; }
   border-color: rgba(76, 175, 80, 0.35);
 }
 
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .btn:active {
   transform: translateY(1px);
 }

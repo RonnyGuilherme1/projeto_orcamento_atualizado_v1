@@ -72,6 +72,13 @@ class Config:
     ABACATEPAY_API_KEY = os.getenv("ABACATEPAY_API_KEY", "")
     # Secret configurado na URL do webhook (query param webhookSecret)
     ABACATEPAY_WEBHOOK_SECRET = os.getenv("ABACATEPAY_WEBHOOK_SECRET", "")
+    # Habilita cartao (beta) no checkout.
+    ABACATEPAY_CARD_ENABLED = os.getenv("ABACATEPAY_CARD_ENABLED", "").lower() in {
+        "1",
+        "true",
+        "yes",
+    }
+    SUBSCRIPTION_CYCLE_DAYS = int(os.getenv("SUBSCRIPTION_CYCLE_DAYS", "30"))
 
     # Ambiente (opcional) - use para rotular logs/UX
     ABACATEPAY_DEV_MODE = os.getenv("ABACATEPAY_DEV_MODE", "true").lower() in {

@@ -929,3 +929,46 @@ body.app-body .pricing-grid{
 .btn-pill.is-loading::after{
   content: " ...";
 }
+
+.upgrade-history{
+  margin-top: 16px;
+}
+
+.history-row{
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 1fr 1fr;
+  gap: 10px;
+  align-items: center;
+  padding: 8px 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.18);
+  font-size: 12px;
+}
+
+.history-head{
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  margin-bottom: 8px;
+}
+
+.history-status{
+  font-weight: 900;
+}
+
+.history-status.history-paid{
+  color: #4caf50;
+}
+
+.history-status.history-pending{
+  color: #f5a623;
+}
+
+@media (max-width: 720px) {
+  .history-row{
+    grid-template-columns: 1fr 1fr;
+  }
+}

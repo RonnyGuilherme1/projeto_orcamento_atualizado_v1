@@ -18,7 +18,12 @@
         <p style="margin:8px 0;">Plano: <strong>{{ plan['name'] }}</strong></p>
         <p style="margin:8px 0;">Valor: <strong>R$ {{ '%.2f'|format(plan['price_month']) }}</strong> (1 mês)</p>
         <p class="muted" style="margin:10px 0 0;">
-          O pagamento é feito via PIX. Após a confirmação, seu plano será atualizado automaticamente.
+          {% if abacatepay_card_enabled %}
+            O pagamento pode ser feito via PIX ou cartão. Após a confirmação, seu plano será atualizado automaticamente.
+            <span style="display:block; margin-top:6px;">Cartão em beta: requer liberação no suporte da AbacatePay.</span>
+          {% else %}
+            O pagamento é feito via PIX. Após a confirmação, seu plano será atualizado automaticamente.
+          {% endif %}
         </p>
       </div>
 
@@ -36,7 +41,7 @@
       <a class="btn-secondary" href="{{ url_for('analytics.upgrade') }}">Voltar</a>
       <form method="post" action="{{ url_for('analytics.upgrade_checkout_start') }}" style="margin:0;">
         <input type="hidden" name="plan" value="{{ selected_plan }}">
-        <button class="btn-primary" type="submit">Ir para pagamento (PIX)</button>
+        <button class="btn-primary" type="submit">Ir para pagamento (PIX{% if abacatepay_card_enabled %} ou Cartão{% endif %})</button>
       </form>
     </div>
   </div>

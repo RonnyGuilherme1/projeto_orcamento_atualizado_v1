@@ -60,6 +60,30 @@ def _normalize_customer(customer: Dict[str, Any]) -> Dict[str, str]:
     }
 
 
+def _normalize_methods(methods: list[str] | None) -> list[str]:
+    allowed = {"PIX", "CARD"}
+    if methods:
+        raw_methods = methods
+    else:
+        raw_methods = ["PIX"]
+        if current_app.config.get("ABACATEPAY_CARD_ENABLED"):
+            raw_methods.append("CARD")
+
+    normalized = []
+    seen = set()
+    for method in raw_methods:
+        if not method:
+            continue
+        item = str(method).strip().upper()
+        if item in allowed and item not in seen:
+            normalized.append(item)
+            seen.add(item)
+        if len(normalized) >= 2:
+            break
+
+    return normalized or ["PIX"]
+
+
 def create_plan_billing(
     plan: str,
     external_id: str,
@@ -67,6 +91,7 @@ def create_plan_billing(
     completion_url: str,
     customer: Dict[str, Any] | None = None,
     customer_id: str | None = None,
+    methods: list[str] | None = None,
 ) -> Dict[str, str]:
     """Cria uma cobranca ONE_TIME para o plano selecionado.
 
@@ -92,7 +117,7 @@ def create_plan_billing(
 
     payload: Dict[str, Any] = {
         "frequency": "ONE_TIME",
-        "methods": ["PIX"],
+        "methods": _normalize_methods(methods),
         "products": [
             {
                 "externalId": f"plan:{plan}",

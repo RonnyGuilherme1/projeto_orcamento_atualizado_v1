@@ -813,6 +813,9 @@ body.app-body .panel-actions{
 
 .account-actions{
   margin-top: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .account-link{
@@ -841,10 +844,72 @@ body.app-body .panel-actions{
   font-size: 12px;
 }
 
+.account-badge.is-active{
+  background: rgba(76, 175, 80, 0.12);
+  border-color: rgba(76, 175, 80, 0.28);
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.account-badge.is-overdue{
+  background: rgba(255, 77, 79, 0.12);
+  border-color: rgba(255, 77, 79, 0.32);
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.account-badge.is-inactive{
+  background: rgba(245, 166, 35, 0.12);
+  border-color: rgba(245, 166, 35, 0.30);
+  color: rgba(255, 255, 255, 0.92);
+}
+
 .account-kv{
   grid-template-columns: 1fr 1fr;
   gap: 12px;
   display: grid;
+}
+
+.account-history{
+  margin-top: 10px;
+  display: grid;
+  gap: 8px;
+}
+
+.history-row{
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 1fr 1fr;
+  gap: 10px;
+  align-items: center;
+  padding: 8px 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.18);
+  font-size: 12px;
+}
+
+.history-head{
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 10px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.history-status{
+  font-weight: 900;
+}
+
+.history-status.history-paid{
+  color: #4caf50;
+}
+
+.history-status.history-pending{
+  color: #f5a623;
+}
+
+@media (max-width: 720px) {
+  .history-row{
+    grid-template-columns: 1fr 1fr;
+  }
 }
 
 .account-k{

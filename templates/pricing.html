@@ -47,8 +47,14 @@
   <div class="pricing-note">
     <strong>Como funciona a compra agora?</strong>
     <p class="muted">
-      Você escolhe um plano, faz o pagamento via PIX (AbacatePay) e, em seguida, cria sua conta ou entra
-      para ativar o plano automaticamente.
+      {% if abacatepay_card_enabled %}
+        Você escolhe um plano, faz o pagamento via PIX ou cartão (AbacatePay) e, em seguida, cria sua conta ou entra
+        para ativar o plano automaticamente.
+        <span style="display:block; margin-top:6px;">Cartão em beta: requer liberação no suporte da AbacatePay.</span>
+      {% else %}
+        Você escolhe um plano, faz o pagamento via PIX (AbacatePay) e, em seguida, cria sua conta ou entra
+        para ativar o plano automaticamente.
+      {% endif %}
     </p>
   </div>
 {% endblock %}

@@ -11,8 +11,11 @@ from services.checkout_store import (
     set_order_billing_id,
     get_order_by_token,
     mark_order_paid_by_billing_id,
+    mark_order_paid_by_token,
+    list_orders_by_user,
 )
 from services.abacatepay import create_plan_billing, get_billing_status, AbacatePayError
+from services.subscription import apply_paid_order
 
 
 analytics_bp = Blueprint("analytics", __name__)
@@ -113,13 +116,14 @@ def upgrade_return():
 
     # Se o webhook já marcou como pago, aplica o plano aqui.
     if order.status == "PAID":
-        current_user.set_plan(order.plan)
-        db.session.commit()
+        if apply_paid_order(current_user, order):
+            db.session.commit()
         flash(f"Pagamento confirmado. Seu plano foi atualizado para {PLANS[order.plan]['name']}.", "success")
         return redirect(url_for("index"))
 
     flash("Pagamento em processamento. Se você já pagou, aguarde alguns instantes e atualize a página.", "info")
-    return render_template("upgrade_return.html", order=order)
+    billing_orders = list_orders_by_user(current_user.id, limit=10)
+    return render_template("upgrade_return.html", order=order, billing_orders=billing_orders)
 
 
 @analytics_bp.get("/app/upgrade/status")
@@ -132,10 +136,13 @@ def upgrade_status():
     if order.user_id and int(order.user_id) != int(current_user.id):
         return jsonify({"ok": False, "error": "forbidden"}), 403
 
+    redirect_to = (request.args.get("redirect") or "").strip()
     if order.status == "PAID":
-        current_user.set_plan(order.plan)
-        db.session.commit()
-        return jsonify({"ok": True, "status": "PAID", "redirect": url_for("index")})
+        if apply_paid_order(current_user, order):
+            db.session.commit()
+        return jsonify(
+            {"ok": True, "status": "PAID", "redirect": redirect_to or url_for("index")}
+        )
 
     status = order.status
     if order.billing_id or order.token:
@@ -148,10 +155,16 @@ def upgrade_status():
         if remote_status:
             status = remote_status
             if remote_status == "PAID":
-                mark_order_paid_by_billing_id(order.billing_id)
-                current_user.set_plan(order.plan)
-                db.session.commit()
-                return jsonify({"ok": True, "status": "PAID", "redirect": url_for("index")})
+                if order.billing_id:
+                    mark_order_paid_by_billing_id(order.billing_id)
+                else:
+                    mark_order_paid_by_token(order.token)
+                order = get_order_by_token(order.token)
+                if order and apply_paid_order(current_user, order):
+                    db.session.commit()
+                return jsonify(
+                    {"ok": True, "status": "PAID", "redirect": redirect_to or url_for("index")}
+                )
 
     return jsonify({"ok": True, "status": status})
 

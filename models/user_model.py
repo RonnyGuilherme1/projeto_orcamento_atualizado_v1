@@ -20,6 +20,8 @@ class User(UserMixin, db.Model):
     # billing / planos (MVP)
     plan = db.Column(db.String(20), default="basic", nullable=False)
     plan_updated_at = db.Column(db.DateTime, nullable=True)
+    plan_expires_at = db.Column(db.DateTime, nullable=True)
+    plan_last_paid_at = db.Column(db.DateTime, nullable=True)
 
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
 
