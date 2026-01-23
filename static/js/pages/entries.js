@@ -3,6 +3,7 @@
   const inputData = document.getElementById("data");
   const inputTipo = document.getElementById("tipo");
   const inputDescricao = document.getElementById("descricao");
+  const inputCategoria = document.getElementById("categoria");
   const inputValor = document.getElementById("valor");
   const inputStatus = document.getElementById("status");
 
@@ -21,6 +22,7 @@
   const editData = document.getElementById("edit-data");
   const editTipo = document.getElementById("edit-tipo");
   const editStatus = document.getElementById("edit-status");
+  const editCategoria = document.getElementById("edit-categoria");
   const editDescricao = document.getElementById("edit-descricao");
   const editValor = document.getElementById("edit-valor");
 
@@ -29,6 +31,18 @@
 
   let entradas = [];
   let editandoId = null;
+
+  const CATEGORY_LABELS = {};
+  if (inputCategoria) {
+    Array.from(inputCategoria.options).forEach((opt) => {
+      CATEGORY_LABELS[opt.value] = opt.textContent;
+    });
+  }
+
+  function categoriaLabel(value) {
+    const key = String(value || "outros");
+    return CATEGORY_LABELS[key] || "Outros";
+  }
 
   function syncCustomSelect(selectEl) {
     if (selectEl && typeof selectEl._customUpdate === "function") {
@@ -155,6 +169,7 @@
     if (!status) return "";
     if (status === "pago") return "Pago";
     if (status === "em_andamento") return "Em andamento";
+    if (status === "nao_pago") return "Não pago";
     if (status === "atrasado") return "Atrasado";
     return String(status);
   }
@@ -181,10 +196,13 @@
 
   function linhaHTML(e, isDespesa) {
     const status = isDespesa ? (statusLabel(e.status) || "") : "";
+    const categoria = String(e.categoria || "outros");
+    const categoriaNome = categoriaLabel(categoria);
     return `
       <div class="linha" data-id="${e.id}">
         <span>${e.data}</span>
         <span>${e.descricao}</span>
+        <span><span class="categoria-chip" data-category="${categoria}">${categoriaNome}</span></span>
         <span>${fmtBRL(e.valor)}</span>
         <span>${status}</span>
         <span class="acoes">
@@ -242,6 +260,7 @@
 
     if (editData) editData.value = item.data || "";
     if (editTipo) editTipo.value = item.tipo || "receita";
+    if (editCategoria) editCategoria.value = item.categoria || "outros";
     if (editDescricao) editDescricao.value = item.descricao || "";
     if (editValor) editValor.value = Number(item.valor) || 0;
 
@@ -249,6 +268,7 @@
 
     syncCustomSelect(editTipo);
     syncCustomSelect(editStatus);
+    syncCustomSelect(editCategoria);
     atualizarStatusModal();
     abrirModal();
   }
@@ -306,6 +326,7 @@
     const payload = {
       data: inputData?.value,
       tipo: inputTipo?.value,
+      categoria: inputCategoria?.value,
       descricao: inputDescricao?.value,
       valor: parseFloat(inputValor?.value || "0"),
       status: (inputTipo?.value === "despesa") ? (inputStatus?.value || "em_andamento") : null
@@ -319,8 +340,10 @@
 
     form.reset();
     if (inputTipo) inputTipo.value = "receita";
+    if (inputCategoria) inputCategoria.value = "outros";
     atualizarStatusFormPrincipal();
     syncCustomSelect(inputTipo);
+    syncCustomSelect(inputCategoria);
     await carregarDados();
   });
 
@@ -331,6 +354,7 @@
     const payload = {
       data: editData?.value,
       tipo: editTipo?.value,
+      categoria: editCategoria?.value,
       descricao: editDescricao?.value,
       valor: parseFloat(editValor?.value || "0"),
       status: (editTipo?.value === "despesa") ? (editStatus?.value || "em_andamento") : null
@@ -351,10 +375,12 @@
   [
     inputTipo,
     inputStatus,
+    inputCategoria,
     filtroTrimestreReceitas,
     filtroTrimestreDespesas,
     editTipo,
-    editStatus
+    editStatus,
+    editCategoria
   ].forEach(initCustomSelect);
   carregarDados();
 })();

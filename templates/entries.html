@@ -32,6 +32,17 @@
             </select>
           </label>
 
+          <label class="field field-categoria">
+            <span class="field-label">Categoria</span>
+            <select id="categoria" class="control">
+              <option value="moradia">Moradia</option>
+              <option value="mercado">Mercado</option>
+              <option value="transporte">Transporte</option>
+              <option value="servicos">Serviços</option>
+              <option value="outros" selected>Outros</option>
+            </select>
+          </label>
+
           <label class="field field-status">
             <span class="field-label">Status</span>
             <select id="status" class="control">
@@ -78,7 +89,7 @@
         </div>
 
         <div class="lista-header">
-          <span>Data</span><span>Descrição</span><span>Valor</span><span></span><span>Ações</span>
+          <span>Data</span><span>Descrição</span><span>Categoria</span><span>Valor</span><span></span><span>Ações</span>
         </div>
         <div id="receitas" class="lista"></div>
       </div>
@@ -101,7 +112,7 @@
         </div>
 
         <div class="lista-header">
-          <span>Data</span><span>Descrição</span><span>Valor</span><span>Status</span><span>Ações</span>
+          <span>Data</span><span>Descrição</span><span>Categoria</span><span>Valor</span><span>Status</span><span>Ações</span>
         </div>
         <div id="despesas" class="lista"></div>
       </div>
@@ -135,6 +146,17 @@
               <option value="em_andamento">Em andamento</option>
               <option value="pago">Pago</option>
               <option value="nao_pago">Não pago</option>
+            </select>
+          </label>
+
+          <label class="field">
+            <span class="field-label">Categoria</span>
+            <select id="edit-categoria" class="control">
+              <option value="moradia">Moradia</option>
+              <option value="mercado">Mercado</option>
+              <option value="transporte">Transporte</option>
+              <option value="servicos">Serviços</option>
+              <option value="outros">Outros</option>
             </select>
           </label>
 

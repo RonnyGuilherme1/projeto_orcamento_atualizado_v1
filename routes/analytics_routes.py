@@ -1,9 +1,14 @@
 from __future__ import annotations
 
+from datetime import date, timedelta
+
+from sqlalchemy import func
+
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, current_app
 from flask_login import login_required, current_user
 
 from models.extensions import db
+from models.entrada_model import Entrada
 from services.plans import PLANS, is_valid_plan
 from services.feature_gate import require_feature
 from services.checkout_store import (
@@ -19,6 +24,58 @@ from services.subscription import apply_paid_order
 
 
 analytics_bp = Blueprint("analytics", __name__)
+
+CATEGORIAS = {
+    "moradia": "Moradia",
+    "mercado": "Mercado",
+    "transporte": "Transporte",
+    "servicos": "Serviços",
+    "outros": "Outros",
+}
+
+STATUS_PADROES = {"pago", "em_andamento", "nao_pago"}
+
+MESES = [
+    "Janeiro",
+    "Fevereiro",
+    "Março",
+    "Abril",
+    "Maio",
+    "Junho",
+    "Julho",
+    "Agosto",
+    "Setembro",
+    "Outubro",
+    "Novembro",
+    "Dezembro",
+]
+
+
+def _normalize_categoria(value: str | None) -> str:
+    categoria = (value or "").strip().lower()
+    if categoria not in CATEGORIAS:
+        return "outros"
+    return categoria
+
+
+def _last_day_of_month(d: date) -> date:
+    if d.month == 12:
+        first_next = date(d.year + 1, 1, 1)
+    else:
+        first_next = date(d.year, d.month + 1, 1)
+    return first_next - timedelta(days=1)
+
+
+def _pct_change(current: float, previous: float) -> float | None:
+    if previous <= 0:
+        return None
+    return round(((current - previous) / previous) * 100, 1)
+
+
+def _require_verified_json():
+    if not current_user.is_verified:
+        return jsonify({"error": "email_not_verified"}), 403
+    return None
 
 
 def _payment_warning_message(raw: str) -> str:
@@ -200,6 +257,269 @@ def subscribe():
 @require_feature("charts")
 def charts_page():
     return render_template("charts.html")
+
+
+@analytics_bp.get("/app/charts/data")
+@login_required
+@require_feature("charts")
+def charts_data():
+    blocked = _require_verified_json()
+    if blocked:
+        return blocked
+
+    today = date.today()
+
+    def _safe_int(value, default):
+        try:
+            return int(value)
+        except (TypeError, ValueError):
+            return default
+
+    year = _safe_int(request.args.get("year"), today.year)
+    month = _safe_int(request.args.get("month"), today.month)
+    if month < 1 or month > 12:
+        month = today.month
+
+    start = date(year, month, 1)
+    end = _last_day_of_month(start)
+
+    entries = (
+        Entrada.query
+        .filter(
+            Entrada.user_id == current_user.id,
+            Entrada.data >= start,
+            Entrada.data <= end,
+        )
+        .all()
+    )
+
+    receitas_total = sum(float(e.valor) for e in entries if e.tipo == "receita")
+    despesas_total = sum(float(e.valor) for e in entries if e.tipo == "despesa")
+    receitas_count = sum(1 for e in entries if e.tipo == "receita")
+    despesas_count = sum(1 for e in entries if e.tipo == "despesa")
+
+    receitas_antes = (
+        db.session.query(func.coalesce(func.sum(Entrada.valor), 0.0))
+        .filter(
+            Entrada.user_id == current_user.id,
+            Entrada.tipo == "receita",
+            Entrada.data < start,
+        )
+        .scalar()
+    )
+    despesas_pagas_antes = (
+        db.session.query(func.coalesce(func.sum(Entrada.valor), 0.0))
+        .filter(
+            Entrada.user_id == current_user.id,
+            Entrada.tipo == "despesa",
+            Entrada.status == "pago",
+            Entrada.paid_at.isnot(None),
+            Entrada.paid_at < start,
+        )
+        .scalar()
+    )
+
+    saldo_anterior = float(receitas_antes) - float(despesas_pagas_antes)
+    saldo_projetado = saldo_anterior + receitas_total - despesas_total
+
+    if month == 1:
+        prev_month = 12
+        prev_year = year - 1
+    else:
+        prev_month = month - 1
+        prev_year = year
+    prev_start = date(prev_year, prev_month, 1)
+    prev_end = _last_day_of_month(prev_start)
+
+    receitas_prev = (
+        db.session.query(func.coalesce(func.sum(Entrada.valor), 0.0))
+        .filter(
+            Entrada.user_id == current_user.id,
+            Entrada.tipo == "receita",
+            Entrada.data >= prev_start,
+            Entrada.data <= prev_end,
+        )
+        .scalar()
+    )
+    despesas_prev = (
+        db.session.query(func.coalesce(func.sum(Entrada.valor), 0.0))
+        .filter(
+            Entrada.user_id == current_user.id,
+            Entrada.tipo == "despesa",
+            Entrada.data >= prev_start,
+            Entrada.data <= prev_end,
+        )
+        .scalar()
+    )
+
+    receitas_pct = _pct_change(receitas_total, float(receitas_prev))
+    despesas_pct = _pct_change(despesas_total, float(despesas_prev))
+
+    # Serie diaria
+    days = (end - start).days + 1
+    daily_receitas = [0.0] * days
+    daily_despesas = [0.0] * days
+    for e in entries:
+        idx = (e.data - start).days
+        if idx < 0 or idx >= days:
+            continue
+        if e.tipo == "receita":
+            daily_receitas[idx] += float(e.valor)
+        elif e.tipo == "despesa":
+            daily_despesas[idx] += float(e.valor)
+
+    daily_saldo = [r - d for r, d in zip(daily_receitas, daily_despesas)]
+    saldo_acumulado = []
+    running = saldo_anterior
+    for val in daily_saldo:
+        running += val
+        saldo_acumulado.append(round(running, 2))
+
+    # Categorias
+    categoria_totais = {key: 0.0 for key in CATEGORIAS}
+    for e in entries:
+        if e.tipo != "despesa":
+            continue
+        cat = _normalize_categoria(getattr(e, "categoria", None))
+        categoria_totais[cat] += float(e.valor)
+
+    categorias = []
+    for key, total in categoria_totais.items():
+        if total <= 0:
+            continue
+        percent = (total / despesas_total * 100) if despesas_total else 0.0
+        categorias.append(
+            {
+                "key": key,
+                "label": CATEGORIAS.get(key, "Outros"),
+                "total": round(total, 2),
+                "percent": round(percent, 1),
+            }
+        )
+    categorias.sort(key=lambda item: item["total"], reverse=True)
+
+    # Status das despesas
+    status_totais = {"pago": 0.0, "em_andamento": 0.0, "nao_pago": 0.0}
+    for e in entries:
+        if e.tipo != "despesa":
+            continue
+        status = (e.status or "em_andamento").strip().lower()
+        if status not in STATUS_PADROES:
+            status = "em_andamento"
+        status_totais[status] += float(e.valor)
+
+    # Destaques
+    week_net = {}
+    for idx, val in enumerate(daily_saldo):
+        week = (idx // 7) + 1
+        week_net[week] = week_net.get(week, 0.0) + float(val)
+    if week_net:
+        best_week = max(week_net.items(), key=lambda item: item[1])
+        best_week_total = round(best_week[1], 2)
+        best_week_label = f"Semana {best_week[0]}"
+    else:
+        best_week_total = 0.0
+        best_week_label = "-"
+
+    top_expense = None
+    for e in entries:
+        if e.tipo == "despesa":
+            if not top_expense or float(e.valor) > float(top_expense.valor):
+                top_expense = e
+    if top_expense:
+        top_expense_total = round(float(top_expense.valor), 2)
+        top_expense_label = CATEGORIAS.get(
+            _normalize_categoria(getattr(top_expense, "categoria", None)),
+            "Outros",
+        )
+    else:
+        top_expense_total = 0.0
+        top_expense_label = "-"
+
+    equilibrio = round((despesas_total / receitas_total) * 100, 1) if receitas_total else 0.0
+
+    alerts = []
+    if receitas_total <= 0 and despesas_total <= 0:
+        alerts.append("Sem lançamentos no período.")
+    else:
+        hoje = date.today()
+        limite = hoje + timedelta(days=7)
+        proximas = (
+            Entrada.query
+            .filter(
+                Entrada.user_id == current_user.id,
+                Entrada.tipo == "despesa",
+                (Entrada.status.is_(None)) | (Entrada.status != "pago"),
+                Entrada.data >= hoje,
+                Entrada.data <= limite,
+            )
+            .count()
+        )
+        if proximas:
+            alerts.append(f"{proximas} despesas vencem nos próximos 7 dias.")
+        else:
+            alerts.append("Nenhuma despesa vencendo nos próximos 7 dias.")
+
+        if categorias:
+            top_cat = categorias[0]
+            if top_cat["percent"] >= 35:
+                alerts.append(
+                    f"Categoria {top_cat['label']} concentra {top_cat['percent']}% das despesas."
+                )
+
+        if saldo_projetado < 0:
+            alerts.append("Saldo projetado negativo. Ajuste despesas variáveis.")
+        elif receitas_total and saldo_projetado < (receitas_total * 0.1):
+            alerts.append("Saldo projetado abaixo de 10% das receitas.")
+
+    compare_label = f"Comparativo com {MESES[prev_month - 1]}/{prev_year}"
+
+    return jsonify(
+        {
+            "period": {
+                "year": year,
+                "month": month,
+                "start": start.isoformat(),
+                "end": end.isoformat(),
+            },
+            "summary": {
+                "receitas": round(receitas_total, 2),
+                "despesas": round(despesas_total, 2),
+                "saldo_projetado": round(saldo_projetado, 2),
+                "saldo_anterior": round(saldo_anterior, 2),
+                "entradas": len(entries),
+                "receitas_count": receitas_count,
+                "despesas_count": despesas_count,
+            },
+            "compare": {
+                "label": compare_label,
+                "receitas_pct": receitas_pct,
+                "despesas_pct": despesas_pct,
+            },
+            "line": {
+                "labels": [str(i + 1).zfill(2) for i in range(days)],
+                "receitas": [round(v, 2) for v in daily_receitas],
+                "despesas": [round(v, 2) for v in daily_despesas],
+                "saldo": [round(v, 2) for v in daily_saldo],
+                "saldo_acumulado": saldo_acumulado,
+            },
+            "categories": categorias,
+            "statuses": {
+                "pago": round(status_totais["pago"], 2),
+                "em_andamento": round(status_totais["em_andamento"], 2),
+                "nao_pago": round(status_totais["nao_pago"], 2),
+            },
+            "highlights": {
+                "best_week_total": best_week_total,
+                "best_week_label": best_week_label,
+                "top_expense_total": top_expense_total,
+                "top_expense_label": top_expense_label,
+                "equilibrio": equilibrio,
+            },
+            "alerts": alerts[:3],
+            "updated_at": date.today().isoformat(),
+        }
+    )
 
 
 @analytics_bp.get("/app/compare")

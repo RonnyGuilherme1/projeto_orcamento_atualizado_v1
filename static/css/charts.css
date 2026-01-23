@@ -171,6 +171,35 @@ body.app-body .chart-canvas{
   overflow: hidden;
 }
 
+body.app-body .chart-empty{
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.75);
+  background: rgba(8, 12, 16, 0.55);
+  z-index: 2;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 160ms ease;
+}
+
+body.app-body .chart-canvas.is-empty .chart-empty{
+  opacity: 1;
+}
+
+body.app-body .chart-canvas.is-empty .chart-svg{
+  opacity: 0.2;
+}
+
+body.app-body .chart-canvas.is-empty .donut,
+body.app-body .chart-canvas.is-empty .donut-legend,
+body.app-body .chart-canvas.is-empty .bar-row{
+  opacity: 0.2;
+}
+
 body.app-body .chart-canvas::before{
   content: "";
   position: absolute;
@@ -297,11 +326,13 @@ body.app-body .donut::before{
   inset: 0;
   border-radius: 50%;
   background: conic-gradient(
-    var(--cat-home) 0 32%,
-    var(--cat-mkt) 32% 53%,
-    var(--cat-trans) 53% 71%,
-    var(--cat-serv) 71% 87%,
-    var(--cat-other) 87% 100%
+    var(--donut-gradient, 
+      var(--cat-home) 0 32%,
+      var(--cat-mkt) 32% 53%,
+      var(--cat-trans) 53% 71%,
+      var(--cat-serv) 71% 87%,
+      var(--cat-other) 87% 100%
+    )
   );
 }
 

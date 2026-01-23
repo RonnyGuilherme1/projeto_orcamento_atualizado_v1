@@ -10,6 +10,21 @@ from models.entrada_model import Entrada
 
 entradas_bp = Blueprint("entradas", __name__)
 
+CATEGORIAS = {
+    "moradia": "Moradia",
+    "mercado": "Mercado",
+    "transporte": "Transporte",
+    "servicos": "Serviços",
+    "outros": "Outros",
+}
+
+
+def _normalize_categoria(value: str | None) -> str:
+    categoria = (value or "").strip().lower()
+    if categoria not in CATEGORIAS:
+        return "outros"
+    return categoria
+
 
 def _require_verified():
     if not current_user.is_verified:
@@ -38,6 +53,7 @@ def dados():
                 "data": e.data.isoformat(),
                 "tipo": e.tipo,
                 "descricao": e.descricao,
+                "categoria": (e.categoria or "outros"),
                 "valor": float(e.valor),
                 "status": e.status,
                 "paid_at": e.paid_at.isoformat() if e.paid_at else None,
@@ -58,6 +74,7 @@ def add():
     tipo = payload.get("tipo")
     data_str = payload.get("data")
     descricao = (payload.get("descricao") or "").strip()
+    categoria = _normalize_categoria(payload.get("categoria"))
     valor = float(payload.get("valor") or 0)
     status = payload.get("status")
 
@@ -86,6 +103,7 @@ def add():
         data=data_dt,
         tipo=tipo,
         descricao=descricao,
+        categoria=categoria,
         valor=valor,
         status=status,
         paid_at=paid_at,
@@ -113,6 +131,7 @@ def edit(entrada_id):
     tipo = payload.get("tipo")
     data_str = payload.get("data")
     descricao = (payload.get("descricao") or "").strip()
+    categoria = _normalize_categoria(payload.get("categoria"))
     valor = float(payload.get("valor") or 0)
     status = payload.get("status")
 
@@ -122,6 +141,7 @@ def edit(entrada_id):
     e.data = datetime.strptime(data_str, "%Y-%m-%d").date()
     e.tipo = tipo
     e.descricao = descricao
+    e.categoria = categoria
     e.valor = valor
 
     if tipo == "receita":

@@ -18,6 +18,7 @@ class Entrada(db.Model):
     data = db.Column(db.Date, nullable=False)
     tipo = db.Column(db.String(20), nullable=False)  # receita | despesa
     descricao = db.Column(db.String(255), nullable=False)
+    categoria = db.Column(db.String(32), nullable=False, default="outros")
     valor = db.Column(db.Float, nullable=False)
 
     # Só para despesa (para receita, fica NULL)
@@ -52,6 +53,11 @@ def _migrate_sqlite_schema(conn) -> None:
     # updated_at
     if not _column_exists(conn, "entradas", "updated_at"):
         conn.execute(text("ALTER TABLE entradas ADD COLUMN updated_at DATETIME"))
+
+    # categoria
+    if not _column_exists(conn, "entradas", "categoria"):
+        conn.execute(text("ALTER TABLE entradas ADD COLUMN categoria VARCHAR(32)"))
+        conn.execute(text("UPDATE entradas SET categoria = COALESCE(categoria, 'outros')"))
 
     # Backfill: updated_at
     conn.execute(text("UPDATE entradas SET updated_at = COALESCE(updated_at, created_at)"))
@@ -151,6 +157,15 @@ def _migrate_postgres_schema(conn) -> None:
     if not _column_exists_postgres(conn, "entradas", "updated_at"):
         conn.execute(
             text("ALTER TABLE public.entradas ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP")
+        )
+
+    # categoria
+    if not _column_exists_postgres(conn, "entradas", "categoria"):
+        conn.execute(
+            text("ALTER TABLE public.entradas ADD COLUMN IF NOT EXISTS categoria VARCHAR(32)")
+        )
+        conn.execute(
+            text("UPDATE public.entradas SET categoria = COALESCE(categoria, 'outros')")
         )
 
     # Backfill: updated_at

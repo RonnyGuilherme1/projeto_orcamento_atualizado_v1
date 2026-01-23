@@ -16,27 +16,27 @@
         <div class="panel-actions">
           <label class="field field-inline">
             <span class="field-label">Ano</span>
-            <select class="control">
-              <option>2026</option>
-              <option>2025</option>
-              <option>2024</option>
+            <select id="chart-year" class="control">
+              <option value="2026">2026</option>
+              <option value="2025">2025</option>
+              <option value="2024">2024</option>
             </select>
           </label>
           <label class="field field-inline">
             <span class="field-label">Mês</span>
-            <select class="control">
-              <option>Janeiro</option>
-              <option>Fevereiro</option>
-              <option>Março</option>
-              <option>Abril</option>
-              <option>Maio</option>
-              <option>Junho</option>
-              <option>Julho</option>
-              <option>Agosto</option>
-              <option>Setembro</option>
-              <option>Outubro</option>
-              <option>Novembro</option>
-              <option>Dezembro</option>
+            <select id="chart-month" class="control">
+              <option value="1">Janeiro</option>
+              <option value="2">Fevereiro</option>
+              <option value="3">Março</option>
+              <option value="4">Abril</option>
+              <option value="5">Maio</option>
+              <option value="6">Junho</option>
+              <option value="7">Julho</option>
+              <option value="8">Agosto</option>
+              <option value="9">Setembro</option>
+              <option value="10">Outubro</option>
+              <option value="11">Novembro</option>
+              <option value="12">Dezembro</option>
             </select>
           </label>
           <button class="btn btn-ghost" type="button">Exportar</button>
@@ -46,30 +46,30 @@
       <div class="hero-grid">
         <div class="hero-stat">
           <span class="stat-label">Receitas no período</span>
-          <strong>R$ 18.450</strong>
-          <span class="stat-meta">+12% vs mês anterior</span>
+          <strong id="summary-receitas">R$ 0,00</strong>
+          <span class="stat-meta" id="summary-receitas-meta">Sem comparativo</span>
         </div>
         <div class="hero-stat">
           <span class="stat-label">Despesas no período</span>
-          <strong>R$ 8.640</strong>
-          <span class="stat-meta">-6% vs mês anterior</span>
+          <strong id="summary-despesas">R$ 0,00</strong>
+          <span class="stat-meta" id="summary-despesas-meta">Sem comparativo</span>
         </div>
         <div class="hero-stat">
           <span class="stat-label">Saldo projetado</span>
-          <strong>R$ 9.810</strong>
-          <span class="stat-meta">Fechamento estimado</span>
+          <strong id="summary-saldo">R$ 0,00</strong>
+          <span class="stat-meta" id="summary-saldo-meta">Fechamento estimado</span>
         </div>
         <div class="hero-stat">
           <span class="stat-label">Entradas registradas</span>
-          <strong>42 lançamentos</strong>
-          <span class="stat-meta">22 receitas · 20 despesas</span>
+          <strong id="summary-count">0 lançamentos</strong>
+          <span class="stat-meta" id="summary-count-meta">0 receitas · 0 despesas</span>
         </div>
       </div>
 
       <div class="hero-notes">
-        <span class="note-pill">Atualizado há 2 horas</span>
-        <span class="note-pill">Saldo anterior: R$ 1.280</span>
-        <span class="note-pill">Comparativo com Janeiro/2025</span>
+        <span class="note-pill" id="chart-note-updated">Atualizado agora</span>
+        <span class="note-pill" id="chart-note-balance">Saldo anterior: R$ 0,00</span>
+        <span class="note-pill" id="chart-note-compare">Comparativo indisponível</span>
       </div>
     </section>
 
@@ -99,32 +99,33 @@
                 <stop offset="100%" stop-color="rgba(245, 166, 35, 0.02)" />
               </linearGradient>
             </defs>
-            <path class="area-income" d="M0 160 L90 120 L180 140 L270 100 L360 120 L450 80 L540 110 L640 90 L640 220 L0 220 Z" />
-            <path class="area-expense" d="M0 180 L90 160 L180 170 L270 150 L360 165 L450 140 L540 155 L640 130 L640 220 L0 220 Z" />
-            <path class="line-income" d="M0 160 L90 120 L180 140 L270 100 L360 120 L450 80 L540 110 L640 90" />
-            <path class="line-expense" d="M0 180 L90 160 L180 170 L270 150 L360 165 L450 140 L540 155 L640 130" />
-            <path class="line-balance" d="M0 130 L90 140 L180 120 L270 90 L360 100 L450 70 L540 80 L640 60" />
-            <circle class="line-point" cx="270" cy="100" r="4" />
-            <circle class="line-point" cx="450" cy="80" r="4" />
-            <circle class="line-point alt" cx="640" cy="90" r="4" />
+            <path class="area-income" data-area="income" d="M0 180 L640 180 L640 220 L0 220 Z" />
+            <path class="area-expense" data-area="expense" d="M0 190 L640 190 L640 220 L0 220 Z" />
+            <path class="line-income" data-line="income" d="M0 180 L640 180" />
+            <path class="line-expense" data-line="expense" d="M0 190 L640 190" />
+            <path class="line-balance" data-line="balance" d="M0 170 L640 170" />
+            <circle class="line-point" data-point="income" cx="0" cy="180" r="4" />
+            <circle class="line-point" data-point="expense" cx="0" cy="190" r="4" />
+            <circle class="line-point alt" data-point="balance" cx="0" cy="170" r="4" />
           </svg>
+          <div class="chart-empty">Sem dados no período</div>
         </div>
 
         <div class="chart-footer">
           <div class="chart-kpi">
             <span class="kpi-label">Melhor semana</span>
-            <strong>R$ 4.820</strong>
-            <span class="kpi-meta">Semana 2</span>
+            <strong id="kpi-best-week">R$ 0,00</strong>
+            <span class="kpi-meta" id="kpi-best-week-label">-</span>
           </div>
           <div class="chart-kpi">
             <span class="kpi-label">Maior saída</span>
-            <strong>R$ 1.450</strong>
-            <span class="kpi-meta">Moradia</span>
+            <strong id="kpi-top-expense">R$ 0,00</strong>
+            <span class="kpi-meta" id="kpi-top-expense-label">-</span>
           </div>
           <div class="chart-kpi">
             <span class="kpi-label">Equilíbrio</span>
-            <strong>54%</strong>
-            <span class="kpi-meta">Receitas x despesas</span>
+            <strong id="kpi-balance">0%</strong>
+            <span class="kpi-meta" id="kpi-balance-label">Receitas x despesas</span>
           </div>
         </div>
       </article>
@@ -137,19 +138,14 @@
           </div>
         </div>
         <div class="chart-canvas donut-wrap">
-          <div class="donut" role="img" aria-label="Distribuição de despesas por categoria">
+          <div class="donut" id="chart-donut" role="img" aria-label="Distribuição de despesas por categoria">
             <div class="donut-center">
-              <span class="donut-value">R$ 8.640</span>
-              <span class="donut-label">Total de despesas</span>
+              <span class="donut-value" id="donut-total">R$ 0,00</span>
+              <span class="donut-label" id="donut-label">Total de despesas</span>
             </div>
           </div>
-          <ul class="donut-legend">
-            <li><span class="legend-dot dot-home"></span>Moradia 32%</li>
-            <li><span class="legend-dot dot-mkt"></span>Mercado 21%</li>
-            <li><span class="legend-dot dot-trans"></span>Transporte 18%</li>
-            <li><span class="legend-dot dot-serv"></span>Serviços 16%</li>
-            <li><span class="legend-dot dot-other"></span>Outros 13%</li>
-          </ul>
+          <ul class="donut-legend" id="donut-legend"></ul>
+          <div class="chart-empty">Sem despesas no período</div>
         </div>
       </article>
 
@@ -161,27 +157,28 @@
           </div>
         </div>
         <div class="chart-canvas bars">
-          <div class="bar-row">
+          <div class="bar-row" data-status="pago">
             <span class="bar-label">Pagas</span>
             <div class="bar-track">
-              <div class="bar-fill bar-paid" style="width: 64%"></div>
+              <div class="bar-fill bar-paid" data-bar="pago" style="width: 0%"></div>
             </div>
-            <span class="bar-value">R$ 5.540</span>
+            <span class="bar-value" data-bar-value="pago">R$ 0,00</span>
           </div>
-          <div class="bar-row">
+          <div class="bar-row" data-status="em_andamento">
             <span class="bar-label">Em andamento</span>
             <div class="bar-track">
-              <div class="bar-fill bar-open" style="width: 22%"></div>
+              <div class="bar-fill bar-open" data-bar="em_andamento" style="width: 0%"></div>
             </div>
-            <span class="bar-value">R$ 1.900</span>
+            <span class="bar-value" data-bar-value="em_andamento">R$ 0,00</span>
           </div>
-          <div class="bar-row">
+          <div class="bar-row" data-status="nao_pago">
             <span class="bar-label">Não pagas</span>
             <div class="bar-track">
-              <div class="bar-fill bar-late" style="width: 14%"></div>
+              <div class="bar-fill bar-late" data-bar="nao_pago" style="width: 0%"></div>
             </div>
-            <span class="bar-value">R$ 1.200</span>
+            <span class="bar-value" data-bar-value="nao_pago">R$ 0,00</span>
           </div>
+          <div class="chart-empty">Sem despesas no período</div>
         </div>
       </article>
     </section>
@@ -189,33 +186,29 @@
     <section class="insights-grid">
       <article class="panel insight-card">
         <h3>Alertas do mês</h3>
-        <ul class="insight-list">
-          <li>3 despesas vencem nos próximos 7 dias.</li>
-          <li>Assinatura de streaming 18% acima da média.</li>
-          <li>Saldo projetado abaixo do alvo de R$ 2.000.</li>
-        </ul>
+        <ul class="insight-list" id="chart-alerts"></ul>
       </article>
       <article class="panel insight-card">
         <h3>Metas e projeções</h3>
         <div class="progress">
           <div class="progress-head">
             <span>Meta de economia</span>
-            <span>R$ 1.500 / R$ 2.000</span>
+            <span id="goal-savings-label">R$ 0,00 / R$ 0,00</span>
           </div>
           <div class="progress-track">
-            <div class="progress-fill" style="width: 75%"></div>
+            <div class="progress-fill" id="goal-savings-bar" style="width: 0%"></div>
           </div>
-          <p class="insight-muted">Ritmo atual: 6 dias para atingir a meta.</p>
+          <p class="insight-muted" id="goal-savings-meta">Sem dados para estimar a meta.</p>
         </div>
         <div class="progress">
           <div class="progress-head">
             <span>Limite de despesas</span>
-            <span>R$ 8.640 / R$ 10.000</span>
+            <span id="goal-expenses-label">R$ 0,00 / R$ 0,00</span>
           </div>
           <div class="progress-track">
-            <div class="progress-fill warning" style="width: 86%"></div>
+            <div class="progress-fill warning" id="goal-expenses-bar" style="width: 0%"></div>
           </div>
-          <p class="insight-muted">Atenção com categorias variáveis.</p>
+          <p class="insight-muted" id="goal-expenses-meta">Sem dados para definir o limite.</p>
         </div>
       </article>
       <article class="panel insight-card">
@@ -228,4 +221,8 @@
       </article>
     </section>
   </div>
+{% endblock %}
+
+{% block scripts %}
+  <script src="/static/js/pages/charts.js"></script>
 {% endblock %}

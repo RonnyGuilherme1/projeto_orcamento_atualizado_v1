@@ -789,7 +789,7 @@ body.app-body .entries-page .form-grid{
 body.app-body .entries-page .form-grid .field{
   gap: 6px;
   min-width: 0;
-  grid-column: span 4;
+  grid-column: span 3;
   display: grid;
 }
 
@@ -802,15 +802,19 @@ body.app-body .entries-page .span-all{
 }
 
 body.app-body .entries-page .field-date{
-  grid-column: span 4;
+  grid-column: span 3;
 }
 
 body.app-body .entries-page .field-tipo{
-  grid-column: span 4;
+  grid-column: span 3;
+}
+
+body.app-body .entries-page .field-categoria{
+  grid-column: span 3;
 }
 
 body.app-body .entries-page .field-status{
-  grid-column: span 4;
+  grid-column: span 3;
 }
 
 body.app-body .entries-page .field-descricao{
@@ -871,10 +875,10 @@ body.sidebar-open .history-grid{
 }
 
 body.app-body .lista-header, body.app-body .linha{
-  grid-template-columns: 110px 1fr 120px 120px 110px;
+  grid-template-columns: 110px 1fr 140px 120px 120px 110px;
   gap: 12px;
   align-items: center;
-  min-width: 640px;
+  min-width: 760px;
   display: grid;
 }
 
@@ -905,11 +909,53 @@ body.app-body .linha{
   padding: 12px;
 }
 
+body.app-body .linha.empty{
+  grid-template-columns: 1fr;
+}
+
 body.app-body .linha span{
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   min-width: 0;
+}
+
+body.app-body .categoria-chip{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
+  font-size: 11px;
+  font-weight: 900;
+  color: rgba(255, 255, 255, 0.86);
+}
+
+body.app-body .categoria-chip[data-category="moradia"]{
+  border-color: rgba(76, 175, 80, 0.32);
+  background: rgba(76, 175, 80, 0.12);
+}
+
+body.app-body .categoria-chip[data-category="mercado"]{
+  border-color: rgba(110, 209, 255, 0.32);
+  background: rgba(110, 209, 255, 0.12);
+}
+
+body.app-body .categoria-chip[data-category="transporte"]{
+  border-color: rgba(245, 166, 35, 0.35);
+  background: rgba(245, 166, 35, 0.12);
+}
+
+body.app-body .categoria-chip[data-category="servicos"]{
+  border-color: rgba(255, 140, 157, 0.38);
+  background: rgba(255, 140, 157, 0.12);
+}
+
+body.app-body .categoria-chip[data-category="outros"]{
+  border-color: rgba(158, 228, 159, 0.3);
+  background: rgba(158, 228, 159, 0.12);
 }
 
 body.app-body .linha .acoes{
