@@ -118,15 +118,15 @@
               </div>
             </div>
 
-            <p class="account-muted" style="margin-top:10px;">
-              {% if sub.status == 'ACTIVE' %}
-                Sua assinatura esta ativa. Voce pode renovar a qualquer momento.
-              {% elif sub.status == 'OVERDUE' %}
+            {% if sub.status == 'OVERDUE' %}
+              <p class="account-muted" style="margin-top:10px;">
                 Seu pagamento venceu. O acesso fica bloqueado ate a confirmacao do pagamento.
-              {% else %}
+              </p>
+            {% elif sub.status != 'ACTIVE' %}
+              <p class="account-muted" style="margin-top:10px;">
                 Nenhum pagamento ativo. Conclua o pagamento para liberar o acesso.
-              {% endif %}
-            </p>
+              </p>
+            {% endif %}
 
             <div class="account-actions">
               <a class="btn btn-ghost" href="/app/upgrade">Trocar plano</a>
@@ -187,11 +187,82 @@
                 <div class="account-value">{{ current_user.username }}</div>
               </div>
               <div class="account-field">
-                <label class="account-label">E-mail</label>
-                <div class="account-value">{{ current_user.email or '—' }}</div>
+                <label class="account-label">E-mail atual</label>
+                <div class="account-value">{{ current_user.email or '-' }}</div>
               </div>
             </div>
-            <p class="account-muted">Se você quiser, eu preparo o fluxo de alteração de senha e e-mail com validações e confirmação.</p>
+
+            <div class="account-actions" style="margin-top:12px;">
+              <button class="btn" type="button" data-panel-target="email">Alterar email</button>
+              <button class="btn btn-ghost" type="button" data-panel-target="password">Alterar senha</button>
+            </div>
+
+            <form method="post" action="{{ url_for('account_access_save') }}" class="account-form hidden" data-panel="email" style="margin-top:12px;">
+              <div class="account-form-grid">
+                <div class="account-field">
+                  <label class="account-label">Novo e-mail</label>
+                  <input class="account-input" name="new_email" type="email" placeholder="novo@email.com" autocomplete="email" required>
+                </div>
+                <div class="account-field">
+                  <label class="account-label">Senha atual</label>
+                  <input class="account-input" name="current_password" type="password" autocomplete="current-password" required>
+                </div>
+              </div>
+              <div class="account-actions">
+                <button class="btn" type="submit">Salvar e-mail</button>
+              </div>
+            </form>
+
+            <form method="post" action="{{ url_for('account_access_save') }}" class="account-form hidden" data-panel="password" style="margin-top:12px;">
+              <div class="account-form-grid">
+                <div class="account-field">
+                  <label class="account-label">Senha atual</label>
+                  <input class="account-input" name="current_password" type="password" autocomplete="current-password" required>
+                </div>
+                <div class="account-field">
+                  <label class="account-label">Nova senha</label>
+                  <input class="account-input" name="new_password" type="password" autocomplete="new-password" required>
+                </div>
+                <div class="account-field">
+                  <label class="account-label">Confirmar nova senha</label>
+                  <input class="account-input" name="confirm_password" type="password" autocomplete="new-password" required>
+                </div>
+              </div>
+              <div class="account-actions">
+                <button class="btn" type="submit">Salvar senha</button>
+              </div>
+            </form>
+
+            <script>
+              (function () {
+                const buttons = document.querySelectorAll("[data-panel-target]");
+                const panels = document.querySelectorAll("[data-panel]");
+                function togglePanel(name) {
+                  let opened = false;
+                  panels.forEach((panel) => {
+                    const isTarget = panel.getAttribute("data-panel") === name;
+                    if (isTarget && panel.classList.contains("hidden")) {
+                      panel.classList.remove("hidden");
+                      opened = true;
+                    } else if (isTarget) {
+                      panel.classList.add("hidden");
+                    } else {
+                      panel.classList.add("hidden");
+                    }
+                  });
+                  if (opened) {
+                    const focusField = document.querySelector('[data-panel="' + name + '"] input');
+                    if (focusField) {
+                      focusField.focus();
+                    }
+                  }
+                }
+
+                buttons.forEach((btn) => {
+                  btn.addEventListener("click", () => togglePanel(btn.getAttribute("data-panel-target")));
+                });
+              })();
+            </script>
           </div>
 
         {% elif section == 'profile' %}
@@ -237,10 +308,18 @@
             <div class="account-card-h">
               <h3>Preferências de notificação</h3>
             </div>
-            <p class="account-muted">Base pronta para adicionar preferências (e-mail, vencimentos, alertas). Pode ser conectado a jobs/cron depois.</p>
-            <div class="account-actions">
-              <button class="btn" disabled>Salvar</button>
-            </div>
+            <form method="post" action="/app/account/notifications" class="account-form">
+              <div class="account-field">
+                <label class="account-label">Alertas de vencimento</label>
+                <label class="account-toggle">
+                  <input type="checkbox" name="due_alert" value="1" {% if current_user.notify_due_alert %}checked{% endif %}>
+                  <span>Exibir lembrete quando faltarem 5 dias do vencimento do plano.</span>
+                </label>
+              </div>
+              <div class="account-actions">
+                <button class="btn" type="submit">Salvar</button>
+              </div>
+            </form>
           </div>
         {% endif %}
       </div>

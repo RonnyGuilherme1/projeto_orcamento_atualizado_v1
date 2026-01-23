@@ -16,6 +16,16 @@
     <div class="app-content">
       {% include "partials/app_mobilebar.html" %}
 
+      {% if subscription_notice %}
+        <div class="app-notice" role="status" aria-live="polite">
+          <div class="app-notice-text">
+            <strong>Seu plano vence em {{ subscription_notice.days_left }} dias.</strong>
+            <span>Valido ate {{ subscription_notice.expires_at }}. Renove para manter o acesso.</span>
+          </div>
+          <a class="btn btn-ghost app-notice-cta" href="/app/account?section=billing">Ver assinatura</a>
+        </div>
+      {% endif %}
+
       <main class="app-main">
         {% include "partials/flash.html" %}
         {% block content %}{% endblock %}

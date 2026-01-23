@@ -974,6 +974,20 @@ body.app-body .panel-actions{
   box-shadow: 0 0 0 3px rgba(70, 184, 94, 0.14);
 }
 
+.account-toggle{
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.account-toggle input{
+  margin-top: 2px;
+  width: 16px;
+  height: 16px;
+}
+
 @media (max-width: 960px){
 .account-grid{
   grid-template-columns: 1fr;

@@ -22,6 +22,7 @@ class User(UserMixin, db.Model):
     plan_updated_at = db.Column(db.DateTime, nullable=True)
     plan_expires_at = db.Column(db.DateTime, nullable=True)
     plan_last_paid_at = db.Column(db.DateTime, nullable=True)
+    notify_due_alert = db.Column(db.Boolean, default=True, nullable=False)
 
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
 

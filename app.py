@@ -72,11 +72,29 @@ def inject_plan_helpers():
         return user_has_feature(current_user, feature)
 
     card_enabled = bool(app.config.get("ABACATEPAY_CARD_ENABLED"))
+    subscription_notice = None
+    if current_user.is_authenticated:
+        sub = subscription_context(current_user)
+        days_left = sub.get("days_left")
+        notify = getattr(current_user, "notify_due_alert", True)
+        if (
+            notify
+            and sub.get("status") == "ACTIVE"
+            and isinstance(days_left, int)
+            and 0 < days_left <= 5
+        ):
+            plan_name = PLANS.get(current_user.plan, PLANS["basic"])["name"]
+            subscription_notice = {
+                "days_left": days_left,
+                "expires_at": sub.get("expires_at_display"),
+                "plan_name": plan_name,
+            }
 
     return {
         "PLANS": PLANS,
         "has_feature": has_feature,
         "abacatepay_card_enabled": card_enabled,
+        "subscription_notice": subscription_notice,
     }
 
 
@@ -90,6 +108,8 @@ def enforce_subscription():
     allowed_endpoints = {
         "account_page",
         "account_profile_save",
+        "account_access_save",
+        "account_notifications_save",
         "analytics.upgrade",
         "analytics.upgrade_checkout_page",
         "analytics.upgrade_checkout_start",
@@ -541,6 +561,73 @@ def account_profile_save():
     db.session.commit()
     flash("Dados pessoais atualizados.", "success")
     return redirect(url_for("account_page", section="profile"))
+
+
+@app.post("/app/account/access")
+@login_required
+def account_access_save():
+    """Atualiza e-mail e/ou senha do usuario."""
+    if not current_user.is_verified:
+        return redirect(url_for("auth.verify_pending"))
+
+    new_email = (request.form.get("new_email") or "").strip().lower()
+    current_password = request.form.get("current_password") or ""
+    new_password = request.form.get("new_password") or ""
+    confirm_password = request.form.get("confirm_password") or ""
+
+    if not current_password or not current_user.check_password(current_password):
+        flash("Senha atual invalida.", "error")
+        return redirect(url_for("account_page", section="access"))
+
+    errors = []
+    changes = []
+
+    if new_email:
+        if new_email == (current_user.email or "").lower():
+            new_email = ""
+        elif not re.match(r"^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$", new_email):
+            errors.append("Informe um e-mail valido.")
+        elif User.query.filter(User.email == new_email, User.id != current_user.id).first():
+            errors.append("Esse e-mail ja esta em uso.")
+        else:
+            current_user.email = new_email
+            changes.append("email")
+
+    if new_password or confirm_password:
+        if new_password != confirm_password:
+            errors.append("As senhas nao conferem.")
+        elif len(new_password) < 6:
+            errors.append("A nova senha precisa ter ao menos 6 caracteres.")
+        else:
+            current_user.set_password(new_password)
+            changes.append("password")
+
+    if errors:
+        for e in errors:
+            flash(e, "error")
+        return redirect(url_for("account_page", section="access"))
+
+    if not changes:
+        flash("Nenhuma alteracao para salvar.", "info")
+        return redirect(url_for("account_page", section="access"))
+
+    db.session.commit()
+    flash("Dados de acesso atualizados.", "success")
+    return redirect(url_for("account_page", section="access"))
+
+
+@app.post("/app/account/notifications")
+@login_required
+def account_notifications_save():
+    """Salva preferencia de alerta de vencimento."""
+    if not current_user.is_verified:
+        return redirect(url_for("auth.verify_pending"))
+
+    due_alert = bool(request.form.get("due_alert"))
+    current_user.notify_due_alert = due_alert
+    db.session.commit()
+    flash("Preferencias atualizadas.", "success")
+    return redirect(url_for("account_page", section="notifications"))
 
 
 @app.post("/app/billing/renew")
