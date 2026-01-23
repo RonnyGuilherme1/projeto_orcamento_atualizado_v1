@@ -147,7 +147,7 @@
             <div class="account-card-h">
               <h3>Historico de pagamentos</h3>
             </div>
-            {% if billing_orders %}
+            {% if billing_history %}
               <div class="account-history">
                 <div class="history-row history-head">
                   <div>Data</div>
@@ -155,19 +155,19 @@
                   <div>Status</div>
                   <div>Valor</div>
                 </div>
-                {% for order in billing_orders %}
-                  {% set order_plan = PLANS.get(order.plan, PLANS['basic']) %}
+                {% for item in billing_history %}
+                  {% set item_status_label = 'Pago' if item.status == 'PAID' else 'Pendente' if item.status == 'PENDING' else item.status %}
                   <div class="history-row">
+                    <div>{{ item.date }}</div>
+                    <div>{{ item.plan }}</div>
+                    <div class="history-status history-{{ item.status|lower }}">{{ item_status_label }}</div>
                     <div>
-                      {% if order.paid_at %}
-                        {{ order.paid_at.strftime('%d/%m/%Y') }}
+                      {% if item.amount is not none %}
+                        R$ {{ '%.2f'|format(item.amount) }}
                       {% else %}
-                        {{ order.created_at.strftime('%d/%m/%Y') if order.created_at else '-' }}
+                        -
                       {% endif %}
                     </div>
-                    <div>{{ order_plan['name'] }}</div>
-                    <div class="history-status history-{{ order.status|lower }}">{{ order.status }}</div>
-                    <div>R$ {{ '%.2f'|format(order_plan['price_month']) }}</div>
                   </div>
                 {% endfor %}
               </div>

@@ -1,4 +1,6 @@
 import re
+from datetime import datetime
+from urllib.parse import urlparse, parse_qs
 
 from flask import Flask, render_template, redirect, url_for, request, jsonify, flash
 from flask_login import LoginManager, login_required, current_user
@@ -22,7 +24,7 @@ from routes.analytics_routes import analytics_bp
 from services.plans import PLANS, is_valid_plan
 from services.feature_gate import user_has_feature
 
-from services.abacatepay import create_plan_billing, get_billing_status, AbacatePayError
+from services.abacatepay import create_plan_billing, get_billing_status, list_billings, AbacatePayError
 from services.checkout_store import (
     create_order,
     get_order_by_token,
@@ -125,6 +127,162 @@ def _format_phone(raw: str) -> str:
     if len(d) == 11:
         return f"({d[0:2]}) {d[2:7]}-{d[7:11]}"
     return ""
+
+
+def _normalize_email(value: str | None) -> str:
+    return (value or "").strip().lower()
+
+
+def _format_date_display(value) -> str:
+    if not value:
+        return "-"
+    if isinstance(value, datetime):
+        return value.strftime("%d/%m/%Y")
+    text = str(value)
+    date_part = text[:10]
+    if len(date_part) == 10 and date_part[4] == "-":
+        year, month, day = date_part.split("-")
+        return f"{day}/{month}/{year}"
+    return text
+
+
+def _parse_datetime(value) -> datetime | None:
+    if not value:
+        return None
+    if isinstance(value, datetime):
+        return value
+    text = str(value)
+    try:
+        return datetime.fromisoformat(text.replace("Z", "+00:00")).replace(tzinfo=None)
+    except Exception:
+        return None
+
+
+def _extract_token_from_url(value: str | None) -> str:
+    if not value:
+        return ""
+    try:
+        parsed = urlparse(str(value))
+        token = (parse_qs(parsed.query).get("token") or [""])[0]
+        return str(token)
+    except Exception:
+        return ""
+
+
+def _amount_from_cents(value) -> float | None:
+    try:
+        return round(float(value) / 100, 2)
+    except Exception:
+        return None
+
+
+def _build_billing_history(user, orders, include_remote: bool = False) -> list[dict]:
+    items: list[dict] = []
+    keys: set[str] = set()
+
+    for order in orders or []:
+        plan = PLANS.get(order.plan, PLANS["basic"])
+        key = (order.billing_id or order.token or "").strip()
+        if key:
+            keys.add(key)
+        sort_dt = order.paid_at or order.created_at
+        items.append(
+            {
+                "date": _format_date_display(sort_dt),
+                "plan": plan["name"],
+                "status": (order.status or "").upper() or "PENDING",
+                "amount": plan.get("price_month"),
+                "_sort": sort_dt or datetime.min,
+                "_key": key,
+            }
+        )
+
+    if include_remote:
+        try:
+            billings = list_billings()
+        except AbacatePayError:
+            billings = []
+
+        user_email = _normalize_email(getattr(user, "email", None))
+        user_tax = _only_digits(getattr(user, "tax_id", None))
+
+        for billing in billings:
+            if not isinstance(billing, dict):
+                continue
+            meta = billing.get("metadata") or {}
+            cust_meta = (billing.get("customer") or {}).get("metadata") or {}
+            external_id = billing.get("externalId") or billing.get("external_id") or ""
+            completion_url = (
+                meta.get("completionUrl")
+                or meta.get("completion_url")
+                or cust_meta.get("completionUrl")
+                or cust_meta.get("completion_url")
+            )
+            token_from_url = _extract_token_from_url(completion_url)
+            order_token = (
+                meta.get("orderToken")
+                or cust_meta.get("orderToken")
+                or token_from_url
+                or external_id
+            )
+            key = str(billing.get("id") or billing.get("billingId") or billing.get("billing_id") or order_token or "").strip()
+            if key and key in keys:
+                continue
+
+            customer = billing.get("customer") or {}
+            email = _normalize_email(cust_meta.get("email") or customer.get("email") or meta.get("email"))
+            tax_id = _only_digits(cust_meta.get("taxId") or customer.get("taxId") or meta.get("taxId"))
+            if not (
+                (user_email and email and user_email == email)
+                or (user_tax and tax_id and user_tax == tax_id)
+                or (order_token and order_token in keys)
+            ):
+                continue
+
+            plan_key = meta.get("plan") or cust_meta.get("plan") or ""
+            if not plan_key:
+                products = billing.get("products") or []
+                if products:
+                    ext = products[0].get("externalId") or products[0].get("external_id") or ""
+                    if isinstance(ext, str) and ext.startswith("plan:"):
+                        plan_key = ext.split("plan:", 1)[-1]
+            plan_def = PLANS.get(str(plan_key).strip().lower() or "basic", PLANS["basic"])
+            status = str(billing.get("status") or "").upper() or "PENDING"
+            amount = _amount_from_cents(
+                billing.get("amount")
+                or billing.get("amountInCents")
+                or billing.get("amount_in_cents")
+            )
+            if amount is None:
+                amount = plan_def.get("price_month")
+
+            sort_dt = _parse_datetime(
+                billing.get("paidAt")
+                or billing.get("paid_at")
+                or billing.get("createdAt")
+                or billing.get("created_at")
+                or billing.get("updatedAt")
+                or billing.get("updated_at")
+            )
+
+            items.append(
+                {
+                    "date": _format_date_display(sort_dt),
+                    "plan": plan_def["name"],
+                    "status": status,
+                    "amount": amount,
+                    "_sort": sort_dt or datetime.min,
+                    "_key": key,
+                }
+            )
+            if key:
+                keys.add(key)
+
+    items.sort(key=lambda item: item.get("_sort", datetime.min), reverse=True)
+    for item in items:
+        item.pop("_sort", None)
+        item.pop("_key", None)
+    return items
 
 
 def _payment_warning_message(raw: str) -> str:
@@ -332,6 +490,9 @@ def account_page():
 
     profile = UserProfile.query.filter_by(user_id=current_user.id).first()
     billing_orders = list_orders_by_user(current_user.id, limit=10)
+    billing_history = _build_billing_history(
+        current_user, billing_orders, include_remote=(section == "billing")
+    )
 
     subscription = subscription_context(current_user)
 
@@ -340,7 +501,7 @@ def account_page():
         section=section,
         profile=profile,
         subscription=subscription,
-        billing_orders=billing_orders,
+        billing_history=billing_history,
     )
 
 
@@ -453,6 +614,7 @@ def billing_return():
         return redirect(url_for("account_page", section="billing"))
 
     billing_orders = list_orders_by_user(current_user.id, limit=10)
+    billing_history = _build_billing_history(current_user, billing_orders, include_remote=True)
     status_url = url_for(
         "analytics.upgrade_status",
         token=order.token,
@@ -463,7 +625,7 @@ def billing_return():
         order=order,
         back_url=url_for("account_page", section="billing"),
         status_url=status_url,
-        billing_orders=billing_orders,
+        billing_history=billing_history,
     )
 
 

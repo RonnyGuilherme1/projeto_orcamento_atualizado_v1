@@ -301,3 +301,22 @@ def get_billing_status(billing_id: str | None, external_id: str | None = None) -
     if last_error:
         raise AbacatePayError(f"Erro AbacatePay: {last_error}")
     return None
+
+
+def list_billings() -> list[dict]:
+    headers = {"Authorization": f"Bearer {_api_key()}", "Content-Type": "application/json"}
+    url = f"{_api_base()}/v1/billing/list"
+    try:
+        resp = requests.get(url, headers=headers, timeout=20)
+        body = resp.json()
+    except Exception as exc:
+        raise AbacatePayError(f"Erro AbacatePay: {exc}")
+
+    if (not resp.ok) or (body.get("success") is False):
+        err = body.get("error") or body.get("message") or f"HTTP {resp.status_code}"
+        raise AbacatePayError(f"Erro AbacatePay: {err}")
+
+    data = body.get("data") or []
+    if not isinstance(data, list):
+        return []
+    return [item for item in data if isinstance(item, dict)]

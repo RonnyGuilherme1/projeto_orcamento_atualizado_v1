@@ -9,6 +9,7 @@
   {% set plan = PLANS.get(order.plan, PLANS['basic']) %}
   {% set back_url = back_url or url_for('analytics.upgrade') %}
   {% set status_url = status_url or url_for('analytics.upgrade_status', token=order.token) %}
+  {% set status_label = 'Pago' if order.status == 'PAID' else 'Pendente' if order.status == 'PENDING' else order.status %}
 
   <div class="app-card">
     <h2>Estamos confirmando o seu pagamento</h2>
@@ -23,7 +24,7 @@
         <div class="status-item">
           <span class="status-label">Status</span>
           <span id="status-text" class="status-pill {% if order.status == 'PAID' %}status-paid{% else %}status-pending{% endif %}">
-            {{ order.status }}
+            {{ status_label }}
           </span>
         </div>
       </div>
@@ -42,26 +43,26 @@
 
   <div class="app-card upgrade-history">
     <h3>Historico de pagamentos</h3>
-    {% if billing_orders %}
+    {% if billing_history %}
       <div class="history-row history-head">
         <div>Data</div>
         <div>Plano</div>
         <div>Status</div>
         <div>Valor</div>
       </div>
-      {% for order in billing_orders %}
-        {% set order_plan = PLANS.get(order.plan, PLANS['basic']) %}
+      {% for item in billing_history %}
+        {% set item_status_label = 'Pago' if item.status == 'PAID' else 'Pendente' if item.status == 'PENDING' else item.status %}
         <div class="history-row">
+          <div>{{ item.date }}</div>
+          <div>{{ item.plan }}</div>
+          <div class="history-status history-{{ item.status|lower }}">{{ item_status_label }}</div>
           <div>
-            {% if order.paid_at %}
-              {{ order.paid_at.strftime('%d/%m/%Y') }}
+            {% if item.amount is not none %}
+              R$ {{ '%.2f'|format(item.amount) }}
             {% else %}
-              {{ order.created_at.strftime('%d/%m/%Y') if order.created_at else '-' }}
+              -
             {% endif %}
           </div>
-          <div>{{ order_plan['name'] }}</div>
-          <div class="history-status history-{{ order.status|lower }}">{{ order.status }}</div>
-          <div>R$ {{ '%.2f'|format(order_plan['price_month']) }}</div>
         </div>
       {% endfor %}
     {% else %}
@@ -78,6 +79,13 @@
 
       const statusUrl = {{ status_url|tojson }};
 
+      function statusLabel(rawStatus) {
+        const status = String(rawStatus || '').toUpperCase();
+        if (status === 'PAID') return 'Pago';
+        if (status === 'PENDING') return 'Pendente';
+        return rawStatus || '';
+      }
+
       async function refreshStatus() {
         if (!token || !refreshBtn) return;
         refreshBtn.disabled = true;
@@ -89,7 +97,7 @@
           if (!data.ok) return;
 
           if (data.status && statusText) {
-            statusText.textContent = data.status;
+            statusText.textContent = statusLabel(data.status);
             statusText.classList.toggle('status-paid', data.status === 'PAID');
             statusText.classList.toggle('status-pending', data.status !== 'PAID');
           }

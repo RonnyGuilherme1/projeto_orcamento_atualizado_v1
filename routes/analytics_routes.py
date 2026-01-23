@@ -27,6 +27,23 @@ def _payment_warning_message(raw: str) -> str:
     return "Nao foi possivel validar o pagamento agora. Tente novamente em alguns minutos."
 
 
+def _history_from_orders(orders):
+    items = []
+    for order in orders or []:
+        plan = PLANS.get(order.plan, PLANS["basic"])
+        when = order.paid_at or order.created_at
+        date = when.strftime("%d/%m/%Y") if when else "-"
+        items.append(
+            {
+                "date": date,
+                "plan": plan["name"],
+                "status": (order.status or "").upper() or "PENDING",
+                "amount": plan.get("price_month"),
+            }
+        )
+    return items
+
+
 @analytics_bp.get("/app/upgrade")
 @login_required
 def upgrade():
@@ -123,7 +140,8 @@ def upgrade_return():
 
     flash("Pagamento em processamento. Se você já pagou, aguarde alguns instantes e atualize a página.", "info")
     billing_orders = list_orders_by_user(current_user.id, limit=10)
-    return render_template("upgrade_return.html", order=order, billing_orders=billing_orders)
+    billing_history = _history_from_orders(billing_orders)
+    return render_template("upgrade_return.html", order=order, billing_history=billing_history)
 
 
 @analytics_bp.get("/app/upgrade/status")
