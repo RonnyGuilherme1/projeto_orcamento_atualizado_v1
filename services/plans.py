@@ -15,10 +15,11 @@ PLANS: dict[str, dict] = {
     "basic": {
         "name": "Básico",
         "price_month": 14.90,
+        "tagline": "quem precisa do essencial no dia a dia",
         "highlights": [
-            "Controle de receitas e despesas",
-            "Resumo mensal e saldo",
-            "Categorias básicas",
+            "Dashboard com visão geral do mês",
+            "Resumo mensal de entradas e saídas",
+            "Lançamentos de receitas e despesas",
         ],
         "features": {
             # básico não inclui analytics avançado
@@ -28,28 +29,26 @@ PLANS: dict[str, dict] = {
         "name": "Plus",
         "price_month": 29.90,
         "popular": True,
+        "tagline": "análises visuais e comparações",
         "highlights": [
             "Gráficos mensais e anuais",
             "Comparação de períodos",
             "Filtros avançados no histórico",
-            "Projeção de saldo",
-            "Relatórios simples",
         ],
         "features": {
             "charts",
             "compare",
             "filters",
-            "projection",
-            "reports",
         },
     },
     "pro": {
         "name": "Pro",
         "price_month": 49.90,
+        "tagline": "quem precisa de projeções e relatórios",
         "highlights": [
             "Tudo do Plus",
-            "Base para recursos avançados (exportação, múltiplas contas)",
-            "Prioridade em melhorias",
+            "Projeção de saldo",
+            "Relatórios simples",
         ],
         "features": {
             "charts",
