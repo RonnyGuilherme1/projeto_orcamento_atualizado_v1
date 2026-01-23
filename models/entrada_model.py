@@ -77,6 +77,18 @@ def _migrate_sqlite_schema(conn) -> None:
     if not _column_exists(conn, "users", "plan_updated_at"):
         conn.execute(text("ALTER TABLE users ADD COLUMN plan_updated_at DATETIME"))
 
+    if not _column_exists(conn, "users", "plan_expires_at"):
+        conn.execute(text("ALTER TABLE users ADD COLUMN plan_expires_at DATETIME"))
+
+    if not _column_exists(conn, "users", "plan_last_paid_at"):
+        conn.execute(text("ALTER TABLE users ADD COLUMN plan_last_paid_at DATETIME"))
+
+    if not _column_exists(conn, "users", "notify_due_alert"):
+        conn.execute(text("ALTER TABLE users ADD COLUMN notify_due_alert BOOLEAN"))
+        conn.execute(
+            text("UPDATE users SET notify_due_alert = 1 WHERE notify_due_alert IS NULL")
+        )
+
     # ---------------- users (dados pessoais / checkout) ----------------
     if not _column_exists(conn, "users", "full_name"):
         conn.execute(text("ALTER TABLE users ADD COLUMN full_name VARCHAR(255)"))
@@ -165,6 +177,30 @@ def _migrate_postgres_schema(conn) -> None:
     if not _column_exists_postgres(conn, "users", "plan_updated_at"):
         conn.execute(
             text("ALTER TABLE public.users ADD COLUMN IF NOT EXISTS plan_updated_at TIMESTAMP")
+        )
+
+    if not _column_exists_postgres(conn, "users", "plan_expires_at"):
+        conn.execute(
+            text("ALTER TABLE public.users ADD COLUMN IF NOT EXISTS plan_expires_at TIMESTAMP")
+        )
+
+    if not _column_exists_postgres(conn, "users", "plan_last_paid_at"):
+        conn.execute(
+            text(
+                "ALTER TABLE public.users ADD COLUMN IF NOT EXISTS plan_last_paid_at TIMESTAMP"
+            )
+        )
+
+    if not _column_exists_postgres(conn, "users", "notify_due_alert"):
+        conn.execute(
+            text(
+                "ALTER TABLE public.users ADD COLUMN IF NOT EXISTS notify_due_alert BOOLEAN"
+            )
+        )
+        conn.execute(
+            text(
+                "UPDATE public.users SET notify_due_alert = TRUE WHERE notify_due_alert IS NULL"
+            )
         )
 
     # ---------------- users (dados pessoais / checkout) ----------------
