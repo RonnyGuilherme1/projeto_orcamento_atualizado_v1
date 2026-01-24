@@ -1125,3 +1125,74 @@ body.app-body .linha .acoes{
 }
 
 }
+
+/* Entries page sizing + width tweaks */
+@media (min-width: 1101px){
+  body.page-entries .app-content{
+    padding: 16px 24px 26px;
+  }
+
+  body.page-entries .page{
+    max-width: 1600px;
+  }
+
+  body.page-entries .panel{
+    padding: 14px;
+  }
+
+  body.page-entries .panel-title{
+    font-size: 16px;
+  }
+
+  body.page-entries .panel-subtitle{
+    font-size: 12px;
+  }
+
+  body.page-entries .field label,
+  body.page-entries .field .field-label{
+    font-size: 11px;
+  }
+
+  body.page-entries .control{
+    height: 40px;
+    padding: 8px 10px;
+    font-size: 13px;
+  }
+
+  body.page-entries .btn-primary,
+  body.page-entries .btn-secondary{
+    height: 42px;
+    font-size: 13px;
+  }
+
+  body.page-entries .btn-icon{
+    height: 32px;
+    width: 32px;
+  }
+
+  body.page-entries .panel-historico{
+    --lista-gap: 10px;
+  }
+
+  body.page-entries .panel-receitas{
+    --lista-cols: minmax(80px, 90px) minmax(0, 1.5fr) minmax(90px, 1fr) minmax(90px, 120px) minmax(70px, 90px);
+  }
+
+  body.page-entries .panel-despesas{
+    --lista-cols: minmax(80px, 90px) minmax(0, 1.3fr) minmax(90px, 1fr) minmax(90px, 120px) minmax(110px, 130px) minmax(70px, 90px);
+  }
+
+  body.page-entries .lista-header{
+    font-size: 10px;
+    padding: 7px 9px;
+  }
+
+  body.page-entries .linha{
+    padding: 9px;
+  }
+
+  body.page-entries .categoria-chip{
+    font-size: 10px;
+    padding: 3px 7px;
+  }
+}
