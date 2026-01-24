@@ -47,17 +47,17 @@
         <div class="hero-stat">
           <span class="stat-label">Receitas no período</span>
           <strong id="summary-receitas">R$ 0,00</strong>
-          <span class="stat-meta" id="summary-receitas-meta">Sem comparativo</span>
+          <span class="stat-meta" id="summary-receitas-meta">Total do período</span>
         </div>
         <div class="hero-stat">
           <span class="stat-label">Despesas no período</span>
           <strong id="summary-despesas">R$ 0,00</strong>
-          <span class="stat-meta" id="summary-despesas-meta">Sem comparativo</span>
+          <span class="stat-meta" id="summary-despesas-meta">Total do período</span>
         </div>
         <div class="hero-stat">
-          <span class="stat-label">Saldo projetado</span>
+          <span class="stat-label">Saldo do período</span>
           <strong id="summary-saldo">R$ 0,00</strong>
-          <span class="stat-meta" id="summary-saldo-meta">Fechamento estimado</span>
+          <span class="stat-meta" id="summary-saldo-meta">Receitas - despesas</span>
         </div>
         <div class="hero-stat">
           <span class="stat-label">Entradas registradas</span>
@@ -69,7 +69,6 @@
       <div class="hero-notes">
         <span class="note-pill" id="chart-note-updated">Atualizado agora</span>
         <span class="note-pill" id="chart-note-balance">Saldo anterior: R$ 0,00</span>
-        <span class="note-pill" id="chart-note-compare">Comparativo indisponível</span>
       </div>
     </section>
 
@@ -108,6 +107,12 @@
             <circle class="line-point" data-point="expense" cx="0" cy="190" r="4" />
             <circle class="line-point alt" data-point="balance" cx="0" cy="170" r="4" />
           </svg>
+          <div class="chart-guide" id="line-guide" aria-hidden="true"></div>
+          <div class="chart-tooltip" id="line-tooltip" aria-hidden="true">
+            <span class="tooltip-type" id="line-tooltip-type">Receita</span>
+            <strong class="tooltip-value" id="line-tooltip-value">R$ 0,00</strong>
+            <span class="tooltip-date" id="line-tooltip-date">00/00/0000</span>
+          </div>
           <div class="chart-empty">Sem dados no período</div>
         </div>
 
@@ -217,7 +222,7 @@
           <button class="btn" type="button">Revisar categorias</button>
           <button class="btn btn-ghost" type="button">Gerar relatório</button>
         </div>
-        <p class="insight-muted">Personalize os filtros para comparar outros meses.</p>
+        <p class="insight-muted">Personalize os filtros para analisar outros meses.</p>
       </article>
     </section>
   </div>

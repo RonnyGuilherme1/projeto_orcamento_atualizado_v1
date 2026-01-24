@@ -66,12 +66,6 @@ def _last_day_of_month(d: date) -> date:
     return first_next - timedelta(days=1)
 
 
-def _pct_change(current: float, previous: float) -> float | None:
-    if previous <= 0:
-        return None
-    return round(((current - previous) / previous) * 100, 1)
-
-
 def _require_verified_json():
     if not current_user.is_verified:
         return jsonify({"error": "email_not_verified"}), 403
@@ -320,40 +314,7 @@ def charts_data():
     )
 
     saldo_anterior = float(receitas_antes) - float(despesas_pagas_antes)
-    saldo_projetado = saldo_anterior + receitas_total - despesas_total
-
-    if month == 1:
-        prev_month = 12
-        prev_year = year - 1
-    else:
-        prev_month = month - 1
-        prev_year = year
-    prev_start = date(prev_year, prev_month, 1)
-    prev_end = _last_day_of_month(prev_start)
-
-    receitas_prev = (
-        db.session.query(func.coalesce(func.sum(Entrada.valor), 0.0))
-        .filter(
-            Entrada.user_id == current_user.id,
-            Entrada.tipo == "receita",
-            Entrada.data >= prev_start,
-            Entrada.data <= prev_end,
-        )
-        .scalar()
-    )
-    despesas_prev = (
-        db.session.query(func.coalesce(func.sum(Entrada.valor), 0.0))
-        .filter(
-            Entrada.user_id == current_user.id,
-            Entrada.tipo == "despesa",
-            Entrada.data >= prev_start,
-            Entrada.data <= prev_end,
-        )
-        .scalar()
-    )
-
-    receitas_pct = _pct_change(receitas_total, float(receitas_prev))
-    despesas_pct = _pct_change(despesas_total, float(despesas_prev))
+    saldo_projetado = receitas_total - despesas_total
 
     # Serie diaria
     days = (end - start).days + 1
@@ -472,8 +433,6 @@ def charts_data():
         elif receitas_total and saldo_projetado < (receitas_total * 0.1):
             alerts.append("Saldo projetado abaixo de 10% das receitas.")
 
-    compare_label = f"Comparativo com {MESES[prev_month - 1]}/{prev_year}"
-
     return jsonify(
         {
             "period": {
@@ -490,11 +449,6 @@ def charts_data():
                 "entradas": len(entries),
                 "receitas_count": receitas_count,
                 "despesas_count": despesas_count,
-            },
-            "compare": {
-                "label": compare_label,
-                "receitas_pct": receitas_pct,
-                "despesas_pct": despesas_pct,
             },
             "line": {
                 "labels": [str(i + 1).zfill(2) for i in range(days)],

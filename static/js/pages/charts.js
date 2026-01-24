@@ -6,9 +6,7 @@
   const monthSelect = document.getElementById("chart-month");
 
   const summaryReceitas = document.getElementById("summary-receitas");
-  const summaryReceitasMeta = document.getElementById("summary-receitas-meta");
   const summaryDespesas = document.getElementById("summary-despesas");
-  const summaryDespesasMeta = document.getElementById("summary-despesas-meta");
   const summarySaldo = document.getElementById("summary-saldo");
   const summarySaldoMeta = document.getElementById("summary-saldo-meta");
   const summaryCount = document.getElementById("summary-count");
@@ -16,7 +14,6 @@
 
   const noteUpdated = document.getElementById("chart-note-updated");
   const noteBalance = document.getElementById("chart-note-balance");
-  const noteCompare = document.getElementById("chart-note-compare");
 
   const lineCanvas = document.querySelector(".chart-line");
   const donutCanvas = document.querySelector(".donut-wrap");
@@ -30,6 +27,12 @@
   const pointIncome = document.querySelector('[data-point="income"]');
   const pointExpense = document.querySelector('[data-point="expense"]');
   const pointBalance = document.querySelector('[data-point="balance"]');
+  const lineTooltip = document.getElementById("line-tooltip");
+  const lineTooltipType = document.getElementById("line-tooltip-type");
+  const lineTooltipValue = document.getElementById("line-tooltip-value");
+  const lineTooltipDate = document.getElementById("line-tooltip-date");
+  const lineGuide = document.getElementById("line-guide");
+  const lineSvg = lineCanvas ? lineCanvas.querySelector(".chart-svg") : null;
 
   const kpiBestWeek = document.getElementById("kpi-best-week");
   const kpiBestWeekLabel = document.getElementById("kpi-best-week-label");
@@ -90,6 +93,8 @@
     servicos: "var(--cat-serv)",
     outros: "var(--cat-other)"
   };
+
+  let lineState = null;
 
   function initCustomSelect(selectEl) {
     if (!selectEl || selectEl.dataset.customized) return;
@@ -169,14 +174,6 @@
     return num.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
   }
 
-  function fmtPct(value) {
-    if (value === null || typeof value === "undefined") return "Sem comparativo";
-    const num = Number(value) || 0;
-    const sign = num > 0 ? "+" : "";
-    const text = num.toLocaleString("pt-BR", { maximumFractionDigits: 1 });
-    return `${sign}${text}% vs mês anterior`;
-  }
-
   function fmtDateShort(value) {
     if (!value) return "agora";
     if (value.length >= 10) {
@@ -227,6 +224,99 @@
     return { linePath, areaPath, pointAt };
   }
 
+  function formatLineDate(period, labels, idx) {
+    const label = (labels && labels[idx]) ? labels[idx] : String(idx + 1).padStart(2, "0");
+    if (!period || !period.year || !period.month) return label;
+    const month = String(period.month).padStart(2, "0");
+    return `${label}/${month}/${period.year}`;
+  }
+
+  function hideLineHover() {
+    if (lineTooltip) {
+      lineTooltip.classList.remove("is-visible", "is-income", "is-expense", "is-balance", "is-flip");
+    }
+    if (lineGuide) {
+      lineGuide.classList.remove("is-visible");
+    }
+  }
+
+  function updateLineHover(ev) {
+    if (!lineState || !lineSvg || !lineCanvas || !lineTooltip || !lineGuide) return;
+    if (!lineTooltipType || !lineTooltipValue || !lineTooltipDate) return;
+
+    const length = lineState.length;
+    if (!length) {
+      hideLineHover();
+      return;
+    }
+
+    const svgRect = lineSvg.getBoundingClientRect();
+    const canvasRect = lineCanvas.getBoundingClientRect();
+    const relX = ev.clientX - svgRect.left;
+    const relY = ev.clientY - svgRect.top;
+
+    if (relX < 0 || relX > svgRect.width || relY < 0 || relY > svgRect.height) {
+      hideLineHover();
+      return;
+    }
+
+    const idx = length === 1 ? 0 : Math.round((relX / svgRect.width) * (length - 1));
+    const clampedIdx = Math.max(0, Math.min(length - 1, idx));
+    const pointerY = (relY / svgRect.height) * lineState.height;
+    const series = lineState.series;
+    const builder = lineState.builder;
+    if (!builder || !series) {
+      hideLineHover();
+      return;
+    }
+
+    const candidates = [
+      { key: "income", label: "Receita", value: series.receitas[clampedIdx] },
+      { key: "expense", label: "Despesa", value: series.despesas[clampedIdx] },
+      { key: "balance", label: "Saldo", value: series.saldo[clampedIdx] }
+    ];
+
+    let chosen = null;
+    candidates.forEach((item) => {
+      const point = builder.pointAt(clampedIdx, Number(item.value) || 0);
+      const dist = Math.abs(point.y - pointerY);
+      if (!chosen || dist < chosen.dist) {
+        chosen = { ...item, point, dist };
+      }
+    });
+
+    if (!chosen) {
+      hideLineHover();
+      return;
+    }
+
+    const xPos = length === 1 ? (svgRect.width / 2) : (clampedIdx / (length - 1)) * svgRect.width;
+    const left = (svgRect.left - canvasRect.left) + xPos;
+    const top = (svgRect.top - canvasRect.top) + ((chosen.point.y / lineState.height) * svgRect.height);
+
+    lineGuide.style.left = `${left}px`;
+    lineGuide.classList.add("is-visible");
+
+    lineTooltipType.textContent = chosen.label;
+    lineTooltipValue.textContent = fmtBRL(chosen.value);
+    lineTooltipDate.textContent = formatLineDate(lineState.period, lineState.labels, clampedIdx);
+
+    lineTooltip.classList.remove("is-income", "is-expense", "is-balance", "is-flip");
+    lineTooltip.classList.add(`is-${chosen.key}`);
+    if (top < 70) {
+      lineTooltip.classList.add("is-flip");
+    }
+
+    const tooltipWidth = lineTooltip.offsetWidth || 130;
+    const minLeft = tooltipWidth / 2 + 8;
+    const maxLeft = canvasRect.width - tooltipWidth / 2 - 8;
+    const clampedLeft = Math.min(Math.max(left, minLeft), maxLeft);
+
+    lineTooltip.style.left = `${clampedLeft}px`;
+    lineTooltip.style.top = `${top}px`;
+    lineTooltip.classList.add("is-visible");
+  }
+
   function updateLineChart(series) {
     if (!lineIncome || !lineExpense || !lineBalance) return;
     const width = 640;
@@ -254,6 +344,8 @@
       pointBalance?.setAttribute("cx", pBalance.x);
       pointBalance?.setAttribute("cy", pBalance.y);
     }
+
+    return { builder, width, height, padding };
   }
 
   function updateDonut(categories, total) {
@@ -338,42 +430,56 @@
 
   function updateUI(data) {
     const summary = data.summary || {};
-    const compare = data.compare || {};
     const highlights = data.highlights || {};
     const line = data.line || {};
 
     summaryReceitas.textContent = fmtBRL(summary.receitas);
-    summaryReceitasMeta.textContent = fmtPct(compare.receitas_pct);
     summaryDespesas.textContent = fmtBRL(summary.despesas);
-    summaryDespesasMeta.textContent = fmtPct(compare.despesas_pct);
     summarySaldo.textContent = fmtBRL(summary.saldo_projetado);
-    summarySaldoMeta.textContent = summary.saldo_projetado >= 0 ? "Fechamento estimado" : "Saldo negativo";
+    if (summarySaldoMeta) {
+      summarySaldoMeta.textContent = summary.saldo_projetado >= 0 ? "Resultado do período" : "Saldo negativo";
+    }
     summaryCount.textContent = `${summary.entradas || 0} lançamentos`;
     summaryCountMeta.textContent = `${summary.receitas_count || 0} receitas · ${summary.despesas_count || 0} despesas`;
 
     const updatedText = fmtDateShort(data.updated_at);
     noteUpdated.textContent = updatedText === "agora" ? "Atualizado agora" : `Atualizado em ${updatedText}`;
     noteBalance.textContent = `Saldo anterior: ${fmtBRL(summary.saldo_anterior)}`;
-    noteCompare.textContent = (compare.receitas_pct !== null || compare.despesas_pct !== null)
-      ? compare.label
-      : "Comparativo indisponível";
 
     kpiBestWeek.textContent = fmtBRL(highlights.best_week_total);
     kpiBestWeekLabel.textContent = highlights.best_week_label || "-";
     kpiTopExpense.textContent = fmtBRL(highlights.top_expense_total);
     kpiTopExpenseLabel.textContent = highlights.top_expense_label || "-";
     kpiBalance.textContent = `${Number(highlights.equilibrio || 0).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`;
-    kpiBalanceLabel.textContent = "Receitas x despesas";
+    kpiBalanceLabel.textContent = "Despesas / receitas";
 
     const hasData = (summary.entradas || 0) > 0;
     setEmptyState(lineCanvas, !hasData);
-    updateLineChart({
+    const balanceSeries = (line.saldo_acumulado && line.saldo_acumulado.length)
+      ? line.saldo_acumulado
+      : (line.saldo || []);
+    const lineSeries = {
       receitas: line.receitas || [],
       despesas: line.despesas || [],
-      saldo: (line.saldo_acumulado && line.saldo_acumulado.length)
-        ? line.saldo_acumulado
-        : (line.saldo || [])
-    });
+      saldo: balanceSeries
+    };
+    const chartInfo = updateLineChart(lineSeries);
+    if (hasData && chartInfo) {
+      const lineLength = lineSeries.receitas.length || lineSeries.despesas.length || lineSeries.saldo.length;
+      lineState = {
+        series: lineSeries,
+        labels: line.labels || [],
+        period: data.period || null,
+        builder: chartInfo.builder,
+        width: chartInfo.width,
+        height: chartInfo.height,
+        padding: chartInfo.padding,
+        length: lineLength
+      };
+    } else {
+      lineState = null;
+      hideLineHover();
+    }
 
     updateDonut(data.categories || [], Number(summary.despesas || 0));
     updateStatusBars(data.statuses || {}, Number(summary.despesas || 0));
@@ -395,6 +501,8 @@
       setEmptyState(lineCanvas, true);
       setEmptyState(donutCanvas, true);
       setEmptyState(barsCanvas, true);
+      lineState = null;
+      hideLineHover();
     }
   }
 
@@ -413,6 +521,10 @@
 
   yearSelect?.addEventListener("change", loadData);
   monthSelect?.addEventListener("change", loadData);
+  if (lineCanvas) {
+    lineCanvas.addEventListener("mousemove", updateLineHover);
+    lineCanvas.addEventListener("mouseleave", hideLineHover);
+  }
 
   loadData();
 })();
