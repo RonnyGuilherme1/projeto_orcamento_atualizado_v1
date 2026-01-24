@@ -161,7 +161,7 @@
             <p>Pagas, em andamento e não pagas</p>
           </div>
         </div>
-        <div class="chart-canvas bars">
+        <div class="chart-canvas bars" id="status-bars">
           <div class="bar-row" data-status="pago">
             <span class="bar-label">Pagas</span>
             <div class="bar-track">
@@ -186,15 +186,40 @@
           <div class="chart-empty">Sem despesas no período</div>
         </div>
       </article>
-    </section>
 
-    <section class="insights-grid">
-      <article class="panel insight-card">
-        <h3>Alertas do mês</h3>
-        <ul class="insight-list" id="chart-alerts"></ul>
+      <article class="panel chart-card">
+        <div class="chart-head">
+          <div>
+            <h3>Categorias</h3>
+            <p>Distribuição por tipo</p>
+          </div>
+        </div>
+        <div class="chart-canvas bars" id="categories-bars">
+          <div class="chart-empty">Sem despesas no período</div>
+        </div>
       </article>
-      <article class="panel insight-card">
-        <h3>Metas e projeções</h3>
+
+      <article class="panel chart-card goals-card">
+        <div class="chart-head">
+          <div>
+            <h3>Metas</h3>
+            <p>Defina sua meta de economia</p>
+          </div>
+        </div>
+        <div class="goal-controls">
+          <label class="field field-inline">
+            <span class="field-label">Período</span>
+            <select id="goal-period" class="control">
+              <option value="monthly">Mensal</option>
+              <option value="biweekly">Quinzenal</option>
+              <option value="weekly">Semanal</option>
+            </select>
+          </label>
+          <label class="field field-inline">
+            <span class="field-label">Meta personalizada</span>
+            <input id="goal-custom" class="control" type="text" inputmode="decimal" placeholder="R$ 0,00" />
+          </label>
+        </div>
         <div class="progress">
           <div class="progress-head">
             <span>Meta de economia</span>
@@ -205,24 +230,13 @@
           </div>
           <p class="insight-muted" id="goal-savings-meta">Sem dados para estimar a meta.</p>
         </div>
-        <div class="progress">
-          <div class="progress-head">
-            <span>Limite de despesas</span>
-            <span id="goal-expenses-label">R$ 0,00 / R$ 0,00</span>
-          </div>
-          <div class="progress-track">
-            <div class="progress-fill warning" id="goal-expenses-bar" style="width: 0%"></div>
-          </div>
-          <p class="insight-muted" id="goal-expenses-meta">Sem dados para definir o limite.</p>
-        </div>
       </article>
-      <article class="panel insight-card">
-        <h3>Próximas ações</h3>
-        <div class="next-actions">
-          <button class="btn" type="button">Revisar categorias</button>
-          <button class="btn btn-ghost" type="button">Gerar relatório</button>
-        </div>
-        <p class="insight-muted">Personalize os filtros para analisar outros meses.</p>
+    </section>
+
+    <section class="insights-grid">
+      <article class="panel insight-card span-3">
+        <h3>Alertas do mês</h3>
+        <ul class="insight-list" id="chart-alerts"></ul>
       </article>
     </section>
   </div>

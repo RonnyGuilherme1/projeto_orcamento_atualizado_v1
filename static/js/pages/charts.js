@@ -17,7 +17,7 @@
 
   const lineCanvas = document.querySelector(".chart-line");
   const donutCanvas = document.querySelector(".donut-wrap");
-  const barsCanvas = document.querySelector(".bars");
+  const barsCanvas = document.getElementById("status-bars");
 
   const lineIncome = document.querySelector('[data-line="income"]');
   const lineExpense = document.querySelector('[data-line="expense"]');
@@ -51,9 +51,10 @@
   const goalSavingsLabel = document.getElementById("goal-savings-label");
   const goalSavingsBar = document.getElementById("goal-savings-bar");
   const goalSavingsMeta = document.getElementById("goal-savings-meta");
-  const goalExpensesLabel = document.getElementById("goal-expenses-label");
-  const goalExpensesBar = document.getElementById("goal-expenses-bar");
-  const goalExpensesMeta = document.getElementById("goal-expenses-meta");
+  const goalPeriod = document.getElementById("goal-period");
+  const goalCustom = document.getElementById("goal-custom");
+
+  const categoriesBars = document.getElementById("categories-bars");
 
   const statusBars = {
     pago: {
@@ -95,6 +96,7 @@
   };
 
   let lineState = null;
+  let lastData = null;
 
   function initCustomSelect(selectEl) {
     if (!selectEl || selectEl.dataset.customized) return;
@@ -183,6 +185,53 @@
       if (year && month && day) return `${day}/${month}/${year}`;
     }
     return value;
+  }
+
+  function parseBRL(value) {
+    if (!value) return 0;
+    const cleaned = value.replace(/[^\d,.-]/g, "").replace(/\./g, "").replace(",", ".");
+    const num = Number(cleaned);
+    return Number.isFinite(num) ? num : 0;
+  }
+
+  function safeStorageGet(key) {
+    try {
+      return localStorage.getItem(key);
+    } catch (err) {
+      return null;
+    }
+  }
+
+  function safeStorageSet(key, value) {
+    try {
+      localStorage.setItem(key, value);
+    } catch (err) {
+      return;
+    }
+  }
+
+  function getPeriodKey(period) {
+    if (!period || !period.year || !period.month) return "period";
+    const month = String(period.month).padStart(2, "0");
+    return `${period.year}-${month}`;
+  }
+
+  function getPeriodCount(days, periodType) {
+    if (periodType === "weekly") return Math.max(1, Math.ceil(days / 7));
+    if (periodType === "biweekly") return Math.max(1, Math.ceil(days / 15));
+    return 1;
+  }
+
+  function getPeriodLabel(periodType) {
+    if (periodType === "weekly") return "semanal";
+    if (periodType === "biweekly") return "quinzenal";
+    return "mensal";
+  }
+
+  function getDaysInPeriod(period, labels) {
+    if (labels && labels.length) return labels.length;
+    if (!period || !period.year || !period.month) return 30;
+    return new Date(period.year, period.month, 0).getDate();
   }
 
   function setEmptyState(canvas, isEmpty) {
@@ -394,41 +443,116 @@
     });
   }
 
-  function updateInsights(alerts, summary) {
+  function updateCategoryBars(categories, total) {
+    if (!categoriesBars) return;
+    const items = (categories || []).filter(item => Number(item.total) > 0);
+    const hasData = total > 0 && items.length > 0;
+    setEmptyState(categoriesBars, !hasData);
+
+    categoriesBars.querySelectorAll(".category-row").forEach(row => row.remove());
+
+    if (!hasData) return;
+
+    const emptyEl = categoriesBars.querySelector(".chart-empty");
+    items.slice(0, 5).forEach((item) => {
+      const label = CATEGORY_LABELS[item.key] || item.label || "Outros";
+      const value = Number(item.total) || 0;
+      const pct = total ? Math.min(100, (value / total) * 100) : 0;
+      const color = CATEGORY_COLORS[item.key] || "var(--cat-other)";
+      const row = document.createElement("div");
+      row.className = "bar-row category-row";
+      row.innerHTML = `
+        <span class="bar-label">${label}</span>
+        <div class="bar-track">
+          <div class="bar-fill" style="width:${pct.toFixed(1)}%; background:${color};"></div>
+        </div>
+        <span class="bar-value">${fmtBRL(value)}</span>
+      `;
+      if (emptyEl) {
+        categoriesBars.insertBefore(row, emptyEl);
+      } else {
+        categoriesBars.appendChild(row);
+      }
+    });
+  }
+
+  function updateAlerts(alerts) {
     if (!alertsList) return;
     const list = (alerts || []).length ? alerts : ["Sem dados para gerar alertas."];
     alertsList.innerHTML = list.map(item => `<li>${item}</li>`).join("");
+  }
+
+  function getGoalPeriodStorageKey(periodKey) {
+    return `chartsGoalPeriod:${periodKey}`;
+  }
+
+  function getGoalValueStorageKey(periodKey, periodType) {
+    return `chartsGoalValue:${periodKey}:${periodType}`;
+  }
+
+  function readGoalPeriod(periodKey) {
+    return safeStorageGet(getGoalPeriodStorageKey(periodKey)) || "monthly";
+  }
+
+  function writeGoalPeriod(periodKey, value) {
+    safeStorageSet(getGoalPeriodStorageKey(periodKey), value);
+  }
+
+  function readGoalValue(periodKey, periodType) {
+    const raw = safeStorageGet(getGoalValueStorageKey(periodKey, periodType));
+    const num = Number(raw);
+    return Number.isFinite(num) ? num : 0;
+  }
+
+  function writeGoalValue(periodKey, periodType, value) {
+    safeStorageSet(getGoalValueStorageKey(periodKey, periodType), value ? String(value) : "");
+  }
+
+  function syncGoalControls(period) {
+    if (!goalPeriod || !goalCustom) return;
+    const periodKey = getPeriodKey(period);
+    const storedPeriod = readGoalPeriod(periodKey);
+    if (goalPeriod.value !== storedPeriod) {
+      goalPeriod.value = storedPeriod;
+      goalPeriod._customUpdate?.();
+    }
+    const storedValue = readGoalValue(periodKey, storedPeriod);
+    if (document.activeElement !== goalCustom) {
+      goalCustom.value = storedValue > 0 ? fmtBRL(storedValue) : "";
+    }
+  }
+
+  function updateGoals(summary, line, period) {
+    if (!goalSavingsLabel || !goalSavingsBar || !goalSavingsMeta) return;
+    const periodKey = getPeriodKey(period);
+    const periodType = goalPeriod ? (goalPeriod.value || readGoalPeriod(periodKey)) : readGoalPeriod(periodKey);
+    const days = getDaysInPeriod(period, line.labels || []);
+    const periodCount = getPeriodCount(days, periodType);
 
     const receitas = Number(summary.receitas || 0);
-    const saldo = Math.max(Number(summary.saldo_projetado || 0), 0);
-    const despesas = Number(summary.despesas || 0);
+    const saldoTotal = Number(summary.saldo_projetado || 0);
+    const periodReceitas = periodCount ? receitas / periodCount : receitas;
+    const periodSaldo = periodCount ? saldoTotal / periodCount : saldoTotal;
+    const saldo = Math.max(periodSaldo, 0);
+
+    const suggested = periodReceitas * 0.2;
+    const custom = readGoalValue(periodKey, periodType);
+    const target = custom > 0 ? custom : suggested;
+    const pct = target ? Math.min(100, (saldo / target) * 100) : 0;
+
+    goalSavingsLabel.textContent = `${fmtBRL(saldo)} / ${fmtBRL(target)}`;
+    goalSavingsBar.style.width = `${pct.toFixed(0)}%`;
 
     if (receitas > 0) {
-      const meta = Math.max(receitas * 0.2, saldo);
-      const pct = meta ? Math.min(100, (saldo / meta) * 100) : 0;
-      goalSavingsLabel.textContent = `${fmtBRL(saldo)} / ${fmtBRL(meta)}`;
-      goalSavingsBar.style.width = `${pct.toFixed(0)}%`;
-      goalSavingsMeta.textContent = "Meta sugerida: 20% das receitas.";
+      const label = getPeriodLabel(periodType);
+      goalSavingsMeta.textContent = `Meta sugerida ${label}: ${fmtBRL(suggested)} (20% das receitas).`;
     } else {
-      goalSavingsLabel.textContent = "R$ 0,00 / R$ 0,00";
-      goalSavingsBar.style.width = "0%";
       goalSavingsMeta.textContent = "Sem dados para estimar a meta.";
-    }
-
-    if (receitas > 0) {
-      const limite = receitas * 0.8;
-      const pct = limite ? Math.min(100, (despesas / limite) * 100) : 0;
-      goalExpensesLabel.textContent = `${fmtBRL(despesas)} / ${fmtBRL(limite)}`;
-      goalExpensesBar.style.width = `${pct.toFixed(0)}%`;
-      goalExpensesMeta.textContent = "Limite sugerido: 80% das receitas.";
-    } else {
-      goalExpensesLabel.textContent = "R$ 0,00 / R$ 0,00";
-      goalExpensesBar.style.width = "0%";
-      goalExpensesMeta.textContent = "Sem dados para definir o limite.";
     }
   }
 
   function updateUI(data) {
+    lastData = data;
     const summary = data.summary || {};
     const highlights = data.highlights || {};
     const line = data.line || {};
@@ -483,7 +607,10 @@
 
     updateDonut(data.categories || [], Number(summary.despesas || 0));
     updateStatusBars(data.statuses || {}, Number(summary.despesas || 0));
-    updateInsights(data.alerts || [], summary);
+    updateCategoryBars(data.categories || [], Number(summary.despesas || 0));
+    updateAlerts(data.alerts || []);
+    syncGoalControls(data.period || null);
+    updateGoals(summary, line, data.period || null);
   }
 
   async function loadData() {
@@ -501,7 +628,9 @@
       setEmptyState(lineCanvas, true);
       setEmptyState(donutCanvas, true);
       setEmptyState(barsCanvas, true);
+      setEmptyState(categoriesBars, true);
       lineState = null;
+      lastData = null;
       hideLineHover();
     }
   }
@@ -517,10 +646,32 @@
     monthSelect.value = String(now.getMonth() + 1);
   }
 
-  [yearSelect, monthSelect].forEach(initCustomSelect);
+  [yearSelect, monthSelect, goalPeriod].forEach(initCustomSelect);
 
   yearSelect?.addEventListener("change", loadData);
   monthSelect?.addEventListener("change", loadData);
+  goalPeriod?.addEventListener("change", () => {
+    if (!lastData) return;
+    const periodKey = getPeriodKey(lastData.period || null);
+    writeGoalPeriod(periodKey, goalPeriod.value);
+    syncGoalControls(lastData.period || null);
+    updateGoals(lastData.summary || {}, lastData.line || {}, lastData.period || null);
+  });
+  goalCustom?.addEventListener("input", () => {
+    if (!lastData) return;
+    const periodKey = getPeriodKey(lastData.period || null);
+    const periodType = goalPeriod ? goalPeriod.value : readGoalPeriod(periodKey);
+    const value = parseBRL(goalCustom.value);
+    writeGoalValue(periodKey, periodType, value);
+    updateGoals(lastData.summary || {}, lastData.line || {}, lastData.period || null);
+  });
+  goalCustom?.addEventListener("blur", () => {
+    if (!lastData || !goalCustom) return;
+    const periodKey = getPeriodKey(lastData.period || null);
+    const periodType = goalPeriod ? goalPeriod.value : readGoalPeriod(periodKey);
+    const value = readGoalValue(periodKey, periodType);
+    goalCustom.value = value > 0 ? fmtBRL(value) : "";
+  });
   if (lineCanvas) {
     lineCanvas.addEventListener("mousemove", updateLineHover);
     lineCanvas.addEventListener("mouseleave", hideLineHover);

@@ -404,14 +404,17 @@ def charts_data():
         alerts.append("Sem lançamentos no período.")
     else:
         hoje = date.today()
-        limite = hoje + timedelta(days=7)
+        ref_date = hoje if (year == hoje.year and month == hoje.month) else start
+        limite = ref_date + timedelta(days=7)
+        if limite > end:
+            limite = end
         proximas = (
             Entrada.query
             .filter(
                 Entrada.user_id == current_user.id,
                 Entrada.tipo == "despesa",
                 (Entrada.status.is_(None)) | (Entrada.status != "pago"),
-                Entrada.data >= hoje,
+                Entrada.data >= ref_date,
                 Entrada.data <= limite,
             )
             .count()
