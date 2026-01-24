@@ -91,6 +91,79 @@
     outros: "var(--cat-other)"
   };
 
+  function initCustomSelect(selectEl) {
+    if (!selectEl || selectEl.dataset.customized) return;
+    selectEl.dataset.customized = "true";
+
+    const wrapper = document.createElement("div");
+    wrapper.className = "select";
+
+    selectEl.parentNode.insertBefore(wrapper, selectEl);
+    wrapper.appendChild(selectEl);
+    selectEl.classList.add("select-native");
+    selectEl.tabIndex = -1;
+
+    const trigger = document.createElement("button");
+    trigger.type = "button";
+    trigger.className = "control select-trigger";
+    trigger.setAttribute("aria-haspopup", "listbox");
+    wrapper.appendChild(trigger);
+
+    const list = document.createElement("div");
+    list.className = "select-options";
+    list.setAttribute("role", "listbox");
+    wrapper.appendChild(list);
+
+    function buildOptions() {
+      list.innerHTML = "";
+      Array.from(selectEl.options).forEach(opt => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "select-option";
+        btn.dataset.value = opt.value;
+        btn.textContent = opt.textContent;
+        btn.disabled = opt.disabled;
+        list.appendChild(btn);
+      });
+    }
+
+    function updateFromSelect() {
+      const current = selectEl.options[selectEl.selectedIndex];
+      trigger.textContent = current ? current.textContent : "";
+      wrapper.classList.toggle("is-disabled", !!selectEl.disabled);
+      trigger.disabled = !!selectEl.disabled;
+      list.querySelectorAll(".select-option").forEach(btn => {
+        btn.classList.toggle("is-selected", btn.dataset.value === selectEl.value);
+      });
+    }
+
+    selectEl._customUpdate = updateFromSelect;
+
+    buildOptions();
+    updateFromSelect();
+
+    trigger.addEventListener("click", (ev) => {
+      ev.stopPropagation();
+      if (selectEl.disabled) return;
+      wrapper.classList.toggle("open");
+    });
+
+    list.addEventListener("click", (ev) => {
+      const btn = ev.target.closest(".select-option");
+      if (!btn || btn.disabled) return;
+      selectEl.value = btn.dataset.value;
+      selectEl.dispatchEvent(new Event("change", { bubbles: true }));
+      updateFromSelect();
+      wrapper.classList.remove("open");
+    });
+
+    document.addEventListener("click", (ev) => {
+      if (!wrapper.contains(ev.target)) wrapper.classList.remove("open");
+    });
+
+    selectEl.addEventListener("change", updateFromSelect);
+  }
+
   function fmtBRL(value) {
     const num = Number(value) || 0;
     return num.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -335,6 +408,8 @@
   if (monthSelect) {
     monthSelect.value = String(now.getMonth() + 1);
   }
+
+  [yearSelect, monthSelect].forEach(initCustomSelect);
 
   yearSelect?.addEventListener("change", loadData);
   monthSelect?.addEventListener("change", loadData);

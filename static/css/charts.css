@@ -11,6 +11,82 @@ body.app-body .charts-page{
   gap: 18px;
 }
 
+body.page-charts .select{
+  position: relative;
+  width: 100%;
+}
+
+body.page-charts .select-native{
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+  width: 0;
+  height: 0;
+}
+
+body.page-charts .select-trigger{
+  text-align: left;
+  padding-right: 34px;
+  position: relative;
+}
+
+body.page-charts .select-trigger::after{
+  content: "";
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 6px solid rgba(255, 255, 255, 0.75);
+  transform: translateY(-40%);
+  pointer-events: none;
+}
+
+body.page-charts .select-options{
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 10;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: #0f141b;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.45);
+  padding: 6px;
+  display: none;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+body.page-charts .select.open .select-options{
+  display: block;
+}
+
+body.page-charts .select-option{
+  width: 100%;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.88);
+  padding: 8px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+body.page-charts .select-option:hover,
+body.page-charts .select-option.is-selected{
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+}
+
+body.page-charts .select.is-disabled .select-trigger{
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 body.app-body .charts-hero{
   position: relative;
   overflow: hidden;
