@@ -5,6 +5,7 @@ from urllib.parse import urlparse, parse_qs
 from flask import Flask, render_template, redirect, url_for, request, jsonify, flash
 from flask_login import LoginManager, login_required, current_user
 from dotenv import load_dotenv
+from sqlalchemy.exc import OperationalError
 
 # Carrega variaveis de ambiente de .env (desenvolvimento local)
 load_dotenv()
@@ -53,7 +54,21 @@ login_manager.init_app(app)
 
 @login_manager.user_loader
 def load_user(user_id):
-    return User.query.get(int(user_id))
+    if not user_id:
+        return None
+
+    try:
+        return db.session.get(User, int(user_id))
+    except OperationalError:
+        # Conexao SSL instavel em pools remotos: tenta limpar e reabrir.
+        db.session.rollback()
+        db.session.remove()
+        db.engine.dispose()
+        try:
+            return db.session.get(User, int(user_id))
+        except OperationalError:
+            db.session.rollback()
+            return None
 
 
 # Blueprints

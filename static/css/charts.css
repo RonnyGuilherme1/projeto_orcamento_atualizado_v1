@@ -106,7 +106,7 @@ body.app-body .charts-hero::after{
 
 body.app-body .charts-hero .panel-head{
   position: relative;
-  z-index: 1;
+  z-index: 3;
 }
 
 body.app-body .hero-grid{
