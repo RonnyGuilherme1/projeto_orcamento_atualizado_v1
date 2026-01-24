@@ -1196,3 +1196,10 @@ body.app-body .linha .acoes{
     padding: 3px 7px;
   }
 }
+
+body.page-entries .panel-despesas .col-valor,
+body.page-entries .panel-despesas .cell-valor,
+body.page-entries .panel-despesas .col-status,
+body.page-entries .panel-despesas .cell-status{
+  text-align: center;
+}
