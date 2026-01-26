@@ -25,7 +25,13 @@ from routes.analytics_routes import analytics_bp
 from services.plans import PLANS, is_valid_plan
 from services.feature_gate import user_has_feature
 
-from services.abacatepay import create_plan_billing, get_billing_status, list_billings, AbacatePayError
+from services.abacatepay import (
+    create_plan_billing,
+    get_billing_status,
+    list_billings,
+    AbacatePayError,
+    payment_warning_message,
+)
 from services.checkout_store import (
     create_order,
     get_order_by_token,
@@ -145,23 +151,6 @@ def enforce_subscription():
 
 def _only_digits(s: str) -> str:
     return re.sub(r"\D+", "", s or "")
-
-
-def _format_cpf(raw: str) -> str:
-    d = _only_digits(raw)
-    if len(d) != 11:
-        return ""
-    return f"{d[0:3]}.{d[3:6]}.{d[6:9]}-{d[9:11]}"
-
-
-def _format_phone(raw: str) -> str:
-    d = _only_digits(raw)
-    # aceita 10 ou 11 dígitos (BR)
-    if len(d) == 10:
-        return f"({d[0:2]}) {d[2:6]}-{d[6:10]}"
-    if len(d) == 11:
-        return f"({d[0:2]}) {d[2:7]}-{d[7:11]}"
-    return ""
 
 
 def _normalize_email(value: str | None) -> str:
@@ -320,12 +309,6 @@ def _build_billing_history(user, orders, include_remote: bool = False) -> list[d
     return items
 
 
-def _payment_warning_message(raw: str) -> str:
-    if app.config.get("ABACATEPAY_DEV_MODE"):
-        return raw
-    return "Nao foi possivel validar o pagamento agora. Tente novamente em alguns minutos."
-
-
 @app.get("/")
 def marketing_home():
     """Página pública de apresentação (marketing)."""
@@ -361,11 +344,15 @@ def buy():
 
     # Exige perfil completo
     profile = UserProfile.query.filter_by(user_id=current_user.id).first()
-    if not profile or not (profile.full_name or "").strip() or not (profile.cpf or "").strip() or not (profile.phone or "").strip():
+    full_name = (current_user.full_name or "").strip() or (getattr(profile, "full_name", "") or "").strip()
+    tax_id = _only_digits(getattr(current_user, "tax_id", None)) or _only_digits(getattr(profile, "cpf", None))
+    phone = _only_digits(getattr(current_user, "cellphone", None)) or _only_digits(getattr(profile, "phone", None))
+
+    if not full_name or not tax_id or not phone:
         flash("Para iniciar o pagamento, complete seus dados pessoais (Nome completo, CPF e Telefone).", "error")
         return redirect(url_for("account_page", section="profile"))
 
-    # Cria pedido local vinculado ao usuário logado
+    # Cria pedido local vinculado ao usuario logado
     order = create_order(plan=plan, user_id=current_user.id)
 
     try:
@@ -375,10 +362,10 @@ def buy():
             return_url=url_for("pricing", _external=True, plan=plan),
             completion_url=url_for("checkout_completion", _external=True, token=order.token),
             customer={
-                "name": profile.full_name,
+                "name": full_name,
                 "email": current_user.email,
-                "cellphone": profile.phone,
-                "taxId": profile.cpf,
+                "cellphone": phone,
+                "taxId": tax_id,
             },
         )
     except TypeError:
@@ -450,7 +437,7 @@ def checkout_status():
         try:
             remote_status = get_billing_status(order.billing_id, external_id=order.token)
         except AbacatePayError as exc:
-            warning = _payment_warning_message(str(exc))
+            warning = payment_warning_message(str(exc))
             return jsonify({"ok": True, "status": status, "plan": order.plan, "warning": warning})
         if remote_status:
             status = remote_status
@@ -523,7 +510,6 @@ def account_page():
     if section not in allowed:
         section = "overview"
 
-    profile = UserProfile.query.filter_by(user_id=current_user.id).first()
     billing_orders = list_orders_by_user(current_user.id, limit=10)
     billing_history = _build_billing_history(
         current_user, billing_orders, include_remote=(section == "billing")
@@ -534,7 +520,6 @@ def account_page():
     return render_template(
         "account.html",
         section=section,
-        profile=profile,
         subscription=subscription,
         billing_history=billing_history,
     )

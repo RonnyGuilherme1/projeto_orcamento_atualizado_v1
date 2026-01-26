@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+import unicodedata
 from typing import Any, Dict, Optional
 
 import requests
@@ -27,6 +28,12 @@ def _api_base() -> str:
     return "https://api.abacatepay.com"
 
 
+def payment_warning_message(raw: str) -> str:
+    if current_app.config.get("ABACATEPAY_DEV_MODE"):
+        return raw
+    return "Nao foi possivel validar o pagamento agora. Tente novamente em alguns minutos."
+
+
 def _only_digits(value: str) -> str:
     return re.sub(r"\D+", "", value or "")
 
@@ -49,6 +56,12 @@ def _format_cellphone(value: str) -> str:
     if len(digits) == 11:
         return f"({digits[0:2]}) {digits[2:7]}-{digits[7:11]}"
     return raw
+
+
+def _ascii_text(value: str) -> str:
+    if not value:
+        return ""
+    return unicodedata.normalize("NFKD", value).encode("ascii", "ignore").decode("ascii")
 
 
 def _normalize_customer(customer: Dict[str, Any]) -> Dict[str, str]:
@@ -115,13 +128,16 @@ def create_plan_billing(
 
     amount_cents = int(round(float(plan_def["price_month"]) * 100))
 
+    product_name = _ascii_text(plan_def["name"]) or "Plano"
+    product_external_id = f"plan-{plan}-v3"
+
     payload: Dict[str, Any] = {
         "frequency": "ONE_TIME",
         "methods": _normalize_methods(methods),
         "products": [
             {
-                "externalId": f"plan:{plan}",
-                "name": f"{plan_def['name']} (1 mÃªs)",
+                "externalId": product_external_id,
+                "name": f"{product_name} (1 mes)",
                 "description": "Acesso ao sistema de controle financeiro.",
                 "quantity": 1,
                 "price": amount_cents,
@@ -150,21 +166,23 @@ def create_plan_billing(
     )
 
     try:
-        data = resp.json()
+        body = resp.json()
     except Exception:
-        raise AbacatePayError(f"Resposta invÃ¡lida da AbacatePay (HTTP {resp.status_code}).")
+        if current_app.config.get("ABACATEPAY_DEV_MODE"):
+            snippet = (resp.text or "").strip()
+            if snippet:
+                snippet = snippet[:300]
+                raise AbacatePayError(
+                    f"Resposta invalida da AbacatePay (HTTP {resp.status_code}): {snippet}"
+                )
+        raise AbacatePayError(f"Resposta invalida da AbacatePay (HTTP {resp.status_code}).")
 
     # AbacatePay pode retornar 200 com success=false
-    if (not resp.ok) or (data.get("success") is False):
-        err = data.get("error") or data.get("message") or data
+    if (not resp.ok) or (body.get("success") is False):
+        err = body.get("error") or body.get("message") or body
         raise AbacatePayError(f"Erro AbacatePay: {err}")
 
-    billing = data.get("data") or data
-    # normaliza chaves usadas no seu app
-    billing_id = billing.get("billingId") or billing.get("billing_id") or billing.get("id")
-    pay_url = billing.get("url") or billing.get("checkoutUrl") or billing.get("checkout_url")
-
-    body = resp.json() or {}
+    body = body or {}
     # A API retorna { data: ..., error: ... }.
     # Em alguns cenÃ¡rios error pode vir preenchido mesmo com HTTP 200.
     if body.get("error"):

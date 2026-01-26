@@ -11,34 +11,65 @@
   {% set status_url = status_url or url_for('analytics.upgrade_status', token=order.token) %}
   {% set status_label = 'Pago' if order.status == 'PAID' else 'Pendente' if order.status == 'PENDING' else order.status %}
 
-  <div class="app-card">
-    <h2>Estamos confirmando o seu pagamento</h2>
-    <p class="muted">Assim que a confirmação chegar, o seu plano será atualizado automaticamente.</p>
+  <div class="app-card upgrade-return">
+    <div class="upgrade-return-hero">
+      <div class="upgrade-return-copy">
+        <span class="upgrade-return-kicker">Checkout do plano</span>
+        <h2>Estamos confirmando o seu pagamento</h2>
+        <p class="upgrade-return-subtitle">
+          Assim que a confirmação chegar, o seu plano será atualizado automaticamente.
+        </p>
+      </div>
+      <div class="upgrade-return-plan">
+        <span class="upgrade-return-plan-label">Plano selecionado</span>
+        <span class="upgrade-return-plan-pill">{{ plan['name'] }}</span>
+        <span class="upgrade-return-plan-price">R$ {{ '%.2f'|format(plan['price_month']) }} / mês</span>
+      </div>
+    </div>
 
-    <div class="app-card upgrade-return-status">
-      <div class="status-grid">
-        <div class="status-item">
-          <span class="status-label">Plano</span>
-          <strong>{{ plan['name'] }}</strong>
-        </div>
-        <div class="status-item">
-          <span class="status-label">Status</span>
+    <div class="upgrade-return-panel">
+      <div class="upgrade-return-status-card">
+        <div class="upgrade-return-status-head">
+          <span class="status-label">Status do pagamento</span>
           <span id="status-text" class="status-pill {% if order.status == 'PAID' %}status-paid{% else %}status-pending{% endif %}">
             {{ status_label }}
           </span>
         </div>
+
+        <p class="upgrade-return-note">
+          Se você concluiu o pagamento agora, pode levar alguns segundos para confirmarmos.
+        </p>
+
+        <div class="upgrade-return-actions">
+          <a class="btn-secondary btn-pill" href="{{ back_url }}">Voltar</a>
+          <button class="btn-primary btn-pill" type="button" id="refresh-status">Atualizar status</button>
+        </div>
+
+        <p class="upgrade-return-hint">
+          Atualizamos automaticamente a cada poucos segundos. Se o status não atualizar,
+          aguarde alguns minutos e tente novamente.
+        </p>
+        <p id="status-warning" class="upgrade-return-warning" style="display:none;"></p>
+      </div>
+
+      <div class="upgrade-return-steps">
+        <span class="upgrade-return-kicker">O que acontece agora</span>
+        <ol class="upgrade-return-step-list">
+          <li>
+            <strong>Pagamento recebido</strong>
+            <span>Aguardamos a confirmação do provedor.</span>
+          </li>
+          <li>
+            <strong>Plano atualizado</strong>
+            <span>Assim que confirmado, seu acesso é liberado.</span>
+          </li>
+          <li>
+            <strong>Histórico registrado</strong>
+            <span>O pagamento aparece no histórico da conta.</span>
+          </li>
+        </ol>
       </div>
     </div>
-
-    <div class="upgrade-return-actions">
-      <a class="btn-secondary btn-pill" href="{{ back_url }}">Voltar</a>
-      <button class="btn-primary btn-pill" type="button" id="refresh-status">Atualizar status</button>
-    </div>
-
-    <p class="muted" style="margin-top:12px;">
-      Se você já pagou e o status não atualizar, aguarde alguns minutos e tente novamente.
-    </p>
-    <p id="status-warning" class="muted" style="margin-top:8px; display:none;"></p>
   </div>
 
   <div class="app-card upgrade-history">
@@ -89,7 +120,6 @@
       async function refreshStatus() {
         if (!token || !refreshBtn) return;
         refreshBtn.disabled = true;
-        refreshBtn.classList.add('is-loading');
         try {
           const res = await fetch(statusUrl);
           if (!res.ok) return;
@@ -119,7 +149,6 @@
           // silencioso
         } finally {
           refreshBtn.disabled = false;
-          refreshBtn.classList.remove('is-loading');
         }
       }
 

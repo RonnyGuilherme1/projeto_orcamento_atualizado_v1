@@ -122,6 +122,9 @@ def init_db(app):
         engine_name = db.engine.name
         with db.engine.begin() as conn:
             if engine_name == "sqlite":
+                conn.execute(text("PRAGMA journal_mode=WAL"))
+                conn.execute(text("PRAGMA synchronous=NORMAL"))
+                conn.execute(text("PRAGMA busy_timeout=5000"))
                 _migrate_sqlite_schema(conn)
             elif engine_name in {"postgresql", "postgres"}:
                 _migrate_postgres_schema(conn)

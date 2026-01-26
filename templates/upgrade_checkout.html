@@ -9,27 +9,39 @@
   {% set plan = PLANS.get(selected_plan, PLANS['basic']) %}
 
   <div class="app-card upgrade-checkout">
-    <h2>Confirmar upgrade</h2>
-    <p class="muted">Você está prestes a iniciar o checkout do plano <strong>{{ plan['name'] }}</strong>.</p>
+    <div class="upgrade-checkout-hero">
+      <div class="upgrade-checkout-copy">
+        <span class="upgrade-checkout-kicker">Checkout do plano</span>
+        <h2>Confirmar upgrade</h2>
+        <p class="upgrade-checkout-subtitle">
+          Você está prestes a iniciar o checkout do plano <strong>{{ plan['name'] }}</strong>.
+        </p>
+      </div>
+      <div class="upgrade-checkout-plan">
+        <span class="upgrade-checkout-plan-label">Plano selecionado</span>
+        <span class="upgrade-checkout-plan-pill">{{ plan['name'] }}</span>
+        <span class="upgrade-checkout-plan-price">R$ {{ '%.2f'|format(plan['price_month']) }} / mês</span>
+      </div>
+    </div>
 
     <div class="checkout-grid">
-      <div class="app-card">
-        <h3 style="margin-top:0;">Resumo</h3>
-        <p style="margin:8px 0;">Plano: <strong>{{ plan['name'] }}</strong></p>
-        <p style="margin:8px 0;">Valor: <strong>R$ {{ '%.2f'|format(plan['price_month']) }}</strong> (1 mês)</p>
-        <p class="muted" style="margin:10px 0 0;">
+      <div class="upgrade-checkout-card">
+        <h3>Resumo</h3>
+        <p>Plano: <strong>{{ plan['name'] }}</strong></p>
+        <p>Valor: <strong>R$ {{ '%.2f'|format(plan['price_month']) }}</strong> (1 mês)</p>
+        <p class="muted">
           {% if abacatepay_card_enabled %}
             O pagamento pode ser feito via PIX ou cartão. Após a confirmação, seu plano será atualizado automaticamente.
-            <span style="display:block; margin-top:6px;">Cartão em beta: requer liberação no suporte da AbacatePay.</span>
+            <span class="upgrade-checkout-note">Cartão em beta: requer liberação no suporte da AbacatePay.</span>
           {% else %}
             O pagamento é feito via PIX. Após a confirmação, seu plano será atualizado automaticamente.
           {% endif %}
         </p>
       </div>
 
-      <div class="app-card">
-        <h3 style="margin-top:0;">O que muda</h3>
-        <ul class="plan-list" style="margin:8px 0 0;">
+      <div class="upgrade-checkout-card">
+        <h3>O que muda</h3>
+        <ul class="plan-list">
           {% for item in plan['highlights'] %}
             <li>{{ item }}</li>
           {% endfor %}
@@ -37,7 +49,7 @@
       </div>
     </div>
 
-    <div class="checkout-actions">
+    <div class="checkout-actions checkout-actions-center">
       <a class="btn-secondary" href="{{ url_for('analytics.upgrade') }}">Voltar</a>
       <form method="post" action="{{ url_for('analytics.upgrade_checkout_start') }}" style="margin:0;">
         <input type="hidden" name="plan" value="{{ selected_plan }}">

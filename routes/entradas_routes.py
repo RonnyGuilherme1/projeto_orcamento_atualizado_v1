@@ -7,6 +7,7 @@ from flask_login import login_required, current_user
 
 from models.extensions import db
 from models.entrada_model import Entrada
+from services.date_utils import last_day_of_month
 
 entradas_bp = Blueprint("entradas", __name__)
 
@@ -205,14 +206,6 @@ def _parse_date_param(value: str | None, field_name: str) -> date:
     return datetime.strptime(value, "%Y-%m-%d").date()
 
 
-def _last_day_of_month(d: date) -> date:
-    if d.month == 12:
-        first_next = date(d.year + 1, 1, 1)
-    else:
-        first_next = date(d.year, d.month + 1, 1)
-    return first_next - timedelta(days=1)
-
-
 @entradas_bp.route("/resumo-ciclo")
 @login_required
 def resumo_ciclo():
@@ -223,7 +216,7 @@ def resumo_ciclo():
     try:
         d = _parse_date_param(request.args.get("data"), "data")
         ate_raw = request.args.get("ate")
-        ate = _parse_date_param(ate_raw, "ate") if ate_raw else _last_day_of_month(d)
+        ate = _parse_date_param(ate_raw, "ate") if ate_raw else last_day_of_month(d)
     except ValueError as ex:
         return jsonify({"error": str(ex)}), 400
 

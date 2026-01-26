@@ -57,6 +57,11 @@ class Config:
             "keepalives_interval": 10,
             "keepalives_count": 5,
         }
+    else:
+        SQLALCHEMY_ENGINE_OPTIONS["connect_args"] = {
+            "check_same_thread": False,
+            "timeout": int(os.getenv("SQLITE_TIMEOUT", "30")),
+        }
 
     # URL pública do app (Render). Ex: https://seuapp.onrender.com
     APP_BASE_URL = os.getenv("APP_BASE_URL", "http://127.0.0.1:5000")

@@ -81,10 +81,14 @@ class User(UserMixin, db.Model):
         return self.generate_verify_token()
 
     @staticmethod
-    def verify_token(token: str, max_age_seconds: int = 60 * 60 * 24) -> int | None:
+    def verify_token(token: str, max_age_seconds: int = 60 * 60 * 24):
         s = User._serializer()
         try:
             data = s.loads(token, max_age=max_age_seconds)
-            return int(data.get("uid"))
         except (BadSignature, SignatureExpired):
             return None
+
+        user_id = data.get("uid")
+        if not user_id:
+            return None
+        return User.query.get(int(user_id))

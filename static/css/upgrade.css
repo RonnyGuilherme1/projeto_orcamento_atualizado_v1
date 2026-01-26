@@ -238,16 +238,18 @@ body.app-body input[type="number"]::-webkit-inner-spin-button, body.app-body inp
   margin-top: 14px;
 }
 
-.upgrade-checkout .checkout-grid .app-card{
-  margin: 0;
-}
-
 .upgrade-checkout .checkout-actions{
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
   margin-top: 16px;
   align-items: center;
+}
+
+.upgrade-checkout .checkout-actions.checkout-actions-center{
+  justify-content: center;
+  align-items: center;
+  width: 100%;
 }
 
 .upgrade-checkout .checkout-actions .btn-secondary,
@@ -910,7 +912,6 @@ body.app-body .pricing-grid{
 
 .btn-pill{
   border-radius: 999px;
-  padding: 0 18px;
   height: 40px;
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
   letter-spacing: 0.01em;
@@ -924,14 +925,110 @@ body.app-body .pricing-grid{
 .btn-pill.btn-secondary{
   background: rgba(255, 255, 255, 0.06);
   border-color: rgba(255, 255, 255, 0.18);
+  padding-top: 10px;
+}
+
+.checkout-actions.btn-secondary{
+  text-align: center;
 }
 
 .btn-pill.is-loading::after{
-  content: " ...";
+  content: "";
 }
 
 .upgrade-history{
   margin-top: 16px;
+}
+
+/* ---------- Upgrade checkout (modern) ---------- */
+.page-upgrade .upgrade-checkout{
+  position: relative;
+  padding: 22px;
+  background: linear-gradient(145deg, rgba(18, 28, 22, 0.9), rgba(11, 15, 20, 0.7));
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+.page-upgrade .upgrade-checkout-hero{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.page-upgrade .upgrade-checkout-kicker{
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.page-upgrade .upgrade-checkout-subtitle{
+  margin: 6px 0 0;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.page-upgrade .upgrade-checkout-plan{
+  min-width: 200px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.25);
+  display: grid;
+  gap: 6px;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+}
+
+.page-upgrade .upgrade-checkout-plan-label{
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.55);
+  font-weight: 800;
+}
+
+.page-upgrade .upgrade-checkout-plan-pill{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 28px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(76, 175, 80, 0.45);
+  background: rgba(76, 175, 80, 0.14);
+  font-weight: 900;
+  letter-spacing: 0.02em;
+}
+
+.page-upgrade .upgrade-checkout-plan-price{
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 700;
+}
+
+.page-upgrade .upgrade-checkout-card{
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.25);
+  padding: 16px;
+}
+
+.page-upgrade .upgrade-checkout-card h3{
+  margin: 0 0 10px;
+}
+
+.page-upgrade .upgrade-checkout-card p{
+  margin: 8px 0;
+}
+
+.page-upgrade .upgrade-checkout-note{
+  display: block;
+  margin-top: 6px;
 }
 
 .history-row{
@@ -976,5 +1073,206 @@ body.app-body .pricing-grid{
 @media (max-width: 720px) {
   .history-row{
     grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* ---------------- Upgrade return (modern) ---------------- */
+.page-upgrade .upgrade-return{
+  position: relative;
+  overflow: hidden;
+  padding: 22px;
+  background: linear-gradient(140deg, rgba(15, 26, 20, 0.85), rgba(11, 15, 20, 0.6));
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+.page-upgrade .upgrade-return::before{
+  content: "";
+  position: absolute;
+  inset: -20% 20% auto -30%;
+  height: 220px;
+  background: radial-gradient(closest-side, rgba(76, 175, 80, 0.28), transparent 70%);
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.page-upgrade .upgrade-return-hero{
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  position: relative;
+  z-index: 1;
+}
+
+.page-upgrade .upgrade-return-copy h2{
+  margin: 6px 0 10px;
+  font-size: 22px;
+  letter-spacing: -0.02em;
+}
+
+.page-upgrade .upgrade-return-kicker{
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.page-upgrade .upgrade-return-subtitle{
+  margin: 0;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.page-upgrade .upgrade-return-plan{
+  min-width: 200px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.25);
+  display: grid;
+  gap: 6px;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+}
+
+.page-upgrade .upgrade-return-plan-label{
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.55);
+  font-weight: 800;
+}
+
+.page-upgrade .upgrade-return-plan-pill{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 28px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(76, 175, 80, 0.45);
+  background: rgba(76, 175, 80, 0.14);
+  font-weight: 900;
+  letter-spacing: 0.02em;
+}
+
+.page-upgrade .upgrade-return-plan-price{
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 700;
+}
+
+.page-upgrade .upgrade-return-panel{
+  margin-top: 18px;
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: 16px;
+  position: relative;
+  z-index: 1;
+}
+
+.page-upgrade .upgrade-return-status-card{
+  padding: 18px;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.3);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
+}
+
+.page-upgrade .upgrade-return-status-head{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.page-upgrade .upgrade-return .status-pill{
+  padding: 8px 16px;
+  font-size: 12px;
+  border-radius: 999px;
+  text-transform: uppercase;
+}
+
+.page-upgrade .upgrade-return-note{
+  margin: 12px 0 0;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 13px;
+}
+
+.page-upgrade .upgrade-return-actions{
+  margin-top: 16px;
+  gap: 12px;
+  width: 100%;
+  display: grid;
+  grid-auto-flow: column;
+  justify-content: center;
+  justify-items: center;
+  align-items: center;
+  text-align: center;
+}
+
+@media (max-width: 600px){
+  .page-upgrade .upgrade-return-actions{
+    grid-auto-flow: row;
+  }
+}
+
+.page-upgrade .upgrade-return-hint{
+  margin: 12px 0 0;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.page-upgrade .upgrade-return-warning{
+  margin-top: 8px;
+  font-size: 12px;
+  color: rgba(245, 166, 35, 0.95);
+  font-weight: 700;
+}
+
+.page-upgrade .upgrade-return-steps{
+  padding: 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  display: grid;
+  gap: 12px;
+}
+
+.page-upgrade .upgrade-return-step-list{
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+
+.page-upgrade .upgrade-return-step-list li{
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.25);
+  font-size: 12px;
+}
+
+.page-upgrade .upgrade-return-step-list strong{
+  font-size: 13px;
+}
+
+.page-upgrade .upgrade-return-step-list span{
+  color: rgba(255, 255, 255, 0.68);
+}
+
+@media (max-width: 960px){
+  .page-upgrade .upgrade-return-panel{
+    grid-template-columns: 1fr;
   }
 }

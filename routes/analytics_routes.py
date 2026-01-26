@@ -4,7 +4,7 @@ from datetime import date, timedelta
 
 from sqlalchemy import func
 
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, current_app
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required, current_user
 
 from models.extensions import db
@@ -19,7 +19,8 @@ from services.checkout_store import (
     mark_order_paid_by_token,
     list_orders_by_user,
 )
-from services.abacatepay import create_plan_billing, get_billing_status, AbacatePayError
+from services.abacatepay import create_plan_billing, get_billing_status, AbacatePayError, payment_warning_message
+from services.date_utils import last_day_of_month
 from services.subscription import apply_paid_order
 
 
@@ -58,24 +59,10 @@ def _normalize_categoria(value: str | None) -> str:
     return categoria
 
 
-def _last_day_of_month(d: date) -> date:
-    if d.month == 12:
-        first_next = date(d.year + 1, 1, 1)
-    else:
-        first_next = date(d.year, d.month + 1, 1)
-    return first_next - timedelta(days=1)
-
-
 def _require_verified_json():
     if not current_user.is_verified:
         return jsonify({"error": "email_not_verified"}), 403
     return None
-
-
-def _payment_warning_message(raw: str) -> str:
-    if current_app.config.get("ABACATEPAY_DEV_MODE"):
-        return raw
-    return "Nao foi possivel validar o pagamento agora. Tente novamente em alguns minutos."
 
 
 def _history_from_orders(orders):
@@ -218,7 +205,7 @@ def upgrade_status():
         try:
             remote_status = get_billing_status(order.billing_id, external_id=order.token)
         except AbacatePayError as exc:
-            warning = _payment_warning_message(str(exc))
+            warning = payment_warning_message(str(exc))
             return jsonify({"ok": True, "status": status, "warning": warning})
 
         if remote_status:
@@ -275,7 +262,7 @@ def charts_data():
         month = today.month
 
     start = date(year, month, 1)
-    end = _last_day_of_month(start)
+    end = last_day_of_month(start)
 
     entries = (
         Entrada.query
