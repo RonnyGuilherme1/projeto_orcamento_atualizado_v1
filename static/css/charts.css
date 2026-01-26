@@ -544,6 +544,17 @@ body.app-body .donut-legend li{
   display: flex;
   align-items: center;
   gap: 8px;
+  cursor: pointer;
+  transition: color 0.2s ease, opacity 0.2s ease;
+}
+
+body.app-body .donut-legend li.is-active{
+  color: rgba(255, 255, 255, 0.95);
+  font-weight: 900;
+}
+
+body.app-body .donut-legend li.is-muted{
+  opacity: 0.45;
 }
 
 body.app-body .dot-home{ --dot: var(--cat-home); }

@@ -97,6 +97,13 @@
 
   let lineState = null;
   let lastData = null;
+  let donutLegendBound = false;
+  const donutState = {
+    categories: [],
+    total: 0,
+    totalValue: 0,
+    gradient: ""
+  };
 
   function initCustomSelect(selectEl) {
     if (!selectEl || selectEl.dataset.customized) return;
@@ -406,29 +413,92 @@
     donutLabel.textContent = total > 0 ? "Total de despesas" : "Sem despesas";
 
     if (!hasData) {
+      donutState.categories = [];
+      donutState.total = total;
+      donutState.totalValue = 0;
+      donutState.gradient = "";
+      donutState.buildGradient = () => "";
       donut.style.removeProperty("--donut-gradient");
       donutLegend.innerHTML = "<li>Sem despesas no período.</li>";
       return;
     }
 
-    const totalValue = categories.reduce((sum, item) => sum + (Number(item.total) || 0), 0) || 0;
-    let acc = 0;
-    const stops = categories.map((item) => {
-      const part = totalValue ? (Number(item.total) / totalValue) * 100 : 0;
-      const start = acc;
-      acc += part;
-      const color = CATEGORY_COLORS[item.key] || "var(--cat-other)";
-      return `${color} ${start.toFixed(1)}% ${acc.toFixed(1)}%`;
-    });
+    const items = (categories || [])
+      .map((item) => ({
+        key: item.key,
+        label: CATEGORY_LABELS[item.key] || item.label || "Outros",
+        total: Number(item.total) || 0,
+        percent: Number(item.percent) || 0,
+        color: CATEGORY_COLORS[item.key] || "var(--cat-other)",
+        dotClass: CATEGORY_DOTS[item.key] || "dot-other"
+      }))
+      .filter((item) => item.total > 0);
 
-    donut.style.setProperty("--donut-gradient", stops.join(", "));
+    const totalValue = items.reduce((sum, item) => sum + item.total, 0) || 0;
+    donutState.categories = items;
+    donutState.total = total;
+    donutState.totalValue = totalValue;
 
-    donutLegend.innerHTML = categories.map((item) => {
-      const label = CATEGORY_LABELS[item.key] || item.label || "Outros";
-      const dotClass = CATEGORY_DOTS[item.key] || "dot-other";
-      const pct = Number(item.percent) || 0;
-      return `<li><span class="legend-dot ${dotClass}"></span>${label} ${pct.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%</li>`;
+    donutState.buildGradient = (activeIndex) => {
+      let acc = 0;
+      const baseTotal = donutState.totalValue || 0;
+      return donutState.categories.map((item, index) => {
+        const part = baseTotal ? (item.total / baseTotal) * 100 : 0;
+        const start = acc;
+        acc += part;
+        const color = activeIndex === null || index === activeIndex
+          ? item.color
+          : "rgba(255, 255, 255, 0.12)";
+        return `${color} ${start.toFixed(1)}% ${acc.toFixed(1)}%`;
+      }).join(", ");
+    };
+
+    donutState.gradient = donutState.buildGradient(null);
+    donut.style.setProperty("--donut-gradient", donutState.gradient);
+
+    donutLegend.innerHTML = items.map((item, index) => {
+      const pct = totalValue ? (item.total / totalValue) * 100 : (item.percent || 0);
+      const pctText = pct.toLocaleString("pt-BR", { maximumFractionDigits: 1 });
+      return `<li data-index="${index}" title="${item.label}: ${fmtBRL(item.total)}">
+        <span class="legend-dot ${item.dotClass}"></span>${item.label} ${pctText}%
+      </li>`;
     }).join("");
+
+    if (!donutLegendBound && donutLegend) {
+      donutLegendBound = true;
+      donutLegend.addEventListener("mouseover", (event) => {
+        const itemEl = event.target.closest("li[data-index]");
+        if (!itemEl) return;
+        const index = Number(itemEl.dataset.index);
+        if (Number.isNaN(index)) return;
+        const item = donutState.categories[index];
+        if (!item) return;
+        const pct = donutState.totalValue ? (item.total / donutState.totalValue) * 100 : (item.percent || 0);
+        const pctText = pct.toLocaleString("pt-BR", { maximumFractionDigits: 1 });
+        donutTotal.textContent = fmtBRL(item.total);
+        donutLabel.textContent = `${item.label} · ${pctText}%`;
+        donut.style.setProperty("--donut-gradient", donutState.buildGradient(index));
+        donutLegend.querySelectorAll("li").forEach((li) => {
+          const liIndex = Number(li.dataset.index);
+          if (Number.isNaN(liIndex)) return;
+          li.classList.toggle("is-active", liIndex === index);
+          li.classList.toggle("is-muted", liIndex !== index);
+        });
+      });
+
+      donutLegend.addEventListener("mouseleave", () => {
+        donutTotal.textContent = fmtBRL(donutState.total);
+        donutLabel.textContent = donutState.total > 0 ? "Total de despesas" : "Sem despesas";
+        if (donutState.gradient) {
+          donut.style.setProperty("--donut-gradient", donutState.gradient);
+        } else {
+          donut.style.removeProperty("--donut-gradient");
+        }
+        donutLegend.querySelectorAll("li").forEach((li) => {
+          li.classList.remove("is-active", "is-muted");
+        });
+      });
+    }
   }
 
   function updateStatusBars(statuses, total) {
