@@ -137,7 +137,7 @@ body.app-body input[type="number"]::-webkit-inner-spin-button, body.app-body inp
 }
 
 .app-shell{
-  grid-template-columns: 280px 1fr;
+  grid-template-columns: 252px 1fr;
   min-height: 100vh;
   min-width: 0;
   display: grid;
@@ -146,7 +146,7 @@ body.app-body input[type="number"]::-webkit-inner-spin-button, body.app-body inp
 .sidebar{
   top: 0;
   height: 100vh;
-  padding: 12px;
+  padding: 11px;
   border-right: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(0, 0, 0, 0.18);
   backdrop-filter: blur(14px);
@@ -157,9 +157,9 @@ body.app-body input[type="number"]::-webkit-inner-spin-button, body.app-body inp
 
 .sidebar-brand{
   align-items: center;
-  gap: 10px;
+  gap: 9px;
   width: 100%;
-  padding: 6px 10px;
+  padding: 5px 9px;
   border-radius: 16px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(255, 255, 255, 0.04);
@@ -175,10 +175,10 @@ body.app-body input[type="number"]::-webkit-inner-spin-button, body.app-body inp
 }
 
 .sidebar-logo{
-  height: 34px;
+  height: 31px;
   border-radius: 12px;
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.10);
-  width: 34px;
+  width: 31px;
 }
 
 .sidebar-title{
@@ -198,41 +198,41 @@ body.app-body input[type="number"]::-webkit-inner-spin-button, body.app-body inp
 }
 
 .sidebar-user{
-  padding: 12px;
+  padding: 11px;
   border-radius: 16px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(255, 255, 255, 0.03);
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-top: 14px;
+  gap: 11px;
+  margin-top: 13px;
 }
 
 .sidebar-nav{
   display: grid;
-  gap: 6px;
-  margin-top: 14px;
+  gap: 5px;
+  margin-top: 13px;
 }
 
 .nav-section{
   color: rgba(255, 255, 255, 0.55);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 900;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  margin: 10px 0 4px;
+  margin: 9px 0 3px;
 }
 
 .nav-item{
   align-items: center;
   justify-content: flex-start;
-  gap: 10px;
-  padding: 10px 12px;
-  border-radius: 14px;
+  gap: 9px;
+  padding: 9px 11px;
+  border-radius: 13px;
   text-decoration: none;
   color: rgba(255, 255, 255, 0.78);
   font-weight: 750;
-  font-size: 13px;
+  font-size: 12px;
   border: 1px solid transparent;
   position: relative;
   display: flex;
@@ -256,10 +256,10 @@ body.app-body input[type="number"]::-webkit-inner-spin-button, body.app-body inp
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.10);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 900;
   color: rgba(255, 255, 255, 0.82);
-  padding: 4px 8px;
+  padding: 3px 7px;
 }
 
 .app-content{
@@ -348,8 +348,8 @@ body.app-body a:hover{
 }
 
 .sidebar-user-avatar{
-  height: 44px;
-  border-radius: 14px;
+  height: 40px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -357,7 +357,7 @@ body.app-body a:hover{
   letter-spacing: -0.02em;
   background: rgba(76, 175, 80, 0.14);
   border: 1px solid rgba(76, 175, 80, 0.28);
-  width: 44px;
+  width: 40px;
 }
 
 .sidebar-user-meta{
@@ -366,13 +366,13 @@ body.app-body a:hover{
 }
 
 .sidebar-user-name{
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 900;
 }
 
 .sidebar-user-plan{
   font-weight: 800;
-  font-size: 12px;
+  font-size: 11px;
   color: rgba(255, 255, 255, 0.68);
 }
 
@@ -427,8 +427,8 @@ body.app-body a:hover{
 }
 
 :root{
-  --sidebar-w-compact: 86px;
-  --sidebar-w: 280px;
+  --sidebar-w-compact: 78px;
+  --sidebar-w: 252px;
 }
 
 .nav-icon{

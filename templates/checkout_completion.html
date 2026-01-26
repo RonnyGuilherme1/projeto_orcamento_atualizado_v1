@@ -130,7 +130,7 @@
       refreshBtn?.addEventListener('click', () => refreshStatus(true));
       applyStatus({{ order.status|tojson }});
       refreshStatus();
-      setInterval(refreshStatus, 2500);
+      setInterval(refreshStatus, 8000);
     })();
   </script>
 {% endblock %}

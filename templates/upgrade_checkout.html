@@ -57,4 +57,17 @@
       </form>
     </div>
   </div>
+
+  <script>
+    (function () {
+      const form = document.querySelector('.upgrade-checkout form');
+      if (!form) return;
+      form.addEventListener('submit', () => {
+        const btn = form.querySelector('button[type=\"submit\"]');
+        if (!btn) return;
+        btn.disabled = true;
+        btn.textContent = 'Iniciando pagamento...';
+      });
+    })();
+  </script>
 {% endblock %}

@@ -46,7 +46,7 @@ PLANS: dict[str, dict] = {
         "price_month": 49.90,
         "tagline": "quem precisa de projeções e relatórios",
         "highlights": [
-            "Tudo do Plus",
+            "Pacote Plus",
             "Projeção de saldo",
             "Relatórios simples",
         ],

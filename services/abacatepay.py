@@ -61,7 +61,13 @@ def _format_cellphone(value: str) -> str:
 def _ascii_text(value: str) -> str:
     if not value:
         return ""
-    return unicodedata.normalize("NFKD", value).encode("ascii", "ignore").decode("ascii")
+    raw = str(value)
+    if any(ord(ch) in (194, 195) for ch in raw):
+        try:
+            raw = raw.encode("latin1").decode("utf-8")
+        except UnicodeError:
+            raw = str(value)
+    return unicodedata.normalize("NFKD", raw).encode("ascii", "ignore").decode("ascii")
 
 
 def _normalize_customer(customer: Dict[str, Any]) -> Dict[str, str]:
@@ -129,7 +135,7 @@ def create_plan_billing(
     amount_cents = int(round(float(plan_def["price_month"]) * 100))
 
     product_name = _ascii_text(plan_def["name"]) or "Plano"
-    product_external_id = f"plan-{plan}-v3"
+    product_external_id = f"plan-{plan}-{external_id[:8]}"
 
     payload: Dict[str, Any] = {
         "frequency": "ONE_TIME",
@@ -168,18 +174,22 @@ def create_plan_billing(
     try:
         body = resp.json()
     except Exception:
-        if current_app.config.get("ABACATEPAY_DEV_MODE"):
-            snippet = (resp.text or "").strip()
-            if snippet:
-                snippet = snippet[:300]
-                raise AbacatePayError(
-                    f"Resposta invalida da AbacatePay (HTTP {resp.status_code}): {snippet}"
-                )
+        snippet = (resp.text or "").strip()
+        if "too many requests" in snippet.lower():
+            raise AbacatePayError(
+                "Muitas tentativas em pouco tempo. Aguarde alguns minutos e tente novamente."
+            )
+        if current_app.config.get("ABACATEPAY_DEV_MODE") and snippet:
+            raise AbacatePayError(
+                f"Resposta invalida da AbacatePay (HTTP {resp.status_code}): {snippet[:300]}"
+            )
         raise AbacatePayError(f"Resposta invalida da AbacatePay (HTTP {resp.status_code}).")
 
     # AbacatePay pode retornar 200 com success=false
     if (not resp.ok) or (body.get("success") is False):
         err = body.get("error") or body.get("message") or body
+        if isinstance(err, str) and "too many requests" in err.lower():
+            err = "Muitas tentativas em pouco tempo. Aguarde alguns minutos e tente novamente."
         raise AbacatePayError(f"Erro AbacatePay: {err}")
 
     body = body or {}

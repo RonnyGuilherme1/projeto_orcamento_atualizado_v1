@@ -38,11 +38,11 @@
     </a>
     <a class="nav-item {% if not has_feature('projection') %}locked{% endif %}" href="{% if has_feature('projection') %}/app/projection{% else %}/app/upgrade{% endif %}" title="Projeção" data-sidebar-close>
       <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-7"/></svg></span><span class="nav-text">Projeção</span>
-      {% if not has_feature('projection') %}<span class="pill">Plus</span>{% endif %}
+      {% if not has_feature('projection') %}<span class="pill">Pro</span>{% endif %}
     </a>
     <a class="nav-item {% if not has_feature('reports') %}locked{% endif %}" href="{% if has_feature('reports') %}/app/reports{% else %}/app/upgrade{% endif %}" title="Relatórios" data-sidebar-close>
       <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h10a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M8 7h8"/><path d="M8 11h8"/><path d="M8 15h5"/></svg></span><span class="nav-text">Relatórios</span>
-      {% if not has_feature('reports') %}<span class="pill">Plus</span>{% endif %}
+      {% if not has_feature('reports') %}<span class="pill">Pro</span>{% endif %}
     </a>
 
     <div class="nav-section">Conta</div>

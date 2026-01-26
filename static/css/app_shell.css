@@ -68,7 +68,7 @@ body.app-body input[type="number"]::-webkit-outer-spin-button {
 
 .app-shell {
   display: grid;
-  grid-template-columns: 280px 1fr;
+  grid-template-columns: 252px 1fr;
   min-height: 100vh;
   min-width: 0;
 }
@@ -77,7 +77,7 @@ body.app-body input[type="number"]::-webkit-outer-spin-button {
   position: sticky;
   top: 0;
   height: 100vh;
-  padding: 12px;
+  padding: 11px;
   border-right: 1px solid rgba(255,255,255,0.08);
   background: rgba(0,0,0,0.18);
   backdrop-filter: blur(14px);
@@ -88,9 +88,9 @@ body.app-body input[type="number"]::-webkit-outer-spin-button {
 .sidebar-brand {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 9px;
   width: 100%;
-  padding: 6px 10px;
+  padding: 5px 9px;
   border-radius: 16px;
   border: 1px solid rgba(255,255,255,0.08);
   background: rgba(255,255,255,0.04);
@@ -105,8 +105,8 @@ body.app-body input[type="number"]::-webkit-outer-spin-button {
 }
 
 .sidebar-logo {
-  width: 34px;
-  height: 34px;
+  width: 31px;
+  height: 31px;
   border-radius: 12px;
   box-shadow: 0 0 0 1px rgba(255,255,255,0.10);
 }
@@ -128,14 +128,14 @@ body.app-body input[type="number"]::-webkit-outer-spin-button {
 }
 
 .sidebar-user {
-  margin-top: 14px;
-  padding: 12px;
+  margin-top: 13px;
+  padding: 11px;
   border-radius: 16px;
   border: 1px solid rgba(255,255,255,0.08);
   background: rgba(255,255,255,0.03);
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 11px;
 }
 
 
@@ -144,21 +144,21 @@ body.app-body input[type="number"]::-webkit-outer-spin-button {
   align-items: baseline;
   justify-content: space-between;
   gap: 10px;
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .muted { color: var(--muted); }
 
 .sidebar-nav {
-  margin-top: 14px;
+  margin-top: 13px;
   display: grid;
-  gap: 6px;
+  gap: 5px;
 }
 
 .nav-section {
-  margin: 10px 0 4px;
+  margin: 9px 0 3px;
   color: rgba(255,255,255,0.55);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 900;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -168,13 +168,13 @@ body.app-body input[type="number"]::-webkit-outer-spin-button {
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  gap: 10px;
-  padding: 10px 12px;
-  border-radius: 14px;
+  gap: 9px;
+  padding: 9px 11px;
+  border-radius: 13px;
   text-decoration: none;
   color: rgba(255,255,255,0.78);
   font-weight: 750;
-  font-size: 13px;
+  font-size: 12px;
   border: 1px solid transparent;
   position: relative;
 }
@@ -194,11 +194,11 @@ body.app-body input[type="number"]::-webkit-outer-spin-button {
 }
 
 .pill {
-  padding: 4px 8px;
+  padding: 3px 7px;
   border-radius: 999px;
   background: rgba(255,255,255,0.06);
   border: 1px solid rgba(255,255,255,0.10);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 900;
   color: rgba(255,255,255,0.82);
 }
@@ -373,9 +373,9 @@ body.app-body a:hover { text-decoration: none; }
 }
 
 .sidebar-user-avatar {
-  width: 44px;
-  height: 44px;
-  border-radius: 14px;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -392,13 +392,13 @@ body.app-body a:hover { text-decoration: none; }
 
 .sidebar-user-name {
   font-weight: 900;
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .sidebar-user-plan {
   color: rgba(255,255,255,0.68);
   font-weight: 800;
-  font-size: 12px;
+  font-size: 11px;
 }
 
 /* ---------- Mobile top bar (hamburger) ---------- */
@@ -465,8 +465,8 @@ body.app-body a:hover { text-decoration: none; }
   Em telas menores (<=1100px), mantém o comportamento de drawer (ver media query abaixo).
 */
 :root {
-  --sidebar-w: 280px;
-  --sidebar-w-compact: 86px;
+  --sidebar-w: 252px;
+  --sidebar-w-compact: 78px;
 }
 
 .nav-icon {
