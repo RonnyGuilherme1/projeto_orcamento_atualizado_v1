@@ -29,11 +29,11 @@ PLANS: dict[str, dict] = {
         "name": "Plus",
         "price_month": 29.90,
         "popular": True,
-        "tagline": "análises visuais e comparações",
+        "tagline": "insights e automacao inteligente",
         "highlights": [
-            "Gráficos mensais e anuais",
-            "Comparação de períodos",
-            "Filtros avançados no histórico",
+            "Graficos mensais e anuais",
+            "Insights e variacoes do periodo",
+            "Regras e automacao no historico",
         ],
         "features": {
             "charts",

@@ -1,0 +1,345 @@
+body.app-body .compare-page{
+  display: grid;
+  gap: 16px;
+}
+
+body.app-body .compare-hero .panel-head{
+  align-items: center;
+}
+
+body.app-body .compare-actions{
+  gap: 10px;
+}
+
+body.app-body .compare-periods{
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+body.app-body .compare-period{
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: rgba(0, 0, 0, 0.18);
+  padding: 12px;
+  display: grid;
+  gap: 10px;
+}
+
+body.app-body .compare-period-head{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+body.app-body .compare-label{
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+body.app-body .compare-toggle{
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+body.app-body .compare-toggle input{
+  accent-color: rgba(76, 175, 80, 0.8);
+}
+
+body.app-body .compare-selects{
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+body.app-body .compare-range{
+  display: none;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+body.app-body .compare-period.use-range .compare-selects{
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+body.app-body .compare-period.use-range .compare-range{
+  display: grid;
+}
+
+body.app-body .compare-error{
+  margin-top: 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 77, 79, 0.4);
+  background: rgba(255, 77, 79, 0.12);
+  color: rgba(255, 255, 255, 0.92);
+  font-weight: 800;
+  font-size: 12px;
+  padding: 10px 12px;
+}
+
+body.app-body .compare-grid{
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+body.app-body .insight-grid{
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+body.app-body .insight-card{
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: rgba(0, 0, 0, 0.18);
+  padding: 14px;
+  display: grid;
+  gap: 6px;
+}
+
+body.app-body .insight-label{
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+body.app-body .insight-card strong{
+  font-size: 16px;
+}
+
+body.app-body .insight-meta{
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.65);
+  font-weight: 700;
+}
+
+body.app-body .compare-card{
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: rgba(0, 0, 0, 0.18);
+  padding: 14px;
+  display: grid;
+  gap: 12px;
+}
+
+body.app-body .compare-card h3{
+  margin: 0;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+body.app-body .compare-values{
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+body.app-body .compare-value-label{
+  display: block;
+  font-size: 11px;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.65);
+  margin-bottom: 4px;
+}
+
+body.app-body .compare-values strong{
+  font-size: 15px;
+}
+
+body.app-body .compare-delta{
+  font-size: 12px;
+  font-weight: 900;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.05);
+  width: fit-content;
+}
+
+body.app-body .compare-delta.is-positive{
+  border-color: rgba(76, 175, 80, 0.4);
+  background: rgba(76, 175, 80, 0.18);
+  color: rgba(255, 255, 255, 0.96);
+}
+
+body.app-body .compare-delta.is-negative{
+  border-color: rgba(255, 77, 79, 0.4);
+  background: rgba(255, 77, 79, 0.18);
+  color: rgba(255, 255, 255, 0.96);
+}
+
+body.app-body .compare-lists{
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+body.app-body .compare-list{
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: rgba(0, 0, 0, 0.18);
+  padding: 14px;
+  display: grid;
+  gap: 10px;
+}
+
+body.app-body .compare-list h3{
+  margin: 0;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+body.app-body .compare-list-items{
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+body.app-body .compare-list-items li{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+body.app-body .compare-list-items .item-meta{
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: 700;
+  font-size: 11px;
+}
+
+body.app-body .compare-chart .chart-head{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+body.app-body .compare-chart-legend{
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+body.app-body .legend-pill{
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 900;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+body.app-body .legend-pill.legend-a{
+  border-color: rgba(76, 175, 80, 0.45);
+  background: rgba(76, 175, 80, 0.18);
+}
+
+body.app-body .legend-pill.legend-b{
+  border-color: rgba(66, 165, 245, 0.45);
+  background: rgba(66, 165, 245, 0.18);
+}
+
+body.app-body .compare-bars{
+  display: grid;
+  gap: 12px;
+}
+
+body.app-body .compare-empty{
+  font-size: 12px;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.65);
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+body.app-body .compare-bar-row{
+  display: grid;
+  grid-template-columns: 130px 1fr 130px;
+  gap: 12px;
+  align-items: center;
+}
+
+body.app-body .compare-bar-label{
+  font-size: 12px;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+body.app-body .compare-bar-group{
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+body.app-body .compare-bar-track{
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+body.app-body .compare-bar{
+  height: 100%;
+  border-radius: 999px;
+}
+
+body.app-body .compare-bar.bar-a{
+  background: rgba(76, 175, 80, 0.9);
+}
+
+body.app-body .compare-bar.bar-b{
+  background: rgba(66, 165, 245, 0.9);
+}
+
+body.app-body .compare-bar-values{
+  display: grid;
+  gap: 4px;
+  text-align: right;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 800;
+}
+
+@media (max-width: 980px){
+  body.app-body .compare-periods,
+  body.app-body .compare-grid,
+  body.app-body .compare-lists,
+  body.app-body .insight-grid{
+    grid-template-columns: 1fr;
+  }
+
+  body.app-body .compare-bar-row{
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+
+  body.app-body .compare-bar-values{
+    text-align: left;
+  }
+}

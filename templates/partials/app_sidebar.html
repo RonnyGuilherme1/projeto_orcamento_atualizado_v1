@@ -28,12 +28,12 @@
       <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14v4"/><path d="M12 10v8"/><path d="M17 6v12"/></svg></span><span class="nav-text">Gráficos</span>
       {% if not has_feature('charts') %}<span class="pill">Plus</span>{% endif %}
     </a>
-    <a class="nav-item {% if not has_feature('compare') %}locked{% endif %}" href="{% if has_feature('compare') %}/app/compare{% else %}/app/upgrade{% endif %}" title="Comparação" data-sidebar-close>
-      <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3H5a2 2 0 0 0-2 2v5"/><path d="M14 21h5a2 2 0 0 0 2-2v-5"/><path d="M21 10V5a2 2 0 0 0-2-2h-5"/><path d="M3 14v5a2 2 0 0 0 2 2h5"/><path d="M8 8h8v8H8z"/></svg></span><span class="nav-text">Comparação</span>
+    <a class="nav-item {% if not has_feature('compare') %}locked{% endif %}" href="{% if has_feature('compare') %}/app/compare{% else %}/app/upgrade{% endif %}" title="Insights" data-sidebar-close>
+      <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3H5a2 2 0 0 0-2 2v5"/><path d="M14 21h5a2 2 0 0 0 2-2v-5"/><path d="M21 10V5a2 2 0 0 0-2-2h-5"/><path d="M3 14v5a2 2 0 0 0 2 2h5"/><path d="M8 8h8v8H8z"/></svg></span><span class="nav-text">Insights</span>
       {% if not has_feature('compare') %}<span class="pill">Plus</span>{% endif %}
     </a>
-    <a class="nav-item {% if not has_feature('filters') %}locked{% endif %}" href="{% if has_feature('filters') %}/app/filters{% else %}/app/upgrade{% endif %}" title="Filtros" data-sidebar-close>
-      <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 3H2l8 9v7l4 2v-9z"/></svg></span><span class="nav-text">Filtros</span>
+    <a class="nav-item {% if not has_feature('filters') %}locked{% endif %}" href="{% if has_feature('filters') %}/app/filters{% else %}/app/upgrade{% endif %}" title="Regras &amp; Automação" data-sidebar-close>
+      <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 3H2l8 9v7l4 2v-9z"/></svg></span><span class="nav-text">Regras &amp; Automação</span>
       {% if not has_feature('filters') %}<span class="pill">Plus</span>{% endif %}
     </a>
     <a class="nav-item {% if not has_feature('projection') %}locked{% endif %}" href="{% if has_feature('projection') %}/app/projection{% else %}/app/upgrade{% endif %}" title="Projeção" data-sidebar-close>

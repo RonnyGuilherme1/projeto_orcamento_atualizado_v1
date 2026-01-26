@@ -65,6 +65,93 @@ def _require_verified_json():
     return None
 
 
+def _parse_iso_date(value: str | None) -> date | None:
+    if not value:
+        return None
+    try:
+        return date.fromisoformat(value)
+    except ValueError:
+        return None
+
+
+def _summary_for_period(start: date, end: date) -> dict:
+    entries = (
+        Entrada.query
+        .filter(
+            Entrada.user_id == current_user.id,
+            Entrada.data >= start,
+            Entrada.data <= end,
+        )
+        .all()
+    )
+
+    receitas_total = sum(float(e.valor) for e in entries if e.tipo == "receita")
+    despesas_total = sum(float(e.valor) for e in entries if e.tipo == "despesa")
+    receitas_count = sum(1 for e in entries if e.tipo == "receita")
+    despesas_count = sum(1 for e in entries if e.tipo == "despesa")
+
+    saldo_projetado = receitas_total - despesas_total
+
+    categoria_totais = {key: 0.0 for key in CATEGORIAS}
+    for e in entries:
+        if e.tipo != "despesa":
+            continue
+        cat = _normalize_categoria(getattr(e, "categoria", None))
+        categoria_totais[cat] += float(e.valor)
+
+    categorias = []
+    for key, total in categoria_totais.items():
+        if total <= 0:
+            continue
+        percent = (total / despesas_total * 100) if despesas_total else 0.0
+        categorias.append(
+            {
+                "key": key,
+                "label": CATEGORIAS.get(key, "Outros"),
+                "total": round(total, 2),
+                "percent": round(percent, 1),
+            }
+        )
+    categorias.sort(key=lambda item: item["total"], reverse=True)
+
+    top_receitas = sorted(
+        [e for e in entries if e.tipo == "receita"],
+        key=lambda item: float(item.valor),
+        reverse=True,
+    )[:10]
+    top_despesas = sorted(
+        [e for e in entries if e.tipo == "despesa"],
+        key=lambda item: float(item.valor),
+        reverse=True,
+    )[:10]
+
+    def _entry_payload(entry: Entrada) -> dict:
+        return {
+            "id": entry.id,
+            "date": entry.data.isoformat() if entry.data else None,
+            "type": entry.tipo,
+            "description": entry.descricao,
+            "category": _normalize_categoria(getattr(entry, "categoria", None)),
+            "value": round(float(entry.valor), 2),
+            "status": entry.status,
+        }
+
+    return {
+        "period": {"start": start.isoformat(), "end": end.isoformat()},
+        "summary": {
+            "receitas": round(receitas_total, 2),
+            "despesas": round(despesas_total, 2),
+            "saldo_projetado": round(saldo_projetado, 2),
+            "entradas": len(entries),
+            "receitas_count": receitas_count,
+            "despesas_count": despesas_count,
+        },
+        "categories": categorias,
+        "top_entries": [_entry_payload(item) for item in top_receitas]
+        + [_entry_payload(item) for item in top_despesas],
+    }
+
+
 def _history_from_orders(orders):
     items = []
     for order in orders or []:
@@ -464,6 +551,23 @@ def charts_data():
             "updated_at": date.today().isoformat(),
         }
     )
+
+
+@analytics_bp.get("/app/compare/data")
+@login_required
+def compare_data():
+    blocked = _require_verified_json()
+    if blocked:
+        return blocked
+
+    start = _parse_iso_date(request.args.get("start"))
+    end = _parse_iso_date(request.args.get("end"))
+    if not start or not end:
+        return jsonify({"error": "invalid_dates"}), 400
+    if end < start:
+        return jsonify({"error": "invalid_range"}), 400
+
+    return jsonify(_summary_for_period(start, end))
 
 
 @analytics_bp.get("/app/compare")
