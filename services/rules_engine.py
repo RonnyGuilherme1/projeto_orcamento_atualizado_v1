@@ -225,6 +225,33 @@ def _rule_matches(entry, conditions: list[dict]) -> bool:
     return all(_match_condition(entry, cond) for cond in conditions)
 
 
+def _normalize_conditions(conditions: list[dict], actions: list[dict]) -> list[dict]:
+    action_category = None
+    action_status = None
+    for action in actions:
+        action_type = (action.get("type") or "").strip().lower()
+        if action_type == "set_category" and action_category is None:
+            action_category = str(action.get("value") or "").strip().lower()
+        if action_type == "set_status" and action_status is None:
+            action_status = str(action.get("value") or "").strip().lower()
+
+    if not action_category and not action_status:
+        return conditions
+
+    filtered = []
+    for cond in conditions:
+        field = (cond.get("field") or "").strip().lower()
+        value = str(cond.get("value") or "").strip().lower()
+        if field == "categoria" and action_category and value == action_category:
+            # evita exigir a mesma categoria que a regra vai aplicar
+            continue
+        if field == "status" and action_status and value == action_status:
+            # evita exigir o mesmo status que a regra vai aplicar
+            continue
+        filtered.append(cond)
+    return filtered
+
+
 def _trigger_filter(query, trigger: str):
     if trigger == "create":
         return query.filter(AutomationRule.apply_on_create.is_(True))
@@ -261,6 +288,7 @@ def apply_rule_to_entry(rule: AutomationRule, entry, user, trigger: str, dry_run
 
     conditions = _parse_json_list(rule.conditions_json)
     actions = _parse_json_list(rule.actions_json)
+    conditions = _normalize_conditions(conditions, actions)
 
     matched = _rule_matches(entry, conditions)
     if not matched:
@@ -301,6 +329,7 @@ def apply_rules_to_entry(entry, user, trigger: str, dry_run: bool = False):
     for rule in rules:
         conditions = _parse_json_list(rule.conditions_json)
         actions = _parse_json_list(rule.actions_json)
+        conditions = _normalize_conditions(conditions, actions)
 
         matched = _rule_matches(entry, conditions)
         if not matched:

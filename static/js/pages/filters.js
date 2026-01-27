@@ -344,7 +344,7 @@
     fieldEnabled.checked = rule ? (rule.is_enabled !== undefined ? !!rule.is_enabled : true) : true;
 
     fieldApplyCreate.checked = rule ? !!rule.apply_on_create : true;
-    fieldApplyEdit.checked = rule ? !!rule.apply_on_edit : false;
+    fieldApplyEdit.checked = rule ? !!rule.apply_on_edit : true;
     fieldApplyImport.checked = rule ? !!rule.apply_on_import : false;
     fieldStop.checked = rule ? !!rule.stop_after_apply : false;
 
