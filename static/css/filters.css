@@ -333,9 +333,9 @@ body.app-body.theme-light .summary-card,
 body.app-body.theme-light .template-card,
 body.app-body.theme-light .rule-item,
 body.app-body.theme-light .rule-card{
-  background: rgba(255, 255, 255, 0.9);
-  border-color: rgba(15, 23, 32, 0.12);
-  box-shadow: 0 10px 24px rgba(15, 23, 32, 0.1);
+  background: #ffffff;
+  border-color: rgba(15, 23, 32, 0.2);
+  box-shadow: 0 12px 26px rgba(15, 23, 32, 0.14);
 }
 
 body.app-body.theme-light .rules-banner,
@@ -346,7 +346,7 @@ body.app-body.theme-light .rules-applies,
 body.app-body.theme-light .rule-meta,
 body.app-body.theme-light .rule-stats,
 body.app-body.theme-light .rule-card p{
-  color: rgba(15, 23, 32, 0.62);
+  color: var(--text);
 }
 
 body.app-body.theme-light .rules-banner strong,
@@ -354,16 +354,16 @@ body.app-body.theme-light .summary-card strong,
 body.app-body.theme-light .template-card strong,
 body.app-body.theme-light .rule-item strong,
 body.app-body.theme-light .rule-card strong{
-  color: rgba(15, 23, 32, 0.95);
+  color: var(--text);
 }
 
 body.app-body.theme-light .rules-pill,
 body.app-body.theme-light .rule-pill,
 body.app-body.theme-light .lock-pill,
 body.app-body.theme-light .btn-tertiary{
-  background: rgba(15, 23, 32, 0.06);
-  border-color: rgba(15, 23, 32, 0.14);
-  color: rgba(15, 23, 32, 0.7);
+  background: rgba(15, 23, 32, 0.04);
+  border-color: rgba(15, 23, 32, 0.2);
+  color: var(--text);
 }
 
 body.app-body.theme-light .btn-tertiary:hover{
@@ -371,7 +371,7 @@ body.app-body.theme-light .btn-tertiary:hover{
 }
 
 body.app-body.theme-light .switch{
-  color: rgba(15, 23, 32, 0.65);
+  color: var(--text);
 }
 
 body.app-body.theme-light .switch-track{

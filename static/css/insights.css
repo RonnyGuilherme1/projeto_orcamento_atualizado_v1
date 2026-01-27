@@ -12,6 +12,82 @@ body.app-body .compare-actions{
   flex-wrap: wrap;
 }
 
+body.page-compare .select{
+  position: relative;
+  width: 100%;
+}
+
+body.page-compare .select-native{
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+  width: 0;
+  height: 0;
+}
+
+body.page-compare .select-trigger{
+  text-align: left;
+  padding-right: 34px;
+  position: relative;
+}
+
+body.page-compare .select-trigger::after{
+  content: "";
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 6px solid rgba(255, 255, 255, 0.75);
+  transform: translateY(-40%);
+  pointer-events: none;
+}
+
+body.page-compare .select-options{
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 10;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: #0f141b;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.45);
+  padding: 6px;
+  display: none;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+body.page-compare .select.open .select-options{
+  display: block;
+}
+
+body.page-compare .select-option{
+  width: 100%;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.88);
+  padding: 8px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+body.page-compare .select-option:hover,
+body.page-compare .select-option.is-selected{
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+}
+
+body.page-compare .select.is-disabled .select-trigger{
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 body.app-body .compare-custom-range{
   display: flex;
   gap: 10px;
@@ -483,37 +559,37 @@ body.app-body.theme-light .compare-list-items .item-meta,
 body.app-body.theme-light .compare-bar-values,
 body.app-body.theme-light .compare-bar-label,
 body.app-body.theme-light .insight-explain-meta{
-  color: rgba(15, 23, 32, 0.62);
+  color: var(--text);
 }
 
 body.app-body.theme-light .compare-period,
 body.app-body.theme-light .insight-card,
 body.app-body.theme-light .compare-card,
 body.app-body.theme-light .compare-list{
-  background: rgba(255, 255, 255, 0.9);
-  border-color: rgba(15, 23, 32, 0.12);
-  box-shadow: 0 10px 24px rgba(15, 23, 32, 0.1);
+  background: #ffffff;
+  border-color: rgba(15, 23, 32, 0.2);
+  box-shadow: 0 12px 26px rgba(15, 23, 32, 0.14);
 }
 
 body.app-body.theme-light .compare-context-item,
 body.app-body.theme-light .compare-delta,
 body.app-body.theme-light .legend-pill{
-  background: rgba(15, 23, 32, 0.05);
-  border-color: rgba(15, 23, 32, 0.12);
-  color: rgba(15, 23, 32, 0.75);
+  background: rgba(15, 23, 32, 0.04);
+  border-color: rgba(15, 23, 32, 0.18);
+  color: var(--text);
 }
 
 body.app-body.theme-light .info-pill{
-  background: rgba(15, 23, 32, 0.08);
-  border-color: rgba(15, 23, 32, 0.2);
-  color: rgba(15, 23, 32, 0.7);
+  background: rgba(15, 23, 32, 0.06);
+  border-color: rgba(15, 23, 32, 0.22);
+  color: var(--text);
 }
 
 body.app-body.theme-light .compare-list-items li,
 body.app-body.theme-light .compare-empty{
-  background: rgba(15, 23, 32, 0.04);
-  border-color: rgba(15, 23, 32, 0.08);
-  color: rgba(15, 23, 32, 0.6);
+  background: #ffffff;
+  border-color: rgba(15, 23, 32, 0.18);
+  color: var(--text);
 }
 
 body.app-body.theme-light .compare-bar-track{
@@ -557,4 +633,30 @@ body.app-body.theme-light .compare-error{
   background: rgba(255, 77, 79, 0.12);
   color: #8b1d1d;
   border-color: rgba(255, 77, 79, 0.35);
+}
+
+body.app-body.theme-light.page-compare .select-trigger{
+  background: #ffffff;
+  border-color: rgba(15, 23, 32, 0.2);
+  color: var(--text);
+}
+
+body.app-body.theme-light.page-compare .select-trigger::after{
+  border-top-color: rgba(15, 23, 32, 0.6);
+}
+
+body.app-body.theme-light.page-compare .select-options{
+  background: #ffffff;
+  border-color: rgba(15, 23, 32, 0.2);
+  box-shadow: 0 12px 26px rgba(15, 23, 32, 0.14);
+}
+
+body.app-body.theme-light.page-compare .select-option{
+  color: var(--text);
+}
+
+body.app-body.theme-light.page-compare .select-option:hover,
+body.app-body.theme-light.page-compare .select-option.is-selected{
+  background: rgba(15, 23, 32, 0.08);
+  color: #0f1720;
 }

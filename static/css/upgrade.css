@@ -9,6 +9,7 @@
   --r: 18px;
   --shadow: 0 18px 60px rgba(0, 0, 0, 0.55);
   --bg-0: #0b0f14;
+  --topbar-h: 56px;
 }
 
 body.app-body{
@@ -64,27 +65,30 @@ body.app-body input[type="number"]::-webkit-inner-spin-button, body.app-body inp
 .sidebar{
   top: 0;
   height: 100vh;
-  padding: 10px;
+  padding: 0;
   border-right: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(0, 0, 0, 0.18);
   backdrop-filter: blur(14px);
   overflow-y: auto;
-  overflow-x: hidden;
+  overflow-x: visible;
   position: sticky;
+  z-index: 2500;
 }
 
 .sidebar-brand{
   align-items: center;
   gap: 8px;
   width: 100%;
-  padding: 4px 8px;
-  border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.04);
+  padding: 0 14px;
+  border-radius: 0;
+  border: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  background: transparent;
   cursor: pointer;
   color: inherit;
   appearance: none;
   display: flex;
+  min-height: var(--topbar-h);
 }
 
 .sidebar-brand:focus-visible{
@@ -133,7 +137,8 @@ body.app-body input[type="number"]::-webkit-inner-spin-button, body.app-body inp
 .sidebar-nav{
   display: grid;
   gap: 4px;
-  margin-top: 11px;
+  margin-top: 0;
+  padding: 12px 10px 10px;
 }
 
 .nav-section{
@@ -186,19 +191,21 @@ body.app-body input[type="number"]::-webkit-inner-spin-button, body.app-body inp
 
 .app-content{
   min-width: 0;
-  padding: 18px 32px 30px 32px;
+  padding: 0;
 }
 
 .app-topbar{
   align-items: center;
   justify-content: space-between;
   gap: 14px;
-  padding: 14px 16px;
+  padding: 0 16px;
   border: 1px solid rgba(255, 255, 255, 0.10);
   background: rgba(255, 255, 255, 0.05);
-  border-radius: calc(var(--r) + 4px);
+  border-radius: 0;
   box-shadow: var(--shadow);
   display: flex;
+  min-height: var(--topbar-h);
+  border-left: 0;
 }
 
 .page-title{
@@ -220,11 +227,12 @@ body.app-body input[type="number"]::-webkit-inner-spin-button, body.app-body inp
 .app-main{
   min-width: 0;
   margin-top: 14px;
+  padding: 18px 32px 30px;
 }
 
 .app-card{
   border: 1px solid var(--border);
-  border-radius: calc(var(--r) + 6px);
+  border-radius: 4px;
   padding: 16px;
   box-shadow: var(--shadow);
   background: var(--card);
@@ -429,9 +437,18 @@ body.sidebar-collapsed .sidebar{
   left: 0;
   width: var(--sidebar-w-compact);
   transform: none;
-  overflow-x: hidden;
-  padding: 8px;
+  overflow-x: visible;
+  padding: 0;
   position: sticky;
+}
+
+body.sidebar-collapsed .sidebar{
+  overflow: visible;
+}
+
+body.sidebar-collapsed .sidebar-nav{
+  overflow: visible;
+  flex: 0 0 auto;
 }
 
 body.sidebar-collapsed .sidebar-overlay{
@@ -451,12 +468,13 @@ body.sidebar-collapsed .sidebar-title{
   display: none;
 }
 
-body.sidebar-collapsed .sidebar-user{
+body.sidebar-collapsed .sidebar-user-toggle{
   padding: 12px 8px;
   justify-content: center;
 }
 
-body.sidebar-collapsed .sidebar-user-meta{
+body.sidebar-collapsed .sidebar-user-meta,
+body.sidebar-collapsed .sidebar-user-chevron{
   display: none;
 }
 
@@ -509,7 +527,7 @@ body.sidebar-open .app-shell{
 }
 
 .app-content{
-  padding: 16px 16px 26px;
+  padding: 0;
 }
 
 }
@@ -564,11 +582,12 @@ body.sidebar-open .sidebar-overlay{
 }
 
 .app-content{
-  padding: 14px;
+  padding: 0;
 }
 
 .app-main{
   margin-top: 12px;
+  padding: 14px;
 }
 
 }
@@ -617,7 +636,7 @@ body.app-body .page{
 
 body.app-body .panel{
   border: 1px solid rgba(255, 255, 255, 0.10);
-  border-radius: 22px;
+  border-radius: 4px;
   padding: 16px;
   box-shadow: 0 18px 60px rgba(0, 0, 0, 0.35);
   background: rgba(255, 255, 255, 0.05);
@@ -757,6 +776,543 @@ body.app-body .panel-actions{
   display:none !important;
 }
 
+/* --- Sidebar footer + topbar (upgrade) --- */
+body.app-body .sidebar{
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+}
+
+body.app-body .sidebar-spacer{
+  flex: 1;
+}
+
+body.app-body .sidebar-footer{
+  margin-top: 12px;
+  position: relative;
+  padding: 12px 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 -10px 24px rgba(0, 0, 0, 0.18);
+}
+
+body.app-body .sidebar-user-toggle{
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 4px;
+  border-radius: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+body.app-body .sidebar-user-toggle:hover{
+  background: rgba(255, 255, 255, 0.06);
+}
+
+body.app-body .sidebar-user-chevron{
+  margin-left: auto;
+  opacity: 0.7;
+}
+
+body.app-body .sidebar-user-menu{
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 0;
+  right: 0;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: rgba(15, 20, 28, 0.96);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.45);
+  padding: 10px;
+  display: none;
+  z-index: 2000;
+}
+
+body.sidebar-collapsed .sidebar-user-menu{
+  left: calc(100% + 12px);
+  right: auto;
+  bottom: 0;
+  width: 240px;
+}
+
+body.app-body .sidebar-user-menu.is-open{
+  display: grid;
+  gap: 6px;
+}
+
+body.app-body .sidebar-user-info{
+  display: grid;
+  gap: 2px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.75);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 8px;
+  margin-bottom: 4px;
+}
+
+body.app-body .sidebar-user-info strong{
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.95);
+}
+
+body.app-body .user-menu-item{
+  padding: 8px 10px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+body.app-body .user-menu-item:hover{
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.95);
+}
+
+body.app-body .user-menu-item.danger{
+  color: rgba(255, 77, 79, 0.95);
+}
+
+body.app-body .app-topbar{
+  padding: 0 16px;
+  border-radius: 0;
+  background: rgba(255, 255, 255, 0.04);
+  min-height: var(--topbar-h);
+  border-left: 0;
+}
+
+body.app-body .topbar-left{
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+body.app-body .topbar-welcome{
+  font-size: 15px;
+  font-weight: 800;
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  align-items: baseline;
+}
+
+body.app-body .welcome-label{
+  color: rgba(255, 255, 255, 0.7);
+}
+
+body.app-body .welcome-name{
+  font-size: 16px;
+}
+
+body.app-body .topbar-actions{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+body.app-body .topbar-actions .icon-btn{
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+}
+
+body.app-body .topbar-search{
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: rgba(255, 255, 255, 0.04);
+  position: relative;
+  height: 36px;
+}
+
+body.app-body .topbar-search .search-icon{
+  opacity: 0.7;
+  display: inline-flex;
+}
+
+body.app-body .topbar-search .search-input{
+  border: 0;
+  background: transparent;
+  outline: none;
+  min-width: 200px;
+  font-size: 12px;
+  color: inherit;
+}
+
+body.app-body .topbar-search .search-kbd{
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.05);
+  color: inherit;
+}
+
+body.app-body .search-panel{
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 0;
+  width: min(360px, 82vw);
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: rgba(18, 22, 28, 0.98);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.45);
+  padding: 12px;
+  display: none;
+  z-index: 2000;
+  max-height: 320px;
+  overflow: auto;
+}
+
+body.app-body .search-panel.is-open{
+  display: grid;
+  gap: 10px;
+}
+
+body.app-body .search-group{
+  display: grid;
+  gap: 6px;
+}
+
+body.app-body .search-group + .search-group{
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+body.app-body .search-group-title{
+  font-size: 11px;
+  font-weight: 900;
+  color: rgba(255, 255, 255, 0.6);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 2px 6px 0;
+}
+
+body.app-body .search-item{
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  text-align: left;
+}
+
+body.app-body .search-item:hover,
+body.app-body .search-item.is-active{
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.98);
+}
+
+body.app-body .search-item-icon{
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.8;
+}
+
+body.app-body .search-empty{
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.65);
+  padding: 6px 8px;
+}
+
+body.app-body .topbar-notifications{
+  position: relative;
+}
+
+body.app-body .badge{
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: rgba(255, 77, 79, 0.9);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 900;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+body.app-body .notifications-panel{
+  position: absolute;
+  right: 0;
+  top: calc(100% + 10px);
+  width: min(320px, 70vw);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: rgba(15, 20, 28, 0.96);
+  box-shadow: 0 18px 50px rgba(0,0,0,0.45);
+  padding: 12px;
+  display: none;
+  z-index: 2000;
+}
+
+body.app-body .notifications-panel.is-open{
+  display: grid;
+  gap: 10px;
+}
+
+body.app-body .notifications-head{
+  font-size: 12px;
+  font-weight: 900;
+}
+
+body.app-body .notification-item{
+  display: grid;
+  gap: 6px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+body.app-body .notification-item strong{
+  font-size: 13px;
+}
+
+body.app-body .notification-link{
+  color: rgba(158, 228, 159, 0.9);
+  font-weight: 800;
+}
+
+body.app-body .notification-empty{
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+body.app-body .theme-icon{
+  display: inline-flex;
+}
+
+body.app-body.theme-light .theme-moon{
+  display: none;
+}
+
+body.app-body:not(.theme-light) .theme-sun{
+  display: none;
+}
+
+/* --- Theme light overrides (upgrade) --- */
+body.app-body.theme-light{
+  --bg-0: #f2f4f2;
+  --bg-1: #e5e8e6;
+  --card: #ffffff;
+  --border: rgba(15, 23, 32, 0.2);
+  --text: #0f1720;
+  --muted: #0f1720;
+  --shadow: 0 14px 28px rgba(15, 23, 32, 0.14);
+  color-scheme: light;
+  background: radial-gradient(1200px 650px at 20% 0%, rgba(76, 175, 80, 0.14), transparent 60%), radial-gradient(1000px 600px at 90% 10%, rgba(66, 165, 245, 0.10), transparent 55%), linear-gradient(180deg, var(--bg-0), var(--bg-1));
+}
+
+body.app-body.theme-light input,
+body.app-body.theme-light select,
+body.app-body.theme-light textarea{
+  color-scheme: light;
+}
+
+body.app-body.theme-light select{
+  background-color: #ffffff;
+  color: var(--text);
+  border-color: rgba(15, 23, 32, 0.2);
+}
+
+body.app-body.theme-light option{
+  background-color: #ffffff;
+  color: #0f1720;
+}
+
+body.app-body.theme-light .sidebar,
+body.app-body.theme-light .app-topbar,
+body.app-body.theme-light .app-mobilebar,
+body.app-body.theme-light .notifications-panel,
+body.app-body.theme-light .sidebar-user-menu,
+body.app-body.theme-light .app-card,
+body.app-body.theme-light .pricing-card,
+body.app-body.theme-light .history-row,
+body.app-body.theme-light .page-upgrade .upgrade-checkout-card,
+body.app-body.theme-light .page-upgrade .upgrade-checkout-plan,
+body.app-body.theme-light .page-upgrade .upgrade-return-plan,
+body.app-body.theme-light .page-upgrade .upgrade-return-status-card,
+body.app-body.theme-light .page-upgrade .upgrade-return-steps,
+body.app-body.theme-light .page-upgrade .upgrade-return-step-list li{
+  background: #ffffff;
+  border-color: rgba(15, 23, 32, 0.2);
+  box-shadow: 0 12px 26px rgba(15, 23, 32, 0.12);
+}
+
+body.app-body.theme-light .sidebar-brand{
+  border-bottom-color: rgba(15, 23, 32, 0.12);
+}
+
+body.app-body.theme-light .sidebar-footer{
+  border-top-color: rgba(15, 23, 32, 0.12);
+  box-shadow: 0 -10px 24px rgba(15, 23, 32, 0.08);
+}
+
+body.app-body.theme-light .sidebar-user-toggle:hover{
+  background: rgba(15, 23, 32, 0.05);
+}
+
+body.app-body.theme-light .page-upgrade .upgrade-checkout{
+  background: #ffffff;
+  border-color: rgba(15, 23, 32, 0.2);
+  box-shadow: 0 12px 26px rgba(15, 23, 32, 0.12);
+}
+
+body.app-body.theme-light .page-upgrade .upgrade-return{
+  background: #ffffff;
+  border-color: rgba(15, 23, 32, 0.2);
+  box-shadow: 0 12px 26px rgba(15, 23, 32, 0.12);
+}
+
+body.app-body.theme-light .page-upgrade .upgrade-return::before{
+  background: radial-gradient(closest-side, rgba(76, 175, 80, 0.12), transparent 70%);
+  opacity: 0.35;
+}
+
+body.app-body.theme-light .history-head{
+  background: rgba(15, 23, 32, 0.06);
+}
+
+body.app-body.theme-light .page-upgrade,
+body.app-body.theme-light .page-upgrade h2,
+body.app-body.theme-light .page-upgrade h3,
+body.app-body.theme-light .page-upgrade p,
+body.app-body.theme-light .page-upgrade li{
+  color: var(--text);
+}
+
+body.app-body.theme-light .upgrade-checkout-kicker,
+body.app-body.theme-light .upgrade-checkout-subtitle,
+body.app-body.theme-light .upgrade-checkout-plan-label,
+body.app-body.theme-light .upgrade-checkout-plan-price,
+body.app-body.theme-light .upgrade-return-kicker,
+body.app-body.theme-light .upgrade-return-subtitle,
+body.app-body.theme-light .upgrade-return-plan-label,
+body.app-body.theme-light .upgrade-return-plan-price,
+body.app-body.theme-light .upgrade-return-note,
+body.app-body.theme-light .upgrade-return-hint,
+body.app-body.theme-light .upgrade-return-step-list span,
+body.app-body.theme-light .notification-item,
+body.app-body.theme-light .notification-empty,
+body.app-body.theme-light .sidebar-user-info,
+body.app-body.theme-light .user-menu-item,
+body.app-body.theme-light .nav-section,
+body.app-body.theme-light .sidebar-sub,
+body.app-body.theme-light .status-label{
+  color: var(--text);
+}
+
+body.app-body.theme-light .status-pill.status-pending,
+body.app-body.theme-light .status-pill.status-paid{
+  color: var(--text);
+}
+
+body.app-body.theme-light .nav-item{
+  color: rgba(15, 23, 32, 0.78);
+}
+
+body.app-body.theme-light .nav-item:hover{
+  background: rgba(15, 23, 32, 0.06);
+  color: var(--text);
+}
+
+body.app-body.theme-light .nav-item.is-active{
+  background: rgba(76, 175, 80, 0.18);
+  border-color: rgba(76, 175, 80, 0.35);
+  color: var(--text);
+  box-shadow: inset 0 0 0 1px rgba(76, 175, 80, 0.2);
+}
+
+body.app-body.theme-light .pill{
+  background: rgba(15, 23, 32, 0.06);
+  border-color: rgba(15, 23, 32, 0.2);
+  color: var(--text);
+}
+
+body.app-body.theme-light .topbar-search{
+  background: rgba(15, 23, 32, 0.05);
+  border-color: rgba(15, 23, 32, 0.2);
+}
+
+body.app-body.theme-light .search-panel{
+  background: rgba(255, 255, 255, 0.98);
+  border-color: rgba(15, 23, 32, 0.2);
+  box-shadow: 0 18px 45px rgba(15, 23, 32, 0.14);
+}
+
+body.app-body.theme-light .search-group-title{
+  color: var(--text);
+}
+
+body.app-body.theme-light .search-group + .search-group{
+  border-top-color: rgba(15, 23, 32, 0.08);
+}
+
+body.app-body.theme-light .search-item{
+  color: rgba(15, 23, 32, 0.85);
+}
+
+body.app-body.theme-light .search-item:hover,
+body.app-body.theme-light .search-item.is-active{
+  background: rgba(15, 23, 32, 0.06);
+  border-color: rgba(15, 23, 32, 0.2);
+  color: rgba(15, 23, 32, 0.95);
+}
+
+body.app-body.theme-light .search-empty{
+  color: var(--text);
+}
+
+body.app-body.theme-light .status-warning{
+  color: var(--text);
+}
+
+body.app-body.theme-light .welcome-label,
+body.app-body.theme-light .sidebar-user-name,
+body.app-body.theme-light .sidebar-user-plan{
+  color: var(--text);
+}
+
+body.app-body.theme-light .muted{
+  color: var(--text);
+}
+
+@media (max-width: 1024px){
+  body.app-body .app-topbar{
+    display: none;
+  }
+}
+
+@media (min-width: 1025px){
+  body.sidebar-collapsed .sidebar-user-menu{
+    left: calc(100% + 12px);
+    right: auto;
+    bottom: 0;
+    width: 240px;
+  }
+}
+
 body.app-body .pricing-grid{
   grid-template-columns: repeat(3, 1fr);
   gap: 16px;
@@ -766,7 +1322,7 @@ body.app-body .pricing-grid{
 body.app-body .pricing-card{
   background: rgba(0, 0, 0, 0.18);
   border: 1px solid rgba(255, 255, 255, 0.10);
-  border-radius: 22px;
+  border-radius: 4px;
   padding: 22px;
   display: flex;
   flex-direction: column;
@@ -1275,4 +1831,116 @@ body.app-body .pricing-grid{
   .page-upgrade .upgrade-return-panel{
     grid-template-columns: 1fr;
   }
+}
+
+body.sidebar-collapsed .sidebar-user-menu{
+  left: calc(100% + 12px);
+  right: auto;
+  bottom: 0;
+  width: 240px;
+}
+
+body.sidebar-collapsed .sidebar-footer{
+  overflow: visible;
+}
+
+body.sidebar-collapsed .sidebar-footer .sidebar-user-menu{
+  position: fixed !important;
+  left: calc(var(--sidebar-w-compact) + 12px) !important;
+  right: auto !important;
+  bottom: 12px !important;
+  width: 240px;
+  z-index: 3000;
+}
+
+body.app-body.theme-light .sidebar-user-menu{
+  color: var(--text);
+}
+
+body.app-body.theme-light .sidebar-user-menu .user-menu-item{
+  color: var(--text);
+}
+
+body.app-body.theme-light .sidebar-user-info strong{
+  color: var(--text);
+}
+
+body.app-body.theme-light .sidebar-user-menu .user-menu-item:hover{
+  background: rgba(15, 23, 32, 0.06);
+  color: var(--text);
+}
+
+body.app-body.theme-light .sidebar-user-menu .user-menu-item.danger{
+  color: #8b1d1d;
+}
+
+body.app-body.theme-light .pricing-card,
+body.app-body.theme-light .pricing-card h3,
+body.app-body.theme-light .pricing-card .price,
+body.app-body.theme-light .pricing-card .price .value,
+body.app-body.theme-light .pricing-card .price .period,
+body.app-body.theme-light .plan-list,
+body.app-body.theme-light .plan-list li{
+  color: var(--text);
+}
+
+body.app-body.theme-light .plan-list li::marker{
+  color: var(--text);
+}
+
+body.app-body.theme-light .badge{
+  color: var(--text);
+  border-color: rgba(76, 175, 80, 0.35);
+  background: rgba(76, 175, 80, 0.18);
+}
+
+body.app-body.theme-light .page-upgrade .upgrade-checkout{
+  background: #ffffff;
+  border-color: rgba(15, 23, 32, 0.2);
+  box-shadow: 0 12px 26px rgba(15, 23, 32, 0.12);
+}
+
+body.app-body.theme-light .page-upgrade .upgrade-checkout-card,
+body.app-body.theme-light .page-upgrade .upgrade-checkout-plan{
+  background: #ffffff;
+  border-color: rgba(15, 23, 32, 0.2);
+  box-shadow: 0 10px 22px rgba(15, 23, 32, 0.12);
+}
+
+body.app-body.theme-light .page-upgrade .upgrade-checkout-plan-pill{
+  color: #0f1720;
+  background: rgba(76, 175, 80, 0.18);
+  border-color: rgba(76, 175, 80, 0.4);
+}
+
+body.app-body.theme-light .page-upgrade .upgrade-return{
+  background: #ffffff;
+  border-color: rgba(15, 23, 32, 0.2);
+  box-shadow: 0 12px 26px rgba(15, 23, 32, 0.12);
+}
+
+body.app-body.theme-light .page-upgrade .upgrade-return::before{
+  background: radial-gradient(closest-side, rgba(76, 175, 80, 0.12), transparent 70%);
+  opacity: 0.35;
+}
+
+body.app-body.theme-light .page-upgrade .upgrade-return-plan,
+body.app-body.theme-light .page-upgrade .upgrade-return-status-card,
+body.app-body.theme-light .page-upgrade .upgrade-return-steps,
+body.app-body.theme-light .page-upgrade .upgrade-return-step-list li{
+  background: #ffffff;
+  border-color: rgba(15, 23, 32, 0.2);
+  box-shadow: 0 10px 22px rgba(15, 23, 32, 0.12);
+}
+
+body.app-body.theme-light .page-upgrade .upgrade-return-plan-pill{
+  color: #0f1720;
+  background: rgba(76, 175, 80, 0.18);
+  border-color: rgba(76, 175, 80, 0.4);
+}
+
+body.app-body.theme-light .page-upgrade .upgrade-return-note,
+body.app-body.theme-light .page-upgrade .upgrade-return-hint,
+body.app-body.theme-light .page-upgrade .upgrade-return-step-list span{
+  color: var(--text);
 }
