@@ -25,9 +25,6 @@ def user_has_feature(user, feature: str) -> bool:
     feature = (feature or "").strip().lower()
     if not feature:
         return False
-    if not is_subscription_active(user):
-        return False
-
     user_plan = getattr(user, "plan", "basic") or "basic"
     return feature in plan_features(user_plan)
 

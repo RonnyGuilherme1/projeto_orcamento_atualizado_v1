@@ -27,6 +27,8 @@ from services.subscription import apply_paid_order
 analytics_bp = Blueprint("analytics", __name__)
 
 CATEGORIAS = {
+    "salario": "Salário",
+    "extras": "Extras",
     "moradia": "Moradia",
     "mercado": "Mercado",
     "transporte": "Transporte",
@@ -553,9 +555,10 @@ def charts_data():
     )
 
 
+@analytics_bp.get("/app/insights/data")
 @analytics_bp.get("/app/compare/data")
 @login_required
-def compare_data():
+def insights_data():
     blocked = _require_verified_json()
     if blocked:
         return blocked
@@ -570,11 +573,17 @@ def compare_data():
     return jsonify(_summary_for_period(start, end))
 
 
+@analytics_bp.get("/app/insights")
+@login_required
+@require_feature("insights")
+def insights_page():
+    return render_template("insights.html")
+
+
 @analytics_bp.get("/app/compare")
 @login_required
-@require_feature("compare")
 def compare_page():
-    return render_template("compare.html")
+    return redirect(url_for("analytics.insights_page"))
 
 
 @analytics_bp.get("/app/filters")

@@ -8,70 +8,144 @@
 
 {% block content %}
   <div class="page entries-page">
-    <!-- NOVA ENTRADA -->
-    <section class="panel">
-      <div class="panel-head compact">
-        <div>
-          <h2 class="panel-title">Nova Entrada</h2>
-          <p class="panel-subtitle">Cadastre receitas e despesas. Para despesas, defina o status.</p>
+    <div class="entries-top-grid">
+      <!-- NOVA ENTRADA -->
+      <section class="panel entry-panel">
+        <div class="panel-head compact">
+          <div>
+            <h2 class="panel-title">Nova Entrada</h2>
+            <p class="panel-subtitle">Cadastre receitas e despesas. Para despesas, defina o status.</p>
+          </div>
         </div>
-      </div>
 
-      <form id="form" class="entry-form">
-        <div class="form-grid">
-          <label class="field field-date">
-            <span class="field-label">Data</span>
-            <input type="date" id="data" class="control" required>
+        <form id="form" class="entry-form">
+          <div class="form-grid">
+            <label class="field field-date">
+              <span class="field-label">Data</span>
+              <input type="date" id="data" class="control" required>
+            </label>
+
+            <label class="field field-tipo">
+              <span class="field-label">Tipo</span>
+              <select id="tipo" class="control" required>
+                <option value="receita">Receita</option>
+                <option value="despesa">Despesa</option>
+              </select>
+            </label>
+
+            <label class="field field-categoria">
+              <span class="field-label">Categoria</span>
+              <select id="categoria" class="control">
+                <option value="salario">Salário</option>
+                <option value="extras">Extras</option>
+                <option value="moradia">Moradia</option>
+                <option value="mercado">Mercado</option>
+                <option value="transporte">Transporte</option>
+                <option value="servicos">Serviços</option>
+                <option value="outros" selected>Outros</option>
+              </select>
+            </label>
+
+            <label class="field field-status">
+              <span class="field-label">Status</span>
+              <select id="status" class="control">
+                <option value="em_andamento">Em andamento</option>
+                <option value="pago">Pago</option>
+                <option value="nao_pago">Não pago</option>
+              </select>
+            </label>
+
+            <label class="field field-descricao span-2">
+              <span class="field-label">Descrição</span>
+              <input type="text" id="descricao" class="control" placeholder="Ex: Salário, Mercado, Internet..." required>
+            </label>
+
+            <label class="field field-valor field-valor">
+              <span class="field-label">Valor</span>
+              <input type="number" step="0.01" id="valor" class="control" placeholder="0,00" required>
+            </label>
+
+            <div class="form-actions span-all">
+              <button type="submit" class="btn-primary btn-wide">Adicionar</button>
+            </div>
+          </div>
+        </form>
+      </section>
+
+      <!-- HISTÓRICO -->
+      <section class="panel filters-panel">
+        <div class="panel-head compact">
+          <div>
+            <h2 class="panel-title">Filtros avançados</h2>
+            <p class="panel-subtitle">Refine por período, tipo, status, categoria, busca e faixa de valores.</p>
+          </div>
+          <div class="panel-actions">
+            <button class="btn-secondary" type="button" id="filters-clear">Limpar filtros</button>
+          </div>
+        </div>
+
+        <div class="filters-grid">
+          <label class="field span-4">
+            <span class="field-label">Busca</span>
+            <input type="text" id="filter-search" class="control" placeholder="Descrição ou palavra-chave">
           </label>
 
-          <label class="field field-tipo">
+          <label class="field span-3">
+            <span class="field-label">Período (início)</span>
+            <input type="date" id="filter-start" class="control">
+          </label>
+
+          <label class="field span-3">
+            <span class="field-label">Período (fim)</span>
+            <input type="date" id="filter-end" class="control">
+          </label>
+
+          <label class="field span-2">
             <span class="field-label">Tipo</span>
-            <select id="tipo" class="control" required>
+            <select id="filter-type" class="control">
+              <option value="all">Todos</option>
               <option value="receita">Receita</option>
               <option value="despesa">Despesa</option>
             </select>
           </label>
 
-          <label class="field field-categoria">
+          <label class="field span-3">
+            <span class="field-label">Status</span>
+            <select id="filter-status" class="control">
+              <option value="all">Todos</option>
+              <option value="pago">Pago</option>
+              <option value="em_andamento">Em andamento</option>
+              <option value="nao_pago">Não pago</option>
+            </select>
+          </label>
+
+          <label class="field span-3">
             <span class="field-label">Categoria</span>
-            <select id="categoria" class="control">
+            <select id="filter-category" class="control">
+              <option value="all">Todas</option>
               <option value="salario">Salário</option>
               <option value="extras">Extras</option>
               <option value="moradia">Moradia</option>
               <option value="mercado">Mercado</option>
               <option value="transporte">Transporte</option>
               <option value="servicos">Serviços</option>
-              <option value="outros" selected>Outros</option>
+              <option value="outros">Outros</option>
             </select>
           </label>
 
-          <label class="field field-status">
-            <span class="field-label">Status</span>
-            <select id="status" class="control">
-              <option value="em_andamento">Em andamento</option>
-              <option value="pago">Pago</option>
-              <option value="nao_pago">Não pago</option>
-            </select>
+          <label class="field span-3">
+            <span class="field-label">Valor mínimo</span>
+            <input type="number" step="0.01" id="filter-min" class="control" placeholder="R$ 0,00">
           </label>
 
-          <label class="field field-descricao span-2">
-            <span class="field-label">Descrição</span>
-            <input type="text" id="descricao" class="control" placeholder="Ex: Salário, Mercado, Internet..." required>
+          <label class="field span-3">
+            <span class="field-label">Valor máximo</span>
+            <input type="number" step="0.01" id="filter-max" class="control" placeholder="R$ 0,00">
           </label>
-
-          <label class="field field-valor field-valor">
-            <span class="field-label">Valor</span>
-            <input type="number" step="0.01" id="valor" class="control" placeholder="0,00" required>
-          </label>
-
-          <div class="form-actions span-all">
-            <button type="submit" class="btn-primary btn-wide">Adicionar</button>
-          </div>
         </div>
-      </form>
-    </section>
+      </section>
+    </div>
 
-    <!-- HISTÓRICO -->
     <section class="history-grid">
       <div class="panel panel-historico panel-receitas">
         <div class="panel-head compact row">

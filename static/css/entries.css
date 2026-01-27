@@ -774,6 +774,37 @@ body.app-body .entries-page{
   display: grid;
 }
 
+body.app-body .entries-top-grid{
+  display: grid;
+  grid-template-columns: minmax(320px, 1fr) minmax(320px, 1fr);
+  gap: 16px;
+  align-items: stretch;
+  min-width: 0;
+}
+
+body.app-body .entries-top-grid .panel{
+  min-width: 0;
+}
+
+body.app-body .entries-top-grid .panel + .panel{
+  margin-top: 0;
+}
+
+body.app-body .entries-top-grid .entry-panel,
+body.app-body .entries-top-grid .filters-panel{
+  height: 100%;
+}
+
+body.app-body .entries-top-grid .filters-panel .filters-grid{
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+body.app-body .entries-top-grid .filters-panel .filters-grid .span-4,
+body.app-body .entries-top-grid .filters-panel .filters-grid .span-3,
+body.app-body .entries-top-grid .filters-panel .filters-grid .span-2{
+  grid-column: span 1;
+}
+
 body.app-body .entries-page .entry-form{
   padding: 0;
 }
@@ -784,6 +815,57 @@ body.app-body .entries-page .form-grid{
   align-items: end;
   min-width: 0;
   display: grid;
+}
+
+body.app-body .entries-page .entry-panel .form-grid{
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 12px 14px;
+}
+
+body.app-body .entries-page .entry-panel .field{
+  grid-column: span 3;
+}
+
+body.app-body .entries-page .entry-panel .field-descricao{
+  grid-column: 1 / -1;
+}
+
+body.app-body .entries-page .entry-panel .field-valor{
+  grid-column: span 3;
+}
+
+body.app-body .entries-page .entry-panel .form-actions{
+  grid-column: 1 / -1;
+}
+
+body.app-body .entries-page .entry-panel .form-actions .btn-wide{
+  width: 100%;
+}
+
+body.app-body .filters-panel .filters-grid{
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 14px 18px;
+  align-items: end;
+  min-width: 0;
+  display: grid;
+}
+
+body.app-body .filters-panel .filters-grid .field{
+  min-width: 0;
+  display: grid;
+  gap: 6px;
+}
+
+body.app-body .filters-panel .filters-grid .span-4{
+  grid-column: span 4;
+}
+
+body.app-body .filters-panel .filters-grid .span-3{
+  grid-column: span 3;
+}
+
+body.app-body .filters-panel .filters-grid .span-2{
+  grid-column: span 2;
 }
 
 body.app-body .entries-page .form-grid .field{
@@ -845,6 +927,34 @@ body.app-body .entries-page .form-grid .field, body.app-body .entries-page .span
   grid-column: 1 / -1;
 }
 
+body.app-body .filters-panel .filters-grid{
+  gap: 12px;
+  grid-template-columns: 1fr;
+}
+
+body.app-body .filters-panel .filters-grid .field,
+body.app-body .filters-panel .filters-grid .span-4,
+body.app-body .filters-panel .filters-grid .span-3,
+body.app-body .filters-panel .filters-grid .span-2{
+  grid-column: 1 / -1;
+}
+
+}
+
+@media (max-width: 1180px){
+body.app-body .entries-top-grid{
+  grid-template-columns: 1fr;
+}
+
+body.app-body .entries-page .entry-panel .form-grid{
+  grid-template-columns: 1fr;
+}
+
+body.app-body .entries-page .entry-panel .field,
+body.app-body .entries-page .entry-panel .field-valor,
+body.app-body .entries-page .entry-panel .field-descricao{
+  grid-column: 1 / -1;
+}
 }
 
 body.app-body .history-grid{
@@ -1146,6 +1256,12 @@ body.app-body .linha .acoes{
 
   body.page-entries .panel-subtitle{
     font-size: 12px;
+  }
+
+  body.page-entries .entries-top-grid .panel-subtitle{
+    font-size: 13px;
+    line-height: 1.45;
+    min-height: 2.6em;
   }
 
   body.page-entries .field label,

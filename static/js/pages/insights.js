@@ -1,28 +1,8 @@
 (function () {
-  const periodEls = {
-    a: {
-      container: document.querySelector('.compare-period[data-period="a"]'),
-      year: document.getElementById("compare-year-a"),
-      month: document.getElementById("compare-month-a"),
-      useRange: document.getElementById("compare-range-a"),
-      start: document.getElementById("compare-start-a"),
-      end: document.getElementById("compare-end-a")
-    },
-    b: {
-      container: document.querySelector('.compare-period[data-period="b"]'),
-      year: document.getElementById("compare-year-b"),
-      month: document.getElementById("compare-month-b"),
-      useRange: document.getElementById("compare-range-b"),
-      start: document.getElementById("compare-start-b"),
-      end: document.getElementById("compare-end-b")
-    }
-  };
-
-  const swapBtn = document.getElementById("compare-swap");
-  const errorBox = document.getElementById("compare-error");
-  const compareBars = document.getElementById("compare-bars");
-
-  if (!periodEls.a.year || !periodEls.a.month || !periodEls.b.year || !periodEls.b.month) return;
+  const yearSelect = document.getElementById("insight-year");
+  const monthSelect = document.getElementById("insight-month");
+  const errorBox = document.getElementById("insight-error");
+  const periodLabel = document.getElementById("insight-period-label");
 
   const receiptsA = document.getElementById("compare-receitas-a");
   const receiptsB = document.getElementById("compare-receitas-b");
@@ -38,6 +18,7 @@
   const countDelta = document.getElementById("compare-count-delta");
   const categoriesA = document.getElementById("compare-categories-a");
   const categoriesB = document.getElementById("compare-categories-b");
+  const compareBars = document.getElementById("compare-bars");
 
   const insightTopUp = document.getElementById("insight-top-up");
   const insightTopUpMeta = document.getElementById("insight-top-up-meta");
@@ -51,15 +32,32 @@
   const topIncomeList = document.getElementById("insight-top-income");
   const topExpenseList = document.getElementById("insight-top-expense");
 
+  if (!yearSelect || !monthSelect || !receiptsA) return;
+
   const CATEGORY_LABELS = {
-    salario: "Salario",
+    salario: "Salário",
     extras: "Extras",
     moradia: "Moradia",
     mercado: "Mercado",
     transporte: "Transporte",
-    servicos: "Servicos",
+    servicos: "Serviços",
     outros: "Outros"
   };
+
+  const MESES = [
+    "Janeiro",
+    "Fevereiro",
+    "Março",
+    "Abril",
+    "Maio",
+    "Junho",
+    "Julho",
+    "Agosto",
+    "Setembro",
+    "Outubro",
+    "Novembro",
+    "Dezembro"
+  ];
 
   function pad(value) {
     return String(value).padStart(2, "0");
@@ -70,11 +68,31 @@
   }
 
   function monthRange(year, month) {
-    const y = Number(year) || new Date().getFullYear();
-    const m = Number(month) || (new Date().getMonth() + 1);
+    const now = new Date();
+    const y = Number(year) || now.getFullYear();
+    const m = Number(month) || (now.getMonth() + 1);
     const start = new Date(y, m - 1, 1);
     const end = new Date(y, m, 0);
     return { start, end };
+  }
+
+  function getPrevMonth(year, month) {
+    let y = Number(year) || new Date().getFullYear();
+    let m = Number(month) || (new Date().getMonth() + 1);
+    if (m <= 1) {
+      y -= 1;
+      m = 12;
+    } else {
+      m -= 1;
+    }
+    return { year: y, month: m };
+  }
+
+  function formatMonthLabel(year, month) {
+    const y = Number(year) || new Date().getFullYear();
+    const m = Number(month) || (new Date().getMonth() + 1);
+    const name = MESES[m - 1] || "Mês";
+    return `${name} ${y}`;
   }
 
   function fmtBRL(value) {
@@ -84,7 +102,7 @@
 
   function fmtCount(value) {
     const val = Number(value) || 0;
-    return `${val} lancamentos`;
+    return `${val} lançamentos`;
   }
 
   function setDelta(el, a, b, isCurrency = true) {
@@ -113,35 +131,8 @@
     }
   }
 
-  function syncRangeState(key) {
-    const state = periodEls[key];
-    if (!state?.container || !state.useRange) return;
-    state.container.classList.toggle("use-range", state.useRange.checked);
-  }
-
-  function resolvePeriod(key) {
-    const state = periodEls[key];
-    const useRange = state.useRange?.checked;
-
-    if (useRange) {
-      let startValue = state.start?.value;
-      let endValue = state.end?.value;
-      if (!startValue || !endValue) {
-        const range = monthRange(state.year.value, state.month.value);
-        startValue = formatDate(range.start);
-        endValue = formatDate(range.end);
-        if (state.start) state.start.value = startValue;
-        if (state.end) state.end.value = endValue;
-      }
-      return { start: startValue, end: endValue, mode: "range" };
-    }
-
-    const range = monthRange(state.year.value, state.month.value);
-    return { start: formatDate(range.start), end: formatDate(range.end), mode: "month" };
-  }
-
   async function fetchPeriod(start, end) {
-    const url = `/app/compare/data?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`;
+    const url = `/app/insights/data?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`;
     const res = await fetch(url);
     if (!res.ok) throw new Error("Erro ao carregar dados");
     return res.json();
@@ -160,7 +151,7 @@
     if (!listEl) return;
     const items = (categories || []).filter(item => Number(item.total) > 0);
     if (!items.length) {
-      listEl.innerHTML = "<li>Sem despesas no periodo</li>";
+      listEl.innerHTML = "<li>Sem despesas no período</li>";
       return;
     }
     const totalValue = Number(total) || items.reduce((sum, item) => sum + (Number(item.total) || 0), 0);
@@ -213,7 +204,7 @@
   function renderInsightChanges(listEl, deltas) {
     if (!listEl) return;
     if (!deltas || !deltas.length) {
-      listEl.innerHTML = "<li>Sem variacoes relevantes no periodo.</li>";
+      listEl.innerHTML = "<li>Sem variações relevantes no período.</li>";
       return;
     }
     listEl.innerHTML = deltas.slice(0, 6).map((item) => {
@@ -231,7 +222,7 @@
     if (!listEl) return;
     const filtered = (entries || []).filter(item => item.type === tipo);
     if (!filtered.length) {
-      listEl.innerHTML = "<li>Sem lancamentos no periodo.</li>";
+      listEl.innerHTML = "<li>Sem lançamentos no período.</li>";
       return;
     }
     listEl.innerHTML = filtered.slice(0, 5).map((item) => {
@@ -311,8 +302,12 @@
     if (insightTopDown) insightTopDown.textContent = topDown ? topDown.label : "--";
     if (insightTopDownMeta) insightTopDownMeta.textContent = topDown ? `-${fmtBRL(Math.abs(topDown.delta))}` : "--";
 
-    if (insightTopCategory) insightTopCategory.textContent = topCategoryB ? (CATEGORY_LABELS[topCategoryB.key] || topCategoryB.label || "Outros") : "--";
-    if (insightTopCategoryMeta) insightTopCategoryMeta.textContent = topCategoryB ? fmtBRL(topCategoryB.total) : "--";
+    if (insightTopCategory) {
+      insightTopCategory.textContent = topCategoryB ? (CATEGORY_LABELS[topCategoryB.key] || topCategoryB.label || "Outros") : "--";
+    }
+    if (insightTopCategoryMeta) {
+      insightTopCategoryMeta.textContent = topCategoryB ? fmtBRL(topCategoryB.total) : "--";
+    }
 
     if (avgData && insightVsAvg && insightVsAvgMeta) {
       const avgExpenses = (Number(avgData.summary?.despesas) || 0) / 3;
@@ -321,7 +316,7 @@
       const sign = diff >= 0 ? "+" : "-";
       insightVsAvg.textContent = `${sign}${fmtBRL(Math.abs(diff))}`;
       const pct = avgExpenses ? Math.abs(diff / avgExpenses) * 100 : 0;
-      insightVsAvgMeta.textContent = `Media 3 meses: ${fmtBRL(avgExpenses)} (${pct.toFixed(1)}%)`;
+      insightVsAvgMeta.textContent = `Média 3 meses: ${fmtBRL(avgExpenses)} (${pct.toFixed(1)}%)`;
     } else if (insightVsAvg && insightVsAvgMeta) {
       insightVsAvg.textContent = "--";
       insightVsAvgMeta.textContent = "--";
@@ -330,122 +325,113 @@
     renderInsightChanges(insightChanges, deltas);
   }
 
-  async function loadCompare() {
+  function updateCompareSummary(dataA, dataB) {
+    const summaryA = dataA?.summary || {};
+    const summaryB = dataB?.summary || {};
+
+    const receitasA = Number(summaryA.receitas || 0);
+    const receitasB = Number(summaryB.receitas || 0);
+    const despesasA = Number(summaryA.despesas || 0);
+    const despesasB = Number(summaryB.despesas || 0);
+    const saldoA = Number(summaryA.saldo_projetado || 0);
+    const saldoB = Number(summaryB.saldo_projetado || 0);
+    const countValueA = Number(summaryA.entradas || 0);
+    const countValueB = Number(summaryB.entradas || 0);
+
+    if (receiptsA) receiptsA.textContent = fmtBRL(receitasA);
+    if (receiptsB) receiptsB.textContent = fmtBRL(receitasB);
+    if (expensesA) expensesA.textContent = fmtBRL(despesasA);
+    if (expensesB) expensesB.textContent = fmtBRL(despesasB);
+    if (balanceA) balanceA.textContent = fmtBRL(saldoA);
+    if (balanceB) balanceB.textContent = fmtBRL(saldoB);
+    if (countA) countA.textContent = fmtCount(countValueA);
+    if (countB) countB.textContent = fmtCount(countValueB);
+
+    setDelta(receiptsDelta, receitasA, receitasB, true);
+    setDelta(expensesDelta, despesasA, despesasB, true);
+    setDelta(balanceDelta, saldoA, saldoB, true);
+    setDelta(countDelta, countValueA, countValueB, false);
+  }
+
+  function resetInsights() {
+    if (receiptsA) receiptsA.textContent = "R$ 0,00";
+    if (receiptsB) receiptsB.textContent = "R$ 0,00";
+    if (expensesA) expensesA.textContent = "R$ 0,00";
+    if (expensesB) expensesB.textContent = "R$ 0,00";
+    if (balanceA) balanceA.textContent = "R$ 0,00";
+    if (balanceB) balanceB.textContent = "R$ 0,00";
+    if (countA) countA.textContent = "0 lançamentos";
+    if (countB) countB.textContent = "0 lançamentos";
+
+    if (receiptsDelta) receiptsDelta.textContent = "R$ 0,00 (0%)";
+    if (expensesDelta) expensesDelta.textContent = "R$ 0,00 (0%)";
+    if (balanceDelta) balanceDelta.textContent = "R$ 0,00 (0%)";
+    if (countDelta) countDelta.textContent = "0 (0%)";
+
+    if (receiptsDelta) receiptsDelta.classList.remove("is-positive", "is-negative");
+    if (expensesDelta) expensesDelta.classList.remove("is-positive", "is-negative");
+    if (balanceDelta) balanceDelta.classList.remove("is-positive", "is-negative");
+    if (countDelta) countDelta.classList.remove("is-positive", "is-negative");
+
+    if (insightTopUp) insightTopUp.textContent = "--";
+    if (insightTopUpMeta) insightTopUpMeta.textContent = "--";
+    if (insightTopDown) insightTopDown.textContent = "--";
+    if (insightTopDownMeta) insightTopDownMeta.textContent = "--";
+    if (insightTopCategory) insightTopCategory.textContent = "--";
+    if (insightTopCategoryMeta) insightTopCategoryMeta.textContent = "--";
+    if (insightVsAvg) insightVsAvg.textContent = "--";
+    if (insightVsAvgMeta) insightVsAvgMeta.textContent = "--";
+
+    renderCategories(categoriesA, [], 0);
+    renderCategories(categoriesB, [], 0);
+    renderCompareBars([], []);
+    renderInsightChanges(insightChanges, []);
+    renderTopEntries(topIncomeList, [], "receita");
+    renderTopEntries(topExpenseList, [], "despesa");
+  }
+
+  async function loadInsights() {
     showError("");
-    const periodA = resolvePeriod("a");
-    const periodB = resolvePeriod("b");
 
-    if (!periodA.start || !periodA.end || !periodB.start || !periodB.end) {
-      showError("Preencha as datas de ambos os periodos.");
-      return;
-    }
+    const currentYear = Number(yearSelect.value) || new Date().getFullYear();
+    const currentMonth = Number(monthSelect.value) || (new Date().getMonth() + 1);
+    const prev = getPrevMonth(currentYear, currentMonth);
+    const rangeA = monthRange(prev.year, prev.month);
+    const rangeB = monthRange(currentYear, currentMonth);
 
-    if (periodA.end < periodA.start || periodB.end < periodB.start) {
-      showError("A data final deve ser maior ou igual a data inicial.");
-      return;
+    if (periodLabel) {
+      periodLabel.textContent = `${formatMonthLabel(currentYear, currentMonth)} vs ${formatMonthLabel(prev.year, prev.month)}`;
     }
 
     try {
       const [dataA, dataB] = await Promise.all([
-        fetchPeriod(periodA.start, periodA.end),
-        fetchPeriod(periodB.start, periodB.end)
+        fetchPeriod(formatDate(rangeA.start), formatDate(rangeA.end)),
+        fetchPeriod(formatDate(rangeB.start), formatDate(rangeB.end))
       ]);
-      const avgData = await fetchAverage3Months(periodB.end);
+      const avgData = await fetchAverage3Months(formatDate(rangeB.end));
 
-      const summaryA = dataA.summary || {};
-      const summaryB = dataB.summary || {};
-
-      const receitasA = Number(summaryA.receitas || 0);
-      const receitasB = Number(summaryB.receitas || 0);
-      const despesasA = Number(summaryA.despesas || 0);
-      const despesasB = Number(summaryB.despesas || 0);
-      const saldoA = Number(summaryA.saldo_projetado || 0);
-      const saldoB = Number(summaryB.saldo_projetado || 0);
-      const countValueA = Number(summaryA.entradas || 0);
-      const countValueB = Number(summaryB.entradas || 0);
-
-      if (receiptsA) receiptsA.textContent = fmtBRL(receitasA);
-      if (receiptsB) receiptsB.textContent = fmtBRL(receitasB);
-      if (expensesA) expensesA.textContent = fmtBRL(despesasA);
-      if (expensesB) expensesB.textContent = fmtBRL(despesasB);
-      if (balanceA) balanceA.textContent = fmtBRL(saldoA);
-      if (balanceB) balanceB.textContent = fmtBRL(saldoB);
-      if (countA) countA.textContent = fmtCount(countValueA);
-      if (countB) countB.textContent = fmtCount(countValueB);
-
-      setDelta(receiptsDelta, receitasA, receitasB, true);
-      setDelta(expensesDelta, despesasA, despesasB, true);
-      setDelta(balanceDelta, saldoA, saldoB, true);
-      setDelta(countDelta, countValueA, countValueB, false);
-
-      renderCategories(categoriesA, dataA.categories || [], despesasA);
-      renderCategories(categoriesB, dataB.categories || [], despesasB);
+      updateCompareSummary(dataA, dataB);
+      renderCategories(categoriesA, dataA.categories || [], Number(dataA.summary?.despesas || 0));
+      renderCategories(categoriesB, dataB.categories || [], Number(dataB.summary?.despesas || 0));
       renderCompareBars(dataA.categories || [], dataB.categories || []);
       renderInsights(dataA, dataB, avgData);
       renderTopEntries(topIncomeList, dataB.top_entries || [], "receita");
       renderTopEntries(topExpenseList, dataB.top_entries || [], "despesa");
     } catch (err) {
-      showError("Nao foi possivel carregar a comparacao. Tente novamente.");
+      resetInsights();
+      showError("Não foi possível carregar os insights. Tente novamente.");
     }
   }
 
-  function setDefaults() {
-    const now = new Date();
-    const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-
-    periodEls.a.year.value = String(now.getFullYear());
-    periodEls.a.month.value = String(now.getMonth() + 1);
-    periodEls.b.year.value = String(prev.getFullYear());
-    periodEls.b.month.value = String(prev.getMonth() + 1);
-
-    const rangeA = monthRange(periodEls.a.year.value, periodEls.a.month.value);
-    const rangeB = monthRange(periodEls.b.year.value, periodEls.b.month.value);
-
-    if (periodEls.a.start) periodEls.a.start.value = formatDate(rangeA.start);
-    if (periodEls.a.end) periodEls.a.end.value = formatDate(rangeA.end);
-    if (periodEls.b.start) periodEls.b.start.value = formatDate(rangeB.start);
-    if (periodEls.b.end) periodEls.b.end.value = formatDate(rangeB.end);
+  const now = new Date();
+  const yearValue = String(now.getFullYear());
+  if (Array.from(yearSelect.options).some(opt => opt.value === yearValue)) {
+    yearSelect.value = yearValue;
   }
+  monthSelect.value = String(now.getMonth() + 1);
 
-  function swapPeriods() {
-    const swapValues = (key1, key2, field) => {
-      const temp = periodEls[key1][field].value;
-      periodEls[key1][field].value = periodEls[key2][field].value;
-      periodEls[key2][field].value = temp;
-    };
+  yearSelect.addEventListener("change", loadInsights);
+  monthSelect.addEventListener("change", loadInsights);
 
-    swapValues("a", "b", "year");
-    swapValues("a", "b", "month");
-    if (periodEls.a.start && periodEls.b.start) swapValues("a", "b", "start");
-    if (periodEls.a.end && periodEls.b.end) swapValues("a", "b", "end");
-
-    if (periodEls.a.useRange && periodEls.b.useRange) {
-      const tempChecked = periodEls.a.useRange.checked;
-      periodEls.a.useRange.checked = periodEls.b.useRange.checked;
-      periodEls.b.useRange.checked = tempChecked;
-    }
-
-    syncRangeState("a");
-    syncRangeState("b");
-    loadCompare();
-  }
-
-  ["a", "b"].forEach((key) => {
-    const state = periodEls[key];
-    state.useRange?.addEventListener("change", () => {
-      syncRangeState(key);
-      loadCompare();
-    });
-    state.year?.addEventListener("change", loadCompare);
-    state.month?.addEventListener("change", loadCompare);
-    state.start?.addEventListener("change", loadCompare);
-    state.end?.addEventListener("change", loadCompare);
-  });
-
-  swapBtn?.addEventListener("click", swapPeriods);
-
-  syncRangeState("a");
-  syncRangeState("b");
-  setDefaults();
-  loadCompare();
+  loadInsights();
 })();

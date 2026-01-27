@@ -621,17 +621,17 @@ body.app-body .insights-grid{
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
-body.app-body .insight-card{
+body.app-body .alert-card{
   display: grid;
   gap: 12px;
   min-width: 0;
 }
 
-body.app-body .insight-card.span-3{
+body.app-body .alert-card.span-3{
   grid-column: 1 / -1;
 }
 
-body.app-body .insight-card h3{
+body.app-body .alert-card h3{
   margin: 0;
   font-size: 14px;
   font-weight: 900;

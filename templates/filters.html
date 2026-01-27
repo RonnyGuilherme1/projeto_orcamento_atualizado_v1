@@ -1,2 +1,133 @@
-{% set title = "Filtros no histórico" %}
-{% include "_analytics_placeholder.html" %}
+{% extends "base_app.html" %}
+{% set page_class = 'page-filters' %}
+{% set page_css = ['/static/css/app_shell.css', '/static/css/app_base.css', '/static/css/filters.css'] %}
+
+{% block title %}Regras & Automação | Controle Financeiro{% endblock %}
+{% block page_title %}Regras & Automação{% endblock %}
+
+{% block content %}
+  <div class="page rules-page">
+    <section class="panel rules-hero">
+      <div class="panel-head">
+        <div>
+          <h2 class="panel-title">Regras & Automação</h2>
+          <p class="panel-subtitle">Crie regras inteligentes, recorrências e lembretes para reduzir trabalho manual.</p>
+        </div>
+        <div class="panel-actions">
+          <button class="btn-primary" type="button" disabled>Novo gatilho (em breve)</button>
+        </div>
+      </div>
+
+      <div class="rules-summary">
+        <div class="summary-card">
+          <span class="summary-label">Regras ativas</span>
+          <strong>0</strong>
+          <span class="summary-meta">Configure regras para classificar entradas automaticamente.</span>
+        </div>
+        <div class="summary-card">
+          <span class="summary-label">Recorrências</span>
+          <strong>0</strong>
+          <span class="summary-meta">Crie despesas fixas para não esquecer.</span>
+        </div>
+        <div class="summary-card">
+          <span class="summary-label">Lembretes</span>
+          <strong>0</strong>
+          <span class="summary-meta">Alerte antes do vencimento.</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel rules-section">
+      <div class="panel-head">
+        <div>
+          <h3 class="panel-title">Regras inteligentes</h3>
+          <p class="panel-subtitle">Automatize categorias e status com base na descrição.</p>
+        </div>
+        <div class="panel-actions">
+          <button class="btn-secondary" type="button" disabled>Importar regras</button>
+        </div>
+      </div>
+
+      <ul class="rules-list">
+        <li class="rule-item">
+          <div>
+            <strong>Se descrição contém “Salário”</strong>
+            <span class="rule-meta">Categoria: Salário · Marcar como recebida</span>
+          </div>
+          <span class="rule-status">Em breve</span>
+        </li>
+        <li class="rule-item">
+          <div>
+            <strong>Se descrição contém “Uber”</strong>
+            <span class="rule-meta">Categoria: Transporte · Status: em andamento</span>
+          </div>
+          <span class="rule-status">Em breve</span>
+        </li>
+        <li class="rule-item">
+          <div>
+            <strong>Se descrição contém “Mercado”</strong>
+            <span class="rule-meta">Categoria: Mercado · Prioridade alta</span>
+          </div>
+          <span class="rule-status">Em breve</span>
+        </li>
+      </ul>
+    </section>
+
+    <section class="panel rules-section">
+      <div class="panel-head">
+        <div>
+          <h3 class="panel-title">Recorrências</h3>
+          <p class="panel-subtitle">Crie lançamentos automáticos para despesas fixas.</p>
+        </div>
+        <div class="panel-actions">
+          <button class="btn-secondary" type="button" disabled>Nova recorrência</button>
+        </div>
+      </div>
+
+      <div class="rules-grid">
+        <article class="rule-card">
+          <strong>Aluguel</strong>
+          <p>Todo dia 05 · Moradia · R$ 0,00</p>
+          <span class="rule-pill">Em breve</span>
+        </article>
+        <article class="rule-card">
+          <strong>Internet</strong>
+          <p>Todo dia 10 · Serviços · R$ 0,00</p>
+          <span class="rule-pill">Em breve</span>
+        </article>
+        <article class="rule-card">
+          <strong>Cartão</strong>
+          <p>Todo dia 15 · Outros · R$ 0,00</p>
+          <span class="rule-pill">Em breve</span>
+        </article>
+      </div>
+    </section>
+
+    <section class="panel rules-section">
+      <div class="panel-head">
+        <div>
+          <h3 class="panel-title">Lembretes</h3>
+          <p class="panel-subtitle">Receba alertas antes do vencimento das despesas.</p>
+        </div>
+      </div>
+
+      <div class="rules-grid">
+        <article class="rule-card">
+          <strong>Despesas vencendo</strong>
+          <p>Avisar 3 dias antes de “Despesas não pagas”.</p>
+          <span class="rule-pill">Em breve</span>
+        </article>
+        <article class="rule-card">
+          <strong>Entrada confirmada</strong>
+          <p>Marcar como recebida quando houver pagamento.</p>
+          <span class="rule-pill">Em breve</span>
+        </article>
+        <article class="rule-card">
+          <strong>IA no WhatsApp</strong>
+          <p>Classificar lançamentos via mensagem automática.</p>
+          <span class="rule-pill">Em breve</span>
+        </article>
+      </div>
+    </section>
+  </div>
+{% endblock %}

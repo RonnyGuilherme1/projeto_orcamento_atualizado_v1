@@ -1,0 +1,195 @@
+{% extends "base_app.html" %}
+{% set page_class = 'page-compare' %}
+{% set page_css = ['/static/css/app_shell.css', '/static/css/app_base.css', '/static/css/insights.css'] %}
+
+{% block title %}Insights e variações | Controle Financeiro{% endblock %}
+{% block page_title %}Insights{% endblock %}
+
+{% block content %}
+  <div class="page compare-page">
+    <section class="panel compare-hero">
+      <div class="panel-head">
+        <div>
+          <h2 class="panel-title">Insights e variações</h2>
+          <p class="panel-subtitle">Comparação automática do mês selecionado com o mês anterior e a média de 3 meses.</p>
+        </div>
+        <div class="panel-actions">
+          <label class="field field-inline">
+            <span class="field-label">Ano</span>
+            <select id="insight-year" class="control">
+              <option value="2026">2026</option>
+              <option value="2025">2025</option>
+              <option value="2024">2024</option>
+            </select>
+          </label>
+          <label class="field field-inline">
+            <span class="field-label">Mês</span>
+            <select id="insight-month" class="control">
+              <option value="1">Janeiro</option>
+              <option value="2">Fevereiro</option>
+              <option value="3">Março</option>
+              <option value="4">Abril</option>
+              <option value="5">Maio</option>
+              <option value="6">Junho</option>
+              <option value="7">Julho</option>
+              <option value="8">Agosto</option>
+              <option value="9">Setembro</option>
+              <option value="10">Outubro</option>
+              <option value="11">Novembro</option>
+              <option value="12">Dezembro</option>
+            </select>
+          </label>
+          <span class="pill" id="insight-period-label">Mês atual vs mês anterior</span>
+        </div>
+      </div>
+      <div class="compare-error" id="insight-error" role="status" aria-live="polite" style="display:none;"></div>
+    </section>
+
+    <section class="panel compare-summary">
+      <div class="compare-grid">
+        <article class="compare-card">
+          <h3>Receitas</h3>
+          <div class="compare-values">
+            <div>
+              <span class="compare-value-label">Mês anterior</span>
+              <strong id="compare-receitas-a">R$ 0,00</strong>
+            </div>
+            <div>
+              <span class="compare-value-label">Mês atual</span>
+              <strong id="compare-receitas-b">R$ 0,00</strong>
+            </div>
+          </div>
+          <div class="compare-delta" id="compare-receitas-delta">R$ 0,00 (0%)</div>
+        </article>
+
+        <article class="compare-card">
+          <h3>Despesas</h3>
+          <div class="compare-values">
+            <div>
+              <span class="compare-value-label">Mês anterior</span>
+              <strong id="compare-despesas-a">R$ 0,00</strong>
+            </div>
+            <div>
+              <span class="compare-value-label">Mês atual</span>
+              <strong id="compare-despesas-b">R$ 0,00</strong>
+            </div>
+          </div>
+          <div class="compare-delta" id="compare-despesas-delta">R$ 0,00 (0%)</div>
+        </article>
+
+        <article class="compare-card">
+          <h3>Saldo projetado</h3>
+          <div class="compare-values">
+            <div>
+              <span class="compare-value-label">Mês anterior</span>
+              <strong id="compare-saldo-a">R$ 0,00</strong>
+            </div>
+            <div>
+              <span class="compare-value-label">Mês atual</span>
+              <strong id="compare-saldo-b">R$ 0,00</strong>
+            </div>
+          </div>
+          <div class="compare-delta" id="compare-saldo-delta">R$ 0,00 (0%)</div>
+        </article>
+
+        <article class="compare-card">
+          <h3>Movimentacoes</h3>
+          <div class="compare-values">
+            <div>
+              <span class="compare-value-label">Mês anterior</span>
+              <strong id="compare-count-a">0 lançamentos</strong>
+            </div>
+            <div>
+              <span class="compare-value-label">Mês atual</span>
+              <strong id="compare-count-b">0 lançamentos</strong>
+            </div>
+          </div>
+          <div class="compare-delta" id="compare-count-delta">0 (0%)</div>
+        </article>
+      </div>
+    </section>
+
+    <section class="panel insights-panel">
+      <div class="chart-head">
+        <div>
+          <h3>Insights rapidos</h3>
+          <p class="muted">Resumo automático do mês atual vs mês anterior e média 3 meses.</p>
+        </div>
+      </div>
+      <div class="insight-grid">
+        <article class="insight-card">
+          <span class="insight-label">Maior aumento</span>
+          <strong id="insight-top-up">--</strong>
+          <span class="insight-meta" id="insight-top-up-meta">--</span>
+        </article>
+        <article class="insight-card">
+          <span class="insight-label">Maior queda</span>
+          <strong id="insight-top-down">--</strong>
+          <span class="insight-meta" id="insight-top-down-meta">--</span>
+        </article>
+        <article class="insight-card">
+          <span class="insight-label">Categoria mais pesada</span>
+          <strong id="insight-top-category">--</strong>
+          <span class="insight-meta" id="insight-top-category-meta">--</span>
+        </article>
+        <article class="insight-card">
+          <span class="insight-label">Despesa vs média 3 meses</span>
+          <strong id="insight-vs-avg">--</strong>
+          <span class="insight-meta" id="insight-vs-avg-meta">--</span>
+        </article>
+      </div>
+    </section>
+
+    <section class="panel insights-explain">
+      <div class="chart-head">
+        <div>
+          <h3>Mudanca explicada</h3>
+          <p class="muted">Categorias que mais influenciaram a variação entre os meses.</p>
+        </div>
+      </div>
+      <ul id="insight-changes" class="compare-list-items"></ul>
+    </section>
+
+    <section class="panel compare-chart">
+      <div class="chart-head">
+        <div>
+          <h3>Comparativo por categoria</h3>
+          <p class="muted">Barras lado a lado entre mês anterior e mês atual.</p>
+        </div>
+        <div class="compare-chart-legend">
+          <span class="legend-pill legend-a">Mês anterior</span>
+          <span class="legend-pill legend-b">Mês atual</span>
+        </div>
+      </div>
+      <div id="compare-bars" class="compare-bars"></div>
+    </section>
+
+    <section class="panel compare-categories">
+      <div class="compare-lists">
+        <div class="compare-list">
+          <h3>Top categorias - mês anterior</h3>
+          <ul id="compare-categories-a" class="compare-list-items"></ul>
+        </div>
+        <div class="compare-list">
+          <h3>Top categorias - mês atual</h3>
+          <ul id="compare-categories-b" class="compare-list-items"></ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel insights-top">
+      <div class="compare-lists">
+        <div class="compare-list">
+          <h3>Maiores entradas - mês atual</h3>
+          <ul id="insight-top-income" class="compare-list-items"></ul>
+        </div>
+        <div class="compare-list">
+          <h3>Maiores saídas - mês atual</h3>
+          <ul id="insight-top-expense" class="compare-list-items"></ul>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script src="/static/js/pages/insights.js"></script>
+{% endblock %}

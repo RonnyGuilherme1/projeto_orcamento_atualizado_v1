@@ -13,6 +13,16 @@
   const filtroTrimestreReceitas = document.getElementById("filtro-trimestre-receitas");
   const filtroTrimestreDespesas = document.getElementById("filtro-trimestre-despesas");
 
+  const filterSearch = document.getElementById("filter-search");
+  const filterStart = document.getElementById("filter-start");
+  const filterEnd = document.getElementById("filter-end");
+  const filterType = document.getElementById("filter-type");
+  const filterStatus = document.getElementById("filter-status");
+  const filterCategory = document.getElementById("filter-category");
+  const filterMin = document.getElementById("filter-min");
+  const filterMax = document.getElementById("filter-max");
+  const filterClear = document.getElementById("filters-clear");
+
   /* Modal */
   const modalOverlay = document.getElementById("modal-overlay");
   const modalCloseBtn = document.getElementById("modal-close");
@@ -193,6 +203,58 @@
     });
   }
 
+  function applyAdvancedFilters(lista) {
+    let filtradas = [...(lista || [])];
+
+    const search = (filterSearch?.value || "").trim().toLowerCase();
+    if (search) {
+      filtradas = filtradas.filter(item => String(item.descricao || "").toLowerCase().includes(search));
+    }
+
+    const start = filterStart?.value;
+    if (start) {
+      filtradas = filtradas.filter(item => String(item.data || "") >= start);
+    }
+
+    const end = filterEnd?.value;
+    if (end) {
+      filtradas = filtradas.filter(item => String(item.data || "") <= end);
+    }
+
+    const tipo = filterType?.value || "all";
+    if (tipo !== "all") {
+      filtradas = filtradas.filter(item => item.tipo === tipo);
+    }
+
+    const status = filterStatus?.value || "all";
+    if (status !== "all") {
+      filtradas = filtradas.filter(item => item.tipo === "despesa" && (item.status || "em_andamento") === status);
+    }
+
+    const categoria = filterCategory?.value || "all";
+    if (categoria !== "all") {
+      filtradas = filtradas.filter(item => String(item.categoria || "").toLowerCase() === categoria);
+    }
+
+    const minRaw = filterMin?.value;
+    if (minRaw !== undefined && minRaw !== "") {
+      const min = Number(minRaw);
+      if (Number.isFinite(min)) {
+        filtradas = filtradas.filter(item => Number(item.valor || 0) >= min);
+      }
+    }
+
+    const maxRaw = filterMax?.value;
+    if (maxRaw !== undefined && maxRaw !== "") {
+      const max = Number(maxRaw);
+      if (Number.isFinite(max)) {
+        filtradas = filtradas.filter(item => Number(item.valor || 0) <= max);
+      }
+    }
+
+    return filtradas;
+  }
+
   const MESES = [
     "janeiro", "fevereiro", "marco",
     "abril", "maio", "junho",
@@ -250,6 +312,15 @@
     syncCustomSelect(editStatus);
   }
 
+  function atualizarStatusFiltro() {
+    if (!filterType || !filterStatus) return;
+    const isReceitaOnly = filterType.value === "receita";
+    filterStatus.disabled = isReceitaOnly;
+    filterStatus.closest(".field")?.classList.toggle("hidden", isReceitaOnly);
+    if (isReceitaOnly) filterStatus.value = "all";
+    syncCustomSelect(filterStatus);
+  }
+
   function linhaHTML(e, isDespesa) {
     const status = isDespesa ? (statusLabel(e.status) || "") : "";
     const categoria = String(e.categoria || "outros");
@@ -301,8 +372,9 @@
   }
 
   function renderHistoricos() {
-    const receitas = entradas.filter(e => e.tipo === "receita");
-    const despesas = entradas.filter(e => e.tipo === "despesa");
+    const filtradas = applyAdvancedFilters(entradas);
+    const receitas = filtradas.filter(e => e.tipo === "receita");
+    const despesas = filtradas.filter(e => e.tipo === "despesa");
 
     const receitasFiltradas = filtrarPorTrimestre(receitas, filtroTrimestreReceitas?.value || "todos");
     const despesasFiltradas = filtrarPorTrimestre(despesas, filtroTrimestreDespesas?.value || "todos");
@@ -383,6 +455,33 @@
   filtroTrimestreReceitas?.addEventListener("change", renderHistoricos);
   filtroTrimestreDespesas?.addEventListener("change", renderHistoricos);
 
+  filterSearch?.addEventListener("input", renderHistoricos);
+  filterStart?.addEventListener("change", renderHistoricos);
+  filterEnd?.addEventListener("change", renderHistoricos);
+  filterType?.addEventListener("change", () => {
+    atualizarStatusFiltro();
+    renderHistoricos();
+  });
+  filterStatus?.addEventListener("change", renderHistoricos);
+  filterCategory?.addEventListener("change", renderHistoricos);
+  filterMin?.addEventListener("input", renderHistoricos);
+  filterMax?.addEventListener("input", renderHistoricos);
+
+  filterClear?.addEventListener("click", () => {
+    if (filterSearch) filterSearch.value = "";
+    if (filterStart) filterStart.value = "";
+    if (filterEnd) filterEnd.value = "";
+    if (filterType) filterType.value = "all";
+    if (filterStatus) filterStatus.value = "all";
+    if (filterCategory) filterCategory.value = "all";
+    if (filterMin) filterMin.value = "";
+    if (filterMax) filterMax.value = "";
+
+    atualizarStatusFiltro();
+    [filterType, filterStatus, filterCategory].forEach(syncCustomSelect);
+    renderHistoricos();
+  });
+
   modalCloseBtn?.addEventListener("click", fecharModal);
   modalCancelBtn?.addEventListener("click", fecharModal);
   modalOverlay?.addEventListener("click", (ev) => {
@@ -440,6 +539,7 @@
   });
 
   atualizarStatusFormPrincipal();
+  atualizarStatusFiltro();
   bindAcoesListas();
   [
     inputTipo,
@@ -449,7 +549,10 @@
     filtroTrimestreDespesas,
     editTipo,
     editStatus,
-    editCategoria
+    editCategoria,
+    filterType,
+    filterStatus,
+    filterCategory
   ].forEach(initCustomSelect);
   carregarDados();
 })();
