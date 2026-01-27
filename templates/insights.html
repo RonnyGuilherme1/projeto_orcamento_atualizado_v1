@@ -13,7 +13,7 @@
           <h2 class="panel-title">Insights e variações</h2>
           <p class="panel-subtitle">Comparação automática do mês selecionado com o mês anterior e a média de 3 meses.</p>
         </div>
-        <div class="panel-actions">
+        <div class="panel-actions compare-actions">
           <label class="field field-inline">
             <span class="field-label">Ano</span>
             <select id="insight-year" class="control">
@@ -39,8 +39,32 @@
               <option value="12">Dezembro</option>
             </select>
           </label>
+          <label class="field field-inline">
+            <span class="field-label">Comparando com</span>
+            <select id="insight-compare" class="control">
+              <option value="prev">Mês anterior</option>
+              <option value="avg3">Média 3 meses</option>
+              <option value="yoy">Mesmo mês ano passado</option>
+              <option value="custom">Período custom</option>
+            </select>
+          </label>
           <span class="pill" id="insight-period-label">Mês atual vs mês anterior</span>
         </div>
+      </div>
+      <div class="compare-custom-range" id="insight-custom-range" style="display:none;">
+        <label class="field field-inline">
+          <span class="field-label">Período base (início)</span>
+          <input type="date" id="insight-custom-start" class="control">
+        </label>
+        <label class="field field-inline">
+          <span class="field-label">Período base (fim)</span>
+          <input type="date" id="insight-custom-end" class="control">
+        </label>
+      </div>
+      <div class="compare-context">
+        <span class="compare-context-item" id="insight-range-current">Período atual: --</span>
+        <span class="compare-context-item" id="insight-range-base">Período base: --</span>
+        <span class="compare-context-item" id="insight-updated">Atualizado: --</span>
       </div>
       <div class="compare-error" id="insight-error" role="status" aria-live="polite" style="display:none;"></div>
     </section>
@@ -78,7 +102,7 @@
         </article>
 
         <article class="compare-card">
-          <h3>Saldo projetado</h3>
+          <h3>Saldo projetado <span class="info-pill" title="Saldo considerando pendentes até o fim do mês.">i</span></h3>
           <div class="compare-values">
             <div>
               <span class="compare-value-label">Mês anterior</span>
@@ -93,7 +117,7 @@
         </article>
 
         <article class="compare-card">
-          <h3>Movimentacoes</h3>
+          <h3>Movimentações</h3>
           <div class="compare-values">
             <div>
               <span class="compare-value-label">Mês anterior</span>
@@ -118,24 +142,28 @@
       </div>
       <div class="insight-grid">
         <article class="insight-card">
-          <span class="insight-label">Maior aumento</span>
+          <span class="insight-label">Categoria que mais subiu</span>
           <strong id="insight-top-up">--</strong>
           <span class="insight-meta" id="insight-top-up-meta">--</span>
+          <a class="insight-action" id="insight-top-up-action" href="/app/entradas">Ver lançamentos</a>
         </article>
         <article class="insight-card">
-          <span class="insight-label">Maior queda</span>
+          <span class="insight-label">Categoria que mais caiu</span>
           <strong id="insight-top-down">--</strong>
           <span class="insight-meta" id="insight-top-down-meta">--</span>
+          <a class="insight-action" id="insight-top-down-action" href="/app/entradas">Ver lançamentos</a>
         </article>
         <article class="insight-card">
-          <span class="insight-label">Categoria mais pesada</span>
+          <span class="insight-label">Maior gasto do mês</span>
           <strong id="insight-top-category">--</strong>
           <span class="insight-meta" id="insight-top-category-meta">--</span>
+          <a class="insight-action" id="insight-top-category-action" href="/app/entradas">Ver lançamentos</a>
         </article>
         <article class="insight-card">
           <span class="insight-label">Despesa vs média 3 meses</span>
           <strong id="insight-vs-avg">--</strong>
           <span class="insight-meta" id="insight-vs-avg-meta">--</span>
+          <a class="insight-action" id="insight-vs-avg-action" href="/app/entradas">Ver lançamentos</a>
         </article>
       </div>
     </section>
@@ -147,18 +175,22 @@
           <p class="muted">Categorias que mais influenciaram a variação entre os meses.</p>
         </div>
       </div>
+      <div class="insight-explain-meta">
+        <span>Variação total explicada</span>
+        <strong id="insight-explained-total">R$ 0,00</strong>
+      </div>
       <ul id="insight-changes" class="compare-list-items"></ul>
     </section>
 
     <section class="panel compare-chart">
       <div class="chart-head">
         <div>
-          <h3>Comparativo por categoria</h3>
-          <p class="muted">Barras lado a lado entre mês anterior e mês atual.</p>
+          <h3>Variação por categoria (Δ)</h3>
+          <p class="muted">Mostra o impacto da variação por categoria.</p>
         </div>
         <div class="compare-chart-legend">
-          <span class="legend-pill legend-a">Mês anterior</span>
-          <span class="legend-pill legend-b">Mês atual</span>
+          <span class="legend-pill legend-neg">Redução</span>
+          <span class="legend-pill legend-pos">Aumento</span>
         </div>
       </div>
       <div id="compare-bars" class="compare-bars"></div>

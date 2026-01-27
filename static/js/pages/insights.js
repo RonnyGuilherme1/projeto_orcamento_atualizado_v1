@@ -1,8 +1,15 @@
 (function () {
   const yearSelect = document.getElementById("insight-year");
   const monthSelect = document.getElementById("insight-month");
+  const compareSelect = document.getElementById("insight-compare");
+  const customRange = document.getElementById("insight-custom-range");
+  const customStart = document.getElementById("insight-custom-start");
+  const customEnd = document.getElementById("insight-custom-end");
   const errorBox = document.getElementById("insight-error");
   const periodLabel = document.getElementById("insight-period-label");
+  const rangeCurrent = document.getElementById("insight-range-current");
+  const rangeBase = document.getElementById("insight-range-base");
+  const updatedLabel = document.getElementById("insight-updated");
 
   const receiptsA = document.getElementById("compare-receitas-a");
   const receiptsB = document.getElementById("compare-receitas-b");
@@ -28,11 +35,18 @@
   const insightTopCategoryMeta = document.getElementById("insight-top-category-meta");
   const insightVsAvg = document.getElementById("insight-vs-avg");
   const insightVsAvgMeta = document.getElementById("insight-vs-avg-meta");
+  const insightTopUpAction = document.getElementById("insight-top-up-action");
+  const insightTopDownAction = document.getElementById("insight-top-down-action");
+  const insightTopCategoryAction = document.getElementById("insight-top-category-action");
+  const insightVsAvgAction = document.getElementById("insight-vs-avg-action");
   const insightChanges = document.getElementById("insight-changes");
+  const insightExplainedTotal = document.getElementById("insight-explained-total");
   const topIncomeList = document.getElementById("insight-top-income");
   const topExpenseList = document.getElementById("insight-top-expense");
 
   if (!yearSelect || !monthSelect || !receiptsA) return;
+
+  let currentRange = null;
 
   const CATEGORY_LABELS = {
     salario: "Salário",
@@ -67,6 +81,15 @@
     return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
   }
 
+  function formatDisplayDate(date) {
+    if (!(date instanceof Date) || Number.isNaN(date.getTime())) return "--";
+    return date.toLocaleDateString("pt-BR");
+  }
+
+  function formatRangeDisplay(start, end) {
+    return `${formatDisplayDate(start)}–${formatDisplayDate(end)}`;
+  }
+
   function monthRange(year, month) {
     const now = new Date();
     const y = Number(year) || now.getFullYear();
@@ -88,6 +111,19 @@
     return { year: y, month: m };
   }
 
+  function getPreviousMonths(year, month, count) {
+    const list = [];
+    let y = Number(year) || new Date().getFullYear();
+    let m = Number(month) || (new Date().getMonth() + 1);
+    for (let i = 0; i < count; i += 1) {
+      const prev = getPrevMonth(y, m);
+      list.push(prev);
+      y = prev.year;
+      m = prev.month;
+    }
+    return list;
+  }
+
   function formatMonthLabel(year, month) {
     const y = Number(year) || new Date().getFullYear();
     const m = Number(month) || (new Date().getMonth() + 1);
@@ -105,19 +141,49 @@
     return `${val} lançamentos`;
   }
 
-  function setDelta(el, a, b, isCurrency = true) {
+  function setDelta(el, baseValue, currentValue, options = {}) {
     if (!el) return;
-    const base = Number(a) || 0;
-    const current = Number(b) || 0;
+    const {
+      isCurrency = true,
+      goodIfIncrease = true,
+      allowPercent = true,
+      minBase = 200
+    } = options;
+    const base = Number(baseValue) || 0;
+    const current = Number(currentValue) || 0;
     const diff = current - base;
-    const percent = base ? (diff / base) * 100 : 0;
-    const sign = diff >= 0 ? "+" : "-";
     const absDiff = Math.abs(diff);
-    const absPct = Math.abs(percent);
-    const valueText = isCurrency ? fmtBRL(absDiff) : `${absDiff}`;
-    el.textContent = `${sign}${valueText} (${sign}${absPct.toFixed(1)}%)`;
-    el.classList.toggle("is-positive", diff > 0);
-    el.classList.toggle("is-negative", diff < 0);
+    const sign = diff > 0 ? "+" : diff < 0 ? "-" : "";
+    const arrow = diff > 0 ? "↑" : diff < 0 ? "↓" : "•";
+    const valueText = isCurrency ? fmtBRL(absDiff) : absDiff.toLocaleString("pt-BR");
+
+    let percentText = "—";
+    const signFlip = base !== 0 && current !== 0 && base * current < 0;
+    const showPercent = allowPercent && Math.abs(base) >= minBase && !signFlip;
+    if (showPercent) {
+      const pct = base ? (absDiff / Math.abs(base)) * 100 : 0;
+      percentText = `${sign}${pct.toFixed(1)}%`;
+    }
+
+    let suffix = "";
+    if (signFlip) {
+      suffix = current >= 0 ? "Virou positivo" : "Virou negativo";
+    }
+
+    const parts = [`${arrow} ${sign}${valueText}`];
+    if (allowPercent) {
+      parts.push(`(${percentText})`);
+    }
+    if (suffix) {
+      parts.push(`• ${suffix}`);
+    }
+    el.textContent = parts.join(" ");
+
+    el.classList.remove("is-positive", "is-negative");
+    if (goodIfIncrease === null || diff === 0) return;
+    const isGood = diff > 0 ? goodIfIncrease : !goodIfIncrease;
+    el.classList.toggle("is-positive", isGood);
+    el.classList.toggle("is-negative", !isGood);
   }
 
   function showError(message) {
@@ -138,16 +204,70 @@
     return res.json();
   }
 
-  async function fetchAverage3Months(endDateStr) {
-    if (!endDateStr) return null;
-    const end = new Date(endDateStr);
-    if (Number.isNaN(end.getTime())) return null;
-    const start = new Date(end.getFullYear(), end.getMonth() - 2, 1);
-    const endRange = new Date(end.getFullYear(), end.getMonth() + 1, 0);
-    return fetchPeriod(formatDate(start), formatDate(endRange));
+  async function fetchMonthData(year, month) {
+    const range = monthRange(year, month);
+    return fetchPeriod(formatDate(range.start), formatDate(range.end));
   }
 
-  function renderCategories(listEl, categories, total) {
+  function averageDatas(list) {
+    if (!list || !list.length) return null;
+    const count = list.length;
+    const summaryKeys = [
+      "receitas",
+      "despesas",
+      "saldo_projetado",
+      "entradas",
+      "receitas_count",
+      "despesas_count"
+    ];
+    const summary = {};
+    summaryKeys.forEach((key) => {
+      const total = list.reduce((sum, item) => sum + (Number(item.summary?.[key]) || 0), 0);
+      summary[key] = total / count;
+    });
+
+    const catTotals = new Map();
+    list.forEach((item) => {
+      (item.categories || []).forEach((cat) => {
+        if (!cat?.key) return;
+        const existing = catTotals.get(cat.key) || {
+          key: cat.key,
+          label: CATEGORY_LABELS[cat.key] || cat.label || "Outros",
+          total: 0
+        };
+        existing.total += Number(cat.total) || 0;
+        catTotals.set(cat.key, existing);
+      });
+    });
+
+    const categories = Array.from(catTotals.values()).map((item) => ({
+      key: item.key,
+      label: item.label,
+      total: item.total / count
+    }));
+
+    return {
+      summary,
+      categories,
+      top_entries: []
+    };
+  }
+
+  async function fetchAverageMonths(year, month, count) {
+    const months = [];
+    let y = Number(year);
+    let m = Number(month);
+    for (let i = 0; i < count; i += 1) {
+      const prev = getPrevMonth(y, m);
+      months.push(prev);
+      y = prev.year;
+      m = prev.month;
+    }
+    const dataList = await Promise.all(months.map((ref) => fetchMonthData(ref.year, ref.month)));
+    return averageDatas(dataList);
+  }
+
+  function renderCategories(listEl, categories, total, deltaMap, direction) {
     if (!listEl) return;
     const items = (categories || []).filter(item => Number(item.total) > 0);
     if (!items.length) {
@@ -159,9 +279,16 @@
       const label = CATEGORY_LABELS[item.key] || item.label || "Outros";
       const value = Number(item.total) || 0;
       const pct = totalValue ? (value / totalValue) * 100 : (Number(item.percent) || 0);
+      let deltaText = "";
+      if (deltaMap && item.key && deltaMap.has(item.key)) {
+        const delta = deltaMap.get(item.key);
+        const raw = direction === "a" ? -delta : delta;
+        const sign = raw > 0 ? "+" : raw < 0 ? "-" : "";
+        deltaText = ` • Δ ${sign}${fmtBRL(Math.abs(raw))}`;
+      }
       return `<li>
         <span>${label}</span>
-        <span class="item-meta">${fmtBRL(value)} - ${pct.toFixed(1)}%</span>
+        <span class="item-meta">${fmtBRL(value)} - ${pct.toFixed(1)}%${deltaText}</span>
       </li>`;
     }).join("");
   }
@@ -218,6 +345,35 @@
     }).join("");
   }
 
+  function statusLabel(status) {
+    if (!status) return "";
+    if (status === "pago") return "Pago";
+    if (status === "em_andamento") return "Em andamento";
+    if (status === "nao_pago") return "Não pago";
+    if (status === "atrasado") return "Atrasado";
+    return String(status);
+  }
+
+  function formatEntryDate(value) {
+    if (!value) return "";
+    const text = String(value);
+    const parts = text.split("-");
+    if (parts.length >= 3) {
+      return `${parts[2].slice(0, 2)}/${parts[1]}/${parts[0]}`;
+    }
+    return text;
+  }
+
+  function buildEntriesLink(params) {
+    const url = new URL("/app/entradas", window.location.origin);
+    Object.entries(params || {}).forEach(([key, value]) => {
+      if (value === undefined || value === null || value === "") return;
+      url.searchParams.set(key, String(value));
+    });
+    const query = url.searchParams.toString();
+    return query ? `${url.pathname}?${query}` : url.pathname;
+  }
+
   function renderTopEntries(listEl, entries, tipo) {
     if (!listEl) return;
     const filtered = (entries || []).filter(item => item.type === tipo);
@@ -228,63 +384,41 @@
     listEl.innerHTML = filtered.slice(0, 5).map((item) => {
       const label = item.description || "-";
       const cat = CATEGORY_LABELS[item.category] || item.category || "Outros";
+      const date = formatEntryDate(item.date);
+      const status = tipo === "despesa" ? statusLabel(item.status) : "";
+      const metaParts = [cat, fmtBRL(item.value)];
+      if (date) metaParts.unshift(date);
+      if (status) metaParts.push(status);
       return `<li>
         <span>${label}</span>
-        <span class="item-meta">${cat} - ${fmtBRL(item.value)}</span>
+        <span class="item-meta">${metaParts.join(" • ")}</span>
       </li>`;
     }).join("");
   }
 
   function renderCompareBars(catA, catB) {
     if (!compareBars) return;
-    const map = new Map();
+    const deltas = computeCategoryDeltas(catA || [], catB || []).slice(0, 6);
 
-    (catA || []).forEach((item) => {
-      if (!item?.key) return;
-      map.set(item.key, {
-        key: item.key,
-        label: CATEGORY_LABELS[item.key] || item.label || "Outros",
-        a: Number(item.total) || 0,
-        b: 0
-      });
-    });
-
-    (catB || []).forEach((item) => {
-      if (!item?.key) return;
-      const existing = map.get(item.key) || {
-        key: item.key,
-        label: CATEGORY_LABELS[item.key] || item.label || "Outros",
-        a: 0,
-        b: 0
-      };
-      existing.b = Number(item.total) || 0;
-      map.set(item.key, existing);
-    });
-
-    const rows = Array.from(map.values())
-      .filter(item => item.a > 0 || item.b > 0)
-      .sort((a, b) => (b.a + b.b) - (a.a + a.b))
-      .slice(0, 6);
-
-    if (!rows.length) {
+    if (!deltas.length) {
       compareBars.innerHTML = '<div class="compare-empty">Sem despesas suficientes para comparar.</div>';
       return;
     }
 
-    const maxValue = Math.max(...rows.map(row => Math.max(row.a, row.b)), 1);
+    const maxDelta = Math.max(...deltas.map(item => Math.abs(item.delta)), 1);
 
-    compareBars.innerHTML = rows.map((row) => {
-      const widthA = Math.min(100, (row.a / maxValue) * 100);
-      const widthB = Math.min(100, (row.b / maxValue) * 100);
-      return `<div class="compare-bar-row">
-        <span class="compare-bar-label">${row.label}</span>
-        <div class="compare-bar-group">
-          <div class="compare-bar-track"><div class="compare-bar bar-a" style="width:${widthA.toFixed(1)}%"></div></div>
-          <div class="compare-bar-track"><div class="compare-bar bar-b" style="width:${widthB.toFixed(1)}%"></div></div>
+    compareBars.innerHTML = deltas.map((item) => {
+      const width = Math.min(50, (Math.abs(item.delta) / maxDelta) * 50);
+      const isPositive = item.delta > 0;
+      const sign = isPositive ? "+" : "-";
+      const valueText = `${sign}${fmtBRL(Math.abs(item.delta))}`;
+      return `<div class="compare-bar-row delta-row">
+        <span class="compare-bar-label">${item.label}</span>
+        <div class="compare-bar-track delta-track">
+          <div class="compare-bar delta-bar ${isPositive ? "is-positive" : "is-negative"}" style="width:${width.toFixed(1)}%"></div>
         </div>
         <div class="compare-bar-values">
-          <span>${fmtBRL(row.a)}</span>
-          <span>${fmtBRL(row.b)}</span>
+          <span class="delta-value ${isPositive ? "is-positive" : "is-negative"}">${valueText}</span>
         </div>
       </div>`;
     }).join("");
@@ -294,35 +428,88 @@
     if (!dataA || !dataB) return;
     const deltas = computeCategoryDeltas(dataA.categories || [], dataB.categories || []);
     const topUp = deltas.find(item => item.delta > 0);
-    const topDown = [...deltas].reverse().find(item => item.delta < 0);
+    const topDown = deltas.filter(item => item.delta < 0).sort((a, b) => a.delta - b.delta)[0];
     const topCategoryB = (dataB.categories || []).slice().sort((a, b) => (b.total || 0) - (a.total || 0))[0];
+    const periodParams = currentRange
+      ? { start: formatDate(currentRange.start), end: formatDate(currentRange.end) }
+      : {};
 
     if (insightTopUp) insightTopUp.textContent = topUp ? topUp.label : "--";
-    if (insightTopUpMeta) insightTopUpMeta.textContent = topUp ? `+${fmtBRL(topUp.delta)}` : "--";
+    if (insightTopUpMeta) insightTopUpMeta.textContent = topUp ? `+${fmtBRL(Math.abs(topUp.delta))}` : "--";
     if (insightTopDown) insightTopDown.textContent = topDown ? topDown.label : "--";
     if (insightTopDownMeta) insightTopDownMeta.textContent = topDown ? `-${fmtBRL(Math.abs(topDown.delta))}` : "--";
+
+    if (insightTopUpAction) {
+      insightTopUpAction.style.display = topUp ? "inline-flex" : "none";
+      insightTopUpAction.textContent = "Ver lançamentos";
+      if (topUp?.key) {
+        insightTopUpAction.href = buildEntriesLink({ type: "despesa", category: topUp.key, ...periodParams });
+      }
+    }
+    if (insightTopDownAction) {
+      insightTopDownAction.style.display = topDown ? "inline-flex" : "none";
+      insightTopDownAction.textContent = "Ver lançamentos";
+      if (topDown?.key) {
+        insightTopDownAction.href = buildEntriesLink({ type: "despesa", category: topDown.key, ...periodParams });
+      }
+    }
 
     if (insightTopCategory) {
       insightTopCategory.textContent = topCategoryB ? (CATEGORY_LABELS[topCategoryB.key] || topCategoryB.label || "Outros") : "--";
     }
     if (insightTopCategoryMeta) {
-      insightTopCategoryMeta.textContent = topCategoryB ? fmtBRL(topCategoryB.total) : "--";
+      if (topCategoryB) {
+        const totalExpenses = Number(dataB.summary?.despesas || 0);
+        const pct = totalExpenses ? (Number(topCategoryB.total || 0) / totalExpenses) * 100 : 0;
+        const isOutros = String(topCategoryB.key || "") === "outros";
+        const extra = isOutros && pct >= 25 ? " • Outros alto" : "";
+        insightTopCategoryMeta.textContent = `${fmtBRL(topCategoryB.total)} (${pct.toFixed(1)}%)${extra}`;
+      } else {
+        insightTopCategoryMeta.textContent = "--";
+      }
+    }
+    if (insightTopCategoryAction) {
+      if (topCategoryB?.key) {
+        const isOutros = String(topCategoryB.key || "") === "outros";
+        insightTopCategoryAction.style.display = "inline-flex";
+        if (isOutros) {
+          insightTopCategoryAction.textContent = "Criar regra";
+          insightTopCategoryAction.href = "/app/filters";
+        } else {
+          insightTopCategoryAction.textContent = "Ver lançamentos";
+          insightTopCategoryAction.href = buildEntriesLink({ type: "despesa", category: topCategoryB.key, ...periodParams });
+        }
+      } else if (insightTopCategoryAction) {
+        insightTopCategoryAction.style.display = "none";
+      }
     }
 
     if (avgData && insightVsAvg && insightVsAvgMeta) {
-      const avgExpenses = (Number(avgData.summary?.despesas) || 0) / 3;
+      const avgExpenses = Number(avgData.summary?.despesas) || 0;
       const currExpenses = Number(dataB.summary?.despesas) || 0;
       const diff = currExpenses - avgExpenses;
       const sign = diff >= 0 ? "+" : "-";
       insightVsAvg.textContent = `${sign}${fmtBRL(Math.abs(diff))}`;
       const pct = avgExpenses ? Math.abs(diff / avgExpenses) * 100 : 0;
-      insightVsAvgMeta.textContent = `Média 3 meses: ${fmtBRL(avgExpenses)} (${pct.toFixed(1)}%)`;
+      const direction = diff >= 0 ? "acima" : "abaixo";
+      insightVsAvgMeta.textContent = `Você ficou ${direction} da média. Média 3 meses: ${fmtBRL(avgExpenses)} (${pct.toFixed(1)}%)`;
+      if (insightVsAvgAction) {
+        insightVsAvgAction.style.display = "inline-flex";
+        insightVsAvgAction.textContent = "Ver lançamentos";
+        insightVsAvgAction.href = buildEntriesLink({ type: "despesa", ...periodParams });
+      }
     } else if (insightVsAvg && insightVsAvgMeta) {
       insightVsAvg.textContent = "--";
       insightVsAvgMeta.textContent = "--";
+      if (insightVsAvgAction) insightVsAvgAction.style.display = "none";
     }
 
     renderInsightChanges(insightChanges, deltas);
+    if (insightExplainedTotal) {
+      const diff = (Number(dataB.summary?.despesas) || 0) - (Number(dataA.summary?.despesas) || 0);
+      const sign = diff >= 0 ? "+" : "-";
+      insightExplainedTotal.textContent = `${sign}${fmtBRL(Math.abs(diff))}`;
+    }
   }
 
   function updateCompareSummary(dataA, dataB) {
@@ -347,10 +534,10 @@
     if (countA) countA.textContent = fmtCount(countValueA);
     if (countB) countB.textContent = fmtCount(countValueB);
 
-    setDelta(receiptsDelta, receitasA, receitasB, true);
-    setDelta(expensesDelta, despesasA, despesasB, true);
-    setDelta(balanceDelta, saldoA, saldoB, true);
-    setDelta(countDelta, countValueA, countValueB, false);
+    setDelta(receiptsDelta, receitasA, receitasB, { isCurrency: true, goodIfIncrease: true });
+    setDelta(expensesDelta, despesasA, despesasB, { isCurrency: true, goodIfIncrease: false });
+    setDelta(balanceDelta, saldoA, saldoB, { isCurrency: true, goodIfIncrease: true });
+    setDelta(countDelta, countValueA, countValueB, { isCurrency: false, goodIfIncrease: null, allowPercent: false });
   }
 
   function resetInsights() {
@@ -381,6 +568,11 @@
     if (insightTopCategoryMeta) insightTopCategoryMeta.textContent = "--";
     if (insightVsAvg) insightVsAvg.textContent = "--";
     if (insightVsAvgMeta) insightVsAvgMeta.textContent = "--";
+    if (insightTopUpAction) insightTopUpAction.style.display = "none";
+    if (insightTopDownAction) insightTopDownAction.style.display = "none";
+    if (insightTopCategoryAction) insightTopCategoryAction.style.display = "none";
+    if (insightVsAvgAction) insightVsAvgAction.style.display = "none";
+    if (insightExplainedTotal) insightExplainedTotal.textContent = "R$ 0,00";
 
     renderCategories(categoriesA, [], 0);
     renderCategories(categoriesB, [], 0);
@@ -395,24 +587,79 @@
 
     const currentYear = Number(yearSelect.value) || new Date().getFullYear();
     const currentMonth = Number(monthSelect.value) || (new Date().getMonth() + 1);
-    const prev = getPrevMonth(currentYear, currentMonth);
-    const rangeA = monthRange(prev.year, prev.month);
     const rangeB = monthRange(currentYear, currentMonth);
+    currentRange = rangeB;
+    const compareMode = compareSelect?.value || "prev";
+
+    if (customRange) {
+      customRange.style.display = compareMode === "custom" ? "flex" : "none";
+    }
+
+    let rangeA = null;
+    let baseLabel = "";
+    let baseRangeLabel = "";
+    let dataAPromise = null;
+
+    if (compareMode === "avg3") {
+      const prevMonths = getPreviousMonths(currentYear, currentMonth, 3);
+      const oldest = prevMonths[prevMonths.length - 1];
+      const newest = prevMonths[0];
+      const startRange = monthRange(oldest.year, oldest.month);
+      const endRange = monthRange(newest.year, newest.month);
+      baseLabel = "Média 3 meses";
+      baseRangeLabel = formatRangeDisplay(startRange.start, endRange.end);
+      dataAPromise = fetchAverageMonths(currentYear, currentMonth, 3);
+    } else if (compareMode === "yoy") {
+      rangeA = monthRange(currentYear - 1, currentMonth);
+      baseLabel = formatMonthLabel(currentYear - 1, currentMonth);
+      baseRangeLabel = formatRangeDisplay(rangeA.start, rangeA.end);
+      dataAPromise = fetchPeriod(formatDate(rangeA.start), formatDate(rangeA.end));
+    } else if (compareMode === "custom") {
+      const start = customStart?.value;
+      const end = customEnd?.value;
+      if (!start || !end || end < start) {
+        resetInsights();
+        showError("Selecione um período base válido para comparar.");
+        return;
+      }
+      rangeA = { start: new Date(start), end: new Date(end) };
+      baseLabel = "Período custom";
+      baseRangeLabel = `${formatDisplayDate(rangeA.start)}–${formatDisplayDate(rangeA.end)}`;
+      dataAPromise = fetchPeriod(start, end);
+    } else {
+      const prev = getPrevMonth(currentYear, currentMonth);
+      rangeA = monthRange(prev.year, prev.month);
+      baseLabel = formatMonthLabel(prev.year, prev.month);
+      baseRangeLabel = formatRangeDisplay(rangeA.start, rangeA.end);
+      dataAPromise = fetchPeriod(formatDate(rangeA.start), formatDate(rangeA.end));
+    }
 
     if (periodLabel) {
-      periodLabel.textContent = `${formatMonthLabel(currentYear, currentMonth)} vs ${formatMonthLabel(prev.year, prev.month)}`;
+      periodLabel.textContent = `${formatMonthLabel(currentYear, currentMonth)} vs ${baseLabel || "base"}`;
+    }
+
+    if (rangeCurrent) {
+      rangeCurrent.textContent = `Período atual: ${formatRangeDisplay(rangeB.start, rangeB.end)}`;
+    }
+    if (rangeBase) {
+      rangeBase.textContent = `Período base: ${baseRangeLabel || "--"}`;
+    }
+    if (updatedLabel) {
+      const now = new Date();
+      updatedLabel.textContent = `Atualizado: ${formatDisplayDate(now)}`;
     }
 
     try {
       const [dataA, dataB] = await Promise.all([
-        fetchPeriod(formatDate(rangeA.start), formatDate(rangeA.end)),
+        dataAPromise,
         fetchPeriod(formatDate(rangeB.start), formatDate(rangeB.end))
       ]);
-      const avgData = await fetchAverage3Months(formatDate(rangeB.end));
+      const avgData = compareMode === "avg3" ? dataA : await fetchAverageMonths(currentYear, currentMonth, 3);
+      const deltaMap = new Map((computeCategoryDeltas(dataA.categories || [], dataB.categories || [])).map(item => [item.key, item.delta]));
 
       updateCompareSummary(dataA, dataB);
-      renderCategories(categoriesA, dataA.categories || [], Number(dataA.summary?.despesas || 0));
-      renderCategories(categoriesB, dataB.categories || [], Number(dataB.summary?.despesas || 0));
+      renderCategories(categoriesA, dataA.categories || [], Number(dataA.summary?.despesas || 0), deltaMap, "a");
+      renderCategories(categoriesB, dataB.categories || [], Number(dataB.summary?.despesas || 0), deltaMap, "b");
       renderCompareBars(dataA.categories || [], dataB.categories || []);
       renderInsights(dataA, dataB, avgData);
       renderTopEntries(topIncomeList, dataB.top_entries || [], "receita");
@@ -432,6 +679,13 @@
 
   yearSelect.addEventListener("change", loadInsights);
   monthSelect.addEventListener("change", loadInsights);
+  compareSelect?.addEventListener("change", loadInsights);
+  customStart?.addEventListener("change", () => {
+    if (compareSelect?.value === "custom") loadInsights();
+  });
+  customEnd?.addEventListener("change", () => {
+    if (compareSelect?.value === "custom") loadInsights();
+  });
 
   loadInsights();
 })();

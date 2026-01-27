@@ -482,6 +482,23 @@
     renderHistoricos();
   });
 
+  function applyFiltersFromQuery() {
+    const params = new URLSearchParams(window.location.search);
+    if (!params || params.toString() === "") return;
+
+    if (filterSearch && params.get("search")) filterSearch.value = params.get("search");
+    if (filterStart && params.get("start")) filterStart.value = params.get("start");
+    if (filterEnd && params.get("end")) filterEnd.value = params.get("end");
+    if (filterType && params.get("type")) filterType.value = params.get("type");
+    if (filterStatus && params.get("status")) filterStatus.value = params.get("status");
+    if (filterCategory && params.get("category")) filterCategory.value = params.get("category");
+    if (filterMin && params.get("min")) filterMin.value = params.get("min");
+    if (filterMax && params.get("max")) filterMax.value = params.get("max");
+
+    atualizarStatusFiltro();
+    [filterType, filterStatus, filterCategory].forEach(syncCustomSelect);
+  }
+
   modalCloseBtn?.addEventListener("click", fecharModal);
   modalCancelBtn?.addEventListener("click", fecharModal);
   modalOverlay?.addEventListener("click", (ev) => {
@@ -554,5 +571,6 @@
     filterStatus,
     filterCategory
   ].forEach(initCustomSelect);
+  applyFiltersFromQuery();
   carregarDados();
 })();
