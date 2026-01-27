@@ -470,3 +470,91 @@ body.app-body .insight-explain-meta strong{
     text-align: left;
   }
 }
+
+/* --- Theme light overrides (insights) --- */
+body.app-body.theme-light .compare-context,
+body.app-body.theme-light .compare-toggle,
+body.app-body.theme-light .compare-label,
+body.app-body.theme-light .insight-label,
+body.app-body.theme-light .insight-meta,
+body.app-body.theme-light .compare-value-label,
+body.app-body.theme-light .compare-list-items,
+body.app-body.theme-light .compare-list-items .item-meta,
+body.app-body.theme-light .compare-bar-values,
+body.app-body.theme-light .compare-bar-label,
+body.app-body.theme-light .insight-explain-meta{
+  color: rgba(15, 23, 32, 0.62);
+}
+
+body.app-body.theme-light .compare-period,
+body.app-body.theme-light .insight-card,
+body.app-body.theme-light .compare-card,
+body.app-body.theme-light .compare-list{
+  background: rgba(255, 255, 255, 0.9);
+  border-color: rgba(15, 23, 32, 0.12);
+  box-shadow: 0 10px 24px rgba(15, 23, 32, 0.1);
+}
+
+body.app-body.theme-light .compare-context-item,
+body.app-body.theme-light .compare-delta,
+body.app-body.theme-light .legend-pill{
+  background: rgba(15, 23, 32, 0.05);
+  border-color: rgba(15, 23, 32, 0.12);
+  color: rgba(15, 23, 32, 0.75);
+}
+
+body.app-body.theme-light .info-pill{
+  background: rgba(15, 23, 32, 0.08);
+  border-color: rgba(15, 23, 32, 0.2);
+  color: rgba(15, 23, 32, 0.7);
+}
+
+body.app-body.theme-light .compare-list-items li,
+body.app-body.theme-light .compare-empty{
+  background: rgba(15, 23, 32, 0.04);
+  border-color: rgba(15, 23, 32, 0.08);
+  color: rgba(15, 23, 32, 0.6);
+}
+
+body.app-body.theme-light .compare-bar-track{
+  background: rgba(15, 23, 32, 0.08);
+  border-color: rgba(15, 23, 32, 0.12);
+}
+
+body.app-body.theme-light .compare-bar-track.delta-track::before{
+  background: rgba(15, 23, 32, 0.2);
+}
+
+body.app-body.theme-light .compare-delta.is-positive{
+  background: rgba(76, 175, 80, 0.18);
+  border-color: rgba(76, 175, 80, 0.4);
+  color: #1b5e20;
+}
+
+body.app-body.theme-light .compare-delta.is-negative{
+  background: rgba(255, 77, 79, 0.16);
+  border-color: rgba(255, 77, 79, 0.35);
+  color: #8b1d1d;
+}
+
+body.app-body.theme-light .compare-bar-values .delta-value.is-positive{
+  color: #d64545;
+}
+
+body.app-body.theme-light .compare-bar-values .delta-value.is-negative{
+  color: #2e7d32;
+}
+
+body.app-body.theme-light .insight-action{
+  color: rgba(46, 125, 50, 0.95);
+}
+
+body.app-body.theme-light .insight-action:hover{
+  color: rgba(15, 23, 32, 0.9);
+}
+
+body.app-body.theme-light .compare-error{
+  background: rgba(255, 77, 79, 0.12);
+  color: #8b1d1d;
+  border-color: rgba(255, 77, 79, 0.35);
+}

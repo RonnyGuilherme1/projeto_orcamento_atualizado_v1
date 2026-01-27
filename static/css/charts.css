@@ -744,3 +744,37 @@ body.app-body .next-actions{
     text-align: left;
   }
 }
+
+/* ---- Light theme tweaks for charts ---- */
+body.app-body.theme-light .charts-page{
+  --chart-income: rgba(76, 175, 80, 0.95);
+  --chart-expense: rgba(245, 166, 35, 0.95);
+  --chart-balance: rgba(66, 165, 245, 0.95);
+}
+
+body.app-body.theme-light .charts-hero,
+body.app-body.theme-light .chart-card,
+body.app-body.theme-light .chart-canvas,
+body.app-body.theme-light .alert-card{
+  background: rgba(255, 255, 255, 0.9);
+  border-color: rgba(15, 23, 32, 0.12);
+  box-shadow: 0 12px 32px rgba(15, 23, 32, 0.12);
+}
+
+body.app-body.theme-light .chart-canvas::before{
+  background-image: linear-gradient(rgba(15, 23, 32, 0.06) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(15, 23, 32, 0.06) 1px, transparent 1px);
+}
+
+body.app-body.theme-light .chart-empty,
+body.app-body.theme-light .chart-head p,
+body.app-body.theme-light .chart-legend,
+body.app-body.theme-light .chart-line .tooltip-type,
+body.app-body.theme-light .chart-line .tooltip-date{
+  color: rgba(15, 23, 32, 0.6);
+}
+
+body.app-body.theme-light .chart-line .chart-tooltip{
+  background: rgba(15, 23, 32, 0.12);
+  color: rgba(15, 23, 32, 0.9);
+}
