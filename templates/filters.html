@@ -14,7 +14,7 @@
           <p class="panel-subtitle">Crie regras inteligentes, recorrências e lembretes para reduzir trabalho manual.</p>
         </div>
         <div class="panel-actions rules-hero-actions">
-          <button class="btn-primary" type="button" disabled>Nova regra</button>
+          <button class="btn-primary" type="button" id="rule-new">Nova regra</button>
           <button class="btn-secondary" type="button" disabled>Nova recorrência</button>
           <button class="btn-secondary" type="button" disabled>Novo lembrete</button>
         </div>
@@ -22,23 +22,23 @@
 
       <div class="rules-banner">
         <strong>Recursos em desenvolvimento</strong>
-        <span>Criação, execução automática e logs estarão disponíveis na próxima fase.</span>
+        <span>Recorrencias e lembretes estao em desenvolvimento.</span>
       </div>
 
       <div class="rules-summary">
         <div class="summary-card">
           <span class="summary-label">Regras ativas</span>
-          <strong>0</strong>
+          <strong id="summary-rules">0</strong>
           <span class="summary-meta">Configure regras para classificar entradas automaticamente.</span>
         </div>
         <div class="summary-card">
           <span class="summary-label">Recorrências</span>
-          <strong>0</strong>
+          <strong id="summary-recurring">0</strong>
           <span class="summary-meta">Crie despesas fixas para não esquecer.</span>
         </div>
         <div class="summary-card">
           <span class="summary-label">Lembretes</span>
-          <strong>0</strong>
+          <strong id="summary-reminders">0</strong>
           <span class="summary-meta">Alerte antes do vencimento.</span>
         </div>
       </div>
@@ -91,79 +91,72 @@
           <button class="btn-secondary" type="button" disabled>Importar regras</button>
         </div>
       </div>
-
-      <div class="rules-applies">
-        <span>Aplicar em:</span>
-        <span class="rules-pill">Ao criar lançamento</span>
-        <span class="rules-pill muted">Ao importar CSV</span>
-        <span class="rules-pill muted">Ao editar</span>
+      <div class="rules-tools">
+        <div class="rules-applies">
+          <span>Filtros para teste/aplicar:</span>
+          <span class="rules-pill">Ao criar lancamento</span>
+          <span class="rules-pill muted">Ao importar CSV</span>
+          <span class="rules-pill muted">Ao editar</span>
+        </div>
+        <div class="rules-tool-grid">
+          <label class="field">
+            <span class="field-label">Periodo inicio</span>
+            <input type="date" id="rules-filter-start" class="control">
+          </label>
+          <label class="field">
+            <span class="field-label">Periodo fim</span>
+            <input type="date" id="rules-filter-end" class="control">
+          </label>
+          <label class="field">
+            <span class="field-label">Tipo</span>
+            <select id="rules-filter-type" class="control">
+              <option value="all">Todos</option>
+              <option value="receita">Receita</option>
+              <option value="despesa">Despesa</option>
+            </select>
+          </label>
+          <label class="field">
+            <span class="field-label">Categoria</span>
+            <select id="rules-filter-category" class="control">
+              <option value="all">Todas</option>
+              <option value="salario">Salario</option>
+              <option value="extras">Extras</option>
+              <option value="moradia">Moradia</option>
+              <option value="mercado">Mercado</option>
+              <option value="transporte">Transporte</option>
+              <option value="servicos">Servicos</option>
+              <option value="outros">Outros</option>
+            </select>
+          </label>
+          <label class="field">
+            <span class="field-label">Status</span>
+            <select id="rules-filter-status" class="control">
+              <option value="all">Todos</option>
+              <option value="pago">Pago</option>
+              <option value="em_andamento">Em andamento</option>
+              <option value="nao_pago">Nao pago</option>
+              <option value="recebido">Recebido</option>
+            </select>
+          </label>
+          <label class="field">
+            <span class="field-label">Valor minimo</span>
+            <input type="number" step="0.01" id="rules-filter-min" class="control" placeholder="0.00">
+          </label>
+          <label class="field">
+            <span class="field-label">Valor maximo</span>
+            <input type="number" step="0.01" id="rules-filter-max" class="control" placeholder="0.00">
+          </label>
+          <label class="field">
+            <span class="field-label">Limite teste</span>
+            <input type="number" id="rules-filter-limit" class="control" value="200" min="1">
+          </label>
+        </div>
       </div>
 
-      <ul class="rules-list">
-        <li class="rule-item">
-          <div class="rule-main">
-            <strong>Se descrição contém “Salário”</strong>
-            <span class="rule-meta">Categoria: Salário · Marcar como recebida · Prioridade média</span>
-          </div>
-          <div class="rule-side">
-            <div class="rule-stats">
-              <span>Executou 0x</span>
-              <span>Última: —</span>
-            </div>
-            <div class="rule-actions">
-              <label class="switch">
-                <input type="checkbox" disabled>
-                <span class="switch-track"></span>
-                <span class="switch-label">Ativo</span>
-              </label>
-              <button class="btn-tertiary" type="button" disabled>Testar</button>
-              <button class="btn-tertiary" type="button" disabled>Ver log</button>
-            </div>
-          </div>
-        </li>
-        <li class="rule-item">
-          <div class="rule-main">
-            <strong>Se descrição contém “Uber”</strong>
-            <span class="rule-meta">Categoria: Transporte · Status: em andamento · Prioridade média</span>
-          </div>
-          <div class="rule-side">
-            <div class="rule-stats">
-              <span>Executou 0x</span>
-              <span>Última: —</span>
-            </div>
-            <div class="rule-actions">
-              <label class="switch">
-                <input type="checkbox" disabled>
-                <span class="switch-track"></span>
-                <span class="switch-label">Ativo</span>
-              </label>
-              <button class="btn-tertiary" type="button" disabled>Testar</button>
-              <button class="btn-tertiary" type="button" disabled>Ver log</button>
-            </div>
-          </div>
-        </li>
-        <li class="rule-item">
-          <div class="rule-main">
-            <strong>Se descrição contém “Mercado”</strong>
-            <span class="rule-meta">Categoria: Mercado · Prioridade alta · Parar após aplicar</span>
-          </div>
-          <div class="rule-side">
-            <div class="rule-stats">
-              <span>Executou 0x</span>
-              <span>Última: —</span>
-            </div>
-            <div class="rule-actions">
-              <label class="switch">
-                <input type="checkbox" disabled>
-                <span class="switch-track"></span>
-                <span class="switch-label">Ativo</span>
-              </label>
-              <button class="btn-tertiary" type="button" disabled>Testar</button>
-              <button class="btn-tertiary" type="button" disabled>Ver log</button>
-            </div>
-          </div>
-        </li>
-      </ul>
+      <div id="rules-output" class="rules-output hidden"></div>
+
+      <ul class="rules-list" id="rules-list"></ul>
+      <div class="rules-empty" id="rules-empty">Nenhuma regra criada.</div>
     </section>
 
     <section class="panel rules-section">
@@ -243,5 +236,159 @@
         </article>
       </div>
     </section>
+    <div id="rule-modal" class="modal-overlay hidden">
+      <div class="modal">
+        <div class="modal-header">
+          <h3 id="rule-modal-title">Nova regra</h3>
+          <button id="rule-modal-close" class="modal-close" type="button" aria-label="Fechar">&times;</button>
+        </div>
+        <form id="rule-form" class="modal-body">
+          <input type="hidden" id="rule-id">
+
+          <label class="field span-all">
+            <span class="field-label">Nome</span>
+            <input type="text" id="rule-name" class="control" placeholder="Ex: Salario recebido">
+          </label>
+
+          <label class="field">
+            <span class="field-label">Prioridade</span>
+            <input type="number" id="rule-priority" class="control" value="100" min="1">
+          </label>
+
+          <label class="field">
+            <span class="field-label">Ativa</span>
+            <label class="check-pill">
+              <input type="checkbox" id="rule-enabled" checked>
+              <span>Ativa</span>
+            </label>
+          </label>
+
+          <div class="rule-group-title span-all">Aplicar em</div>
+          <div class="rule-checks span-all">
+            <label class="check-pill">
+              <input type="checkbox" id="rule-on-create" checked>
+              <span>Ao criar</span>
+            </label>
+            <label class="check-pill">
+              <input type="checkbox" id="rule-on-edit">
+              <span>Ao editar</span>
+            </label>
+            <label class="check-pill">
+              <input type="checkbox" id="rule-on-import">
+              <span>Ao importar</span>
+            </label>
+            <label class="check-pill">
+              <input type="checkbox" id="rule-stop">
+              <span>Parar apos aplicar</span>
+            </label>
+          </div>
+
+          <div class="rule-group-title span-all">Condicoes</div>
+          <label class="field span-all">
+            <span class="field-label">Descricao contem</span>
+            <input type="text" id="cond-description" class="control" placeholder="Ex: salario">
+          </label>
+          <label class="field">
+            <span class="field-label">Tipo</span>
+            <select id="cond-type" class="control">
+              <option value="all">Todos</option>
+              <option value="receita">Receita</option>
+              <option value="despesa">Despesa</option>
+            </select>
+          </label>
+          <label class="field">
+            <span class="field-label">Categoria</span>
+            <select id="cond-category" class="control">
+              <option value="all">Todas</option>
+              <option value="salario">Salario</option>
+              <option value="extras">Extras</option>
+              <option value="moradia">Moradia</option>
+              <option value="mercado">Mercado</option>
+              <option value="transporte">Transporte</option>
+              <option value="servicos">Servicos</option>
+              <option value="outros">Outros</option>
+            </select>
+          </label>
+          <label class="field">
+            <span class="field-label">Status</span>
+            <select id="cond-status" class="control">
+              <option value="all">Todos</option>
+              <option value="pago">Pago</option>
+              <option value="em_andamento">Em andamento</option>
+              <option value="nao_pago">Nao pago</option>
+              <option value="recebido">Recebido</option>
+            </select>
+          </label>
+          <label class="field">
+            <span class="field-label">Valor minimo</span>
+            <input type="number" step="0.01" id="cond-min" class="control" placeholder="0.00">
+          </label>
+          <label class="field">
+            <span class="field-label">Valor maximo</span>
+            <input type="number" step="0.01" id="cond-max" class="control" placeholder="0.00">
+          </label>
+          <label class="field">
+            <span class="field-label">Metodo</span>
+            <select id="cond-method" class="control">
+              <option value="all">Todos</option>
+              <option value="dinheiro">Dinheiro</option>
+              <option value="cartao">Cartao</option>
+              <option value="pix">Pix</option>
+            </select>
+          </label>
+
+          <div class="rule-group-title span-all">Acoes</div>
+          <label class="field">
+            <span class="field-label">Categoria</span>
+            <select id="action-category" class="control">
+              <option value="">Sem acao</option>
+              <option value="salario">Salario</option>
+              <option value="extras">Extras</option>
+              <option value="moradia">Moradia</option>
+              <option value="mercado">Mercado</option>
+              <option value="transporte">Transporte</option>
+              <option value="servicos">Servicos</option>
+              <option value="outros">Outros</option>
+            </select>
+          </label>
+          <label class="field">
+            <span class="field-label">Status</span>
+            <select id="action-status" class="control">
+              <option value="">Sem acao</option>
+              <option value="pago">Pago</option>
+              <option value="em_andamento">Em andamento</option>
+              <option value="nao_pago">Nao pago</option>
+              <option value="recebido">Recebido</option>
+            </select>
+          </label>
+          <label class="field span-all">
+            <span class="field-label">Tags</span>
+            <input type="text" id="action-tags" class="control" placeholder="Ex: revisar, mobilidade">
+          </label>
+          <label class="field span-all">
+            <span class="field-label">Prefixo da descricao</span>
+            <input type="text" id="action-prefix" class="control" placeholder="Ex: Cartao: ">
+          </label>
+          <label class="field">
+            <span class="field-label">Metodo</span>
+            <select id="action-method" class="control">
+              <option value="">Sem acao</option>
+              <option value="dinheiro">Dinheiro</option>
+              <option value="cartao">Cartao</option>
+              <option value="pix">Pix</option>
+            </select>
+          </label>
+
+          <div class="modal-actions">
+            <button id="rule-modal-cancel" type="button" class="btn-secondary">Cancelar</button>
+            <button type="submit" class="btn-primary">Salvar regra</button>
+          </div>
+        </form>
+      </div>
+    </div>
   </div>
+{% endblock %}
+
+{% block scripts %}
+  <script src="/static/js/pages/filters.js"></script>
 {% endblock %}

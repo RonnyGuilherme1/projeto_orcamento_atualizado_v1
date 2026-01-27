@@ -46,6 +46,18 @@
               </select>
             </label>
 
+            {% if has_feature('filters') %}
+            <label class="field field-metodo">
+              <span class="field-label">Metodo</span>
+              <select id="metodo" class="control">
+                <option value="">Nao informado</option>
+                <option value="dinheiro">Dinheiro</option>
+                <option value="cartao">Cartao</option>
+                <option value="pix">Pix</option>
+              </select>
+            </label>
+            {% endif %}
+
             <label class="field field-status">
               <span class="field-label">Status</span>
               <select id="status" class="control">
@@ -233,6 +245,18 @@
               <option value="nao_pago">Não pago</option>
             </select>
           </label>
+
+          {% if has_feature('filters') %}
+          <label class="field">
+            <span class="field-label">Metodo</span>
+            <select id="edit-metodo" class="control">
+              <option value="">Nao informado</option>
+              <option value="dinheiro">Dinheiro</option>
+              <option value="cartao">Cartao</option>
+              <option value="pix">Pix</option>
+            </select>
+          </label>
+          {% endif %}
 
           <label class="field">
             <span class="field-label">Categoria</span>

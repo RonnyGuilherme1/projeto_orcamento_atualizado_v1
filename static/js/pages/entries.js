@@ -6,6 +6,7 @@
   const inputCategoria = document.getElementById("categoria");
   const inputValor = document.getElementById("valor");
   const inputStatus = document.getElementById("status");
+  const inputMetodo = document.getElementById("metodo");
 
   const receitasDiv = document.getElementById("receitas");
   const despesasDiv = document.getElementById("despesas");
@@ -35,6 +36,7 @@
   const editCategoria = document.getElementById("edit-categoria");
   const editDescricao = document.getElementById("edit-descricao");
   const editValor = document.getElementById("edit-valor");
+  const editMetodo = document.getElementById("edit-metodo");
 
   // Esta página não existe? Sai sem fazer nada.
   if (!form && !receitasDiv && !despesasDiv) return;
@@ -405,6 +407,7 @@
     updateCategoryOptions(editCategoria, editTipo?.value, item.categoria || "outros");
     if (editDescricao) editDescricao.value = item.descricao || "";
     if (editValor) editValor.value = Number(item.valor) || 0;
+    if (editMetodo) editMetodo.value = item.metodo || "";
 
     if (editStatus) editStatus.value = item.tipo === "despesa" ? (item.status || "em_andamento") : "";
 
@@ -516,6 +519,9 @@
       valor: parseFloat(inputValor?.value || "0"),
       status: (inputTipo?.value === "despesa") ? (inputStatus?.value || "em_andamento") : null
     };
+    if (inputMetodo) {
+      payload.metodo = inputMetodo.value || null;
+    }
 
     await fetch("/add", {
       method: "POST",
@@ -525,6 +531,7 @@
 
     form.reset();
     if (inputTipo) inputTipo.value = "receita";
+    if (inputMetodo) inputMetodo.value = "";
     updateCategoryOptions(inputCategoria, inputTipo?.value, "outros");
     atualizarStatusFormPrincipal();
     syncCustomSelect(inputTipo);
@@ -544,6 +551,9 @@
       valor: parseFloat(editValor?.value || "0"),
       status: (editTipo?.value === "despesa") ? (editStatus?.value || "em_andamento") : null
     };
+    if (editMetodo) {
+      payload.metodo = editMetodo.value || null;
+    }
 
     await fetch(`/edit/${editandoId}`, {
       method: "PUT",
@@ -569,7 +579,9 @@
     editCategoria,
     filterType,
     filterStatus,
-    filterCategory
+    filterCategory,
+    inputMetodo,
+    editMetodo
   ].forEach(initCustomSelect);
   applyFiltersFromQuery();
   carregarDados();

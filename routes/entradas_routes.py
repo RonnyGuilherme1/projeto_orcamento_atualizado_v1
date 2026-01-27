@@ -8,6 +8,7 @@ from flask_login import login_required, current_user
 from models.extensions import db
 from models.entrada_model import Entrada
 from services.date_utils import last_day_of_month
+from services.rules_engine import apply_rules_to_entry, normalize_tags
 
 entradas_bp = Blueprint("entradas", __name__)
 
@@ -70,6 +71,9 @@ def dados():
                 "valor": float(e.valor),
                 "status": e.status,
                 "paid_at": e.paid_at.isoformat() if e.paid_at else None,
+                "received_at": e.received_at.isoformat() if e.received_at else None,
+                "metodo": e.metodo,
+                "tags": e.tags,
             }
             for e in entradas
         ]
@@ -90,6 +94,8 @@ def add():
     categoria = _normalize_categoria(tipo, payload.get("categoria"))
     valor = float(payload.get("valor") or 0)
     status = payload.get("status")
+    metodo = (payload.get("metodo") or "").strip().lower() or None
+    tags = normalize_tags(payload.get("tags"))
 
     if not tipo or not data_str or not descricao:
         return jsonify({"error": "Dados inválidos"}), 400
@@ -102,6 +108,7 @@ def add():
         status = status or "em_andamento"
 
     paid_at = None
+    received_at = None
     if tipo != "receita" and status == "pago":
         # CORREÇÃO:
         # Se criar já como pago e o front não mandar paid_at, assume a própria data da despesa.
@@ -118,11 +125,16 @@ def add():
         descricao=descricao,
         categoria=categoria,
         valor=valor,
+        metodo=metodo,
+        tags=tags,
         status=status,
         paid_at=paid_at,
+        received_at=received_at,
     )
 
     db.session.add(e)
+    db.session.flush()
+    apply_rules_to_entry(e, current_user, trigger="create", dry_run=False)
     db.session.commit()
 
     return jsonify({"ok": True})
@@ -147,6 +159,8 @@ def edit(entrada_id):
     categoria = _normalize_categoria(tipo, payload.get("categoria"))
     valor = float(payload.get("valor") or 0)
     status = payload.get("status")
+    metodo = (payload.get("metodo") or "").strip().lower() or None
+    tags = normalize_tags(payload.get("tags"))
 
     if not tipo or not data_str or not descricao:
         return jsonify({"error": "Dados inválidos"}), 400
@@ -156,10 +170,15 @@ def edit(entrada_id):
     e.descricao = descricao
     e.categoria = categoria
     e.valor = valor
+    if "metodo" in payload:
+        e.metodo = metodo
+    if "tags" in payload:
+        e.tags = tags
 
     if tipo == "receita":
         e.status = None
         e.paid_at = None
+        e.received_at = None
     else:
         old_status = e.status
         new_status = status or "em_andamento"
@@ -179,7 +198,9 @@ def edit(entrada_id):
                     e.paid_at = e.data
         else:
             e.paid_at = None
+        e.received_at = None
 
+    apply_rules_to_entry(e, current_user, trigger="edit", dry_run=False)
     db.session.commit()
     return jsonify({"ok": True})
 

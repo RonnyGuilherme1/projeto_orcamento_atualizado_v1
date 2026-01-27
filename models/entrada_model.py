@@ -20,12 +20,16 @@ class Entrada(db.Model):
     descricao = db.Column(db.String(255), nullable=False)
     categoria = db.Column(db.String(32), nullable=False, default="outros")
     valor = db.Column(db.Float, nullable=False)
+    metodo = db.Column(db.String(24), nullable=True)
+    tags = db.Column(db.String(255), nullable=True)
 
-    # Só para despesa (para receita, fica NULL)
-    status = db.Column(db.String(30), nullable=True)  # em_andamento | pago | nao_pago
+    # Status financeiro (despesa/receita)
+    status = db.Column(db.String(30), nullable=True)  # em_andamento | pago | nao_pago | recebido
 
     # Data em que a despesa foi efetivamente paga (quando status vira "pago")
     paid_at = db.Column(db.Date, nullable=True)
+    # Data em que a receita foi confirmada (quando status vira "recebido")
+    received_at = db.Column(db.Date, nullable=True)
 
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     updated_at = db.Column(
@@ -59,6 +63,14 @@ def _migrate_sqlite_schema(conn) -> None:
         conn.execute(text("ALTER TABLE entradas ADD COLUMN categoria VARCHAR(32)"))
         conn.execute(text("UPDATE entradas SET categoria = COALESCE(categoria, 'outros')"))
 
+    # metodo
+    if not _column_exists(conn, "entradas", "metodo"):
+        conn.execute(text("ALTER TABLE entradas ADD COLUMN metodo VARCHAR(24)"))
+
+    # tags
+    if not _column_exists(conn, "entradas", "tags"):
+        conn.execute(text("ALTER TABLE entradas ADD COLUMN tags VARCHAR(255)"))
+
     # Backfill: updated_at
     conn.execute(text("UPDATE entradas SET updated_at = COALESCE(updated_at, created_at)"))
 
@@ -71,6 +83,19 @@ def _migrate_sqlite_schema(conn) -> None:
                SET paid_at = COALESCE(paid_at, data)
              WHERE tipo = 'despesa'
                AND status = 'pago'
+            """
+        )
+    )
+
+    # received_at
+    if not _column_exists(conn, "entradas", "received_at"):
+        conn.execute(text("ALTER TABLE entradas ADD COLUMN received_at DATE"))
+    conn.execute(
+        text(
+            """
+            UPDATE entradas
+               SET received_at = COALESCE(received_at, data)
+             WHERE status = 'recebido'
             """
         )
     )
@@ -114,6 +139,7 @@ def init_db(app):
     with app.app_context():
         # IMPORTANTE: garante que a tabela user_profiles entra no metadata
         from models.user_profile_model import UserProfile  # noqa: F401
+        from models.automation_rule_model import AutomationRule, RuleExecution  # noqa: F401
 
 
         db.create_all()
@@ -171,6 +197,16 @@ def _migrate_postgres_schema(conn) -> None:
             text("UPDATE public.entradas SET categoria = COALESCE(categoria, 'outros')")
         )
 
+    # metodo
+    if not _column_exists_postgres(conn, "entradas", "metodo"):
+        conn.execute(
+            text("ALTER TABLE public.entradas ADD COLUMN IF NOT EXISTS metodo VARCHAR(24)")
+        )
+
+    # tags
+    if not _column_exists_postgres(conn, "entradas", "tags"):
+        conn.execute(text("ALTER TABLE public.entradas ADD COLUMN IF NOT EXISTS tags VARCHAR(255)"))
+
     # Backfill: updated_at
     conn.execute(text("UPDATE public.entradas SET updated_at = COALESCE(updated_at, created_at)"))
 
@@ -183,6 +219,21 @@ def _migrate_postgres_schema(conn) -> None:
                SET paid_at = COALESCE(paid_at, data)
              WHERE tipo = 'despesa'
                AND status = 'pago'
+            """
+        )
+    )
+
+    # received_at
+    if not _column_exists_postgres(conn, "entradas", "received_at"):
+        conn.execute(
+            text("ALTER TABLE public.entradas ADD COLUMN IF NOT EXISTS received_at DATE")
+        )
+    conn.execute(
+        text(
+            """
+            UPDATE public.entradas
+               SET received_at = COALESCE(received_at, data)
+             WHERE status = 'recebido'
             """
         )
     )
