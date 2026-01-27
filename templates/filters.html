@@ -13,9 +13,16 @@
           <h2 class="panel-title">Regras & Automação</h2>
           <p class="panel-subtitle">Crie regras inteligentes, recorrências e lembretes para reduzir trabalho manual.</p>
         </div>
-        <div class="panel-actions">
-          <button class="btn-primary" type="button" disabled>Novo gatilho (em breve)</button>
+        <div class="panel-actions rules-hero-actions">
+          <button class="btn-primary" type="button" disabled>Nova regra</button>
+          <button class="btn-secondary" type="button" disabled>Nova recorrência</button>
+          <button class="btn-secondary" type="button" disabled>Novo lembrete</button>
         </div>
+      </div>
+
+      <div class="rules-banner">
+        <strong>Recursos em desenvolvimento</strong>
+        <span>Criação, execução automática e logs estarão disponíveis na próxima fase.</span>
       </div>
 
       <div class="rules-summary">
@@ -37,6 +44,43 @@
       </div>
     </section>
 
+    <section class="panel rules-section rules-templates">
+      <div class="panel-head">
+        <div>
+          <h3 class="panel-title">Templates rápidos</h3>
+          <p class="panel-subtitle">Comece com modelos prontos para reduzir fricção.</p>
+        </div>
+      </div>
+
+      <div class="template-grid">
+        <article class="template-card">
+          <strong>Salário → Renda + recebido</strong>
+          <p>Se descrição contém “Salário”.</p>
+          <button class="btn-tertiary" type="button" disabled>Usar template</button>
+        </article>
+        <article class="template-card">
+          <strong>Uber → Transporte</strong>
+          <p>Classificar automaticamente despesas.</p>
+          <button class="btn-tertiary" type="button" disabled>Usar template</button>
+        </article>
+        <article class="template-card">
+          <strong>Aluguel mensal dia 5</strong>
+          <p>Recorrência fixa com categoria Moradia.</p>
+          <button class="btn-tertiary" type="button" disabled>Usar template</button>
+        </article>
+        <article class="template-card">
+          <strong>Lembrete 3 dias antes</strong>
+          <p>Alerta antes do vencimento.</p>
+          <button class="btn-tertiary" type="button" disabled>Usar template</button>
+        </article>
+        <article class="template-card">
+          <strong>Revisar categoria Outros</strong>
+          <p>Se valor &gt; R$ 200, pedir revisão.</p>
+          <button class="btn-tertiary" type="button" disabled>Usar template</button>
+        </article>
+      </div>
+    </section>
+
     <section class="panel rules-section">
       <div class="panel-head">
         <div>
@@ -48,27 +92,76 @@
         </div>
       </div>
 
+      <div class="rules-applies">
+        <span>Aplicar em:</span>
+        <span class="rules-pill">Ao criar lançamento</span>
+        <span class="rules-pill muted">Ao importar CSV</span>
+        <span class="rules-pill muted">Ao editar</span>
+      </div>
+
       <ul class="rules-list">
         <li class="rule-item">
-          <div>
+          <div class="rule-main">
             <strong>Se descrição contém “Salário”</strong>
-            <span class="rule-meta">Categoria: Salário · Marcar como recebida</span>
+            <span class="rule-meta">Categoria: Salário · Marcar como recebida · Prioridade média</span>
           </div>
-          <span class="rule-status">Em breve</span>
+          <div class="rule-side">
+            <div class="rule-stats">
+              <span>Executou 0x</span>
+              <span>Última: —</span>
+            </div>
+            <div class="rule-actions">
+              <label class="switch">
+                <input type="checkbox" disabled>
+                <span class="switch-track"></span>
+                <span class="switch-label">Ativo</span>
+              </label>
+              <button class="btn-tertiary" type="button" disabled>Testar</button>
+              <button class="btn-tertiary" type="button" disabled>Ver log</button>
+            </div>
+          </div>
         </li>
         <li class="rule-item">
-          <div>
+          <div class="rule-main">
             <strong>Se descrição contém “Uber”</strong>
-            <span class="rule-meta">Categoria: Transporte · Status: em andamento</span>
+            <span class="rule-meta">Categoria: Transporte · Status: em andamento · Prioridade média</span>
           </div>
-          <span class="rule-status">Em breve</span>
+          <div class="rule-side">
+            <div class="rule-stats">
+              <span>Executou 0x</span>
+              <span>Última: —</span>
+            </div>
+            <div class="rule-actions">
+              <label class="switch">
+                <input type="checkbox" disabled>
+                <span class="switch-track"></span>
+                <span class="switch-label">Ativo</span>
+              </label>
+              <button class="btn-tertiary" type="button" disabled>Testar</button>
+              <button class="btn-tertiary" type="button" disabled>Ver log</button>
+            </div>
+          </div>
         </li>
         <li class="rule-item">
-          <div>
+          <div class="rule-main">
             <strong>Se descrição contém “Mercado”</strong>
-            <span class="rule-meta">Categoria: Mercado · Prioridade alta</span>
+            <span class="rule-meta">Categoria: Mercado · Prioridade alta · Parar após aplicar</span>
           </div>
-          <span class="rule-status">Em breve</span>
+          <div class="rule-side">
+            <div class="rule-stats">
+              <span>Executou 0x</span>
+              <span>Última: —</span>
+            </div>
+            <div class="rule-actions">
+              <label class="switch">
+                <input type="checkbox" disabled>
+                <span class="switch-track"></span>
+                <span class="switch-label">Ativo</span>
+              </label>
+              <button class="btn-tertiary" type="button" disabled>Testar</button>
+              <button class="btn-tertiary" type="button" disabled>Ver log</button>
+            </div>
+          </div>
         </li>
       </ul>
     </section>
@@ -81,6 +174,9 @@
         </div>
         <div class="panel-actions">
           <button class="btn-secondary" type="button" disabled>Nova recorrência</button>
+          {% if current_user.plan != 'pro' %}
+            <a class="lock-pill" href="/app/upgrade?plan=pro">Disponível no Pro</a>
+          {% endif %}
         </div>
       </div>
 
@@ -88,17 +184,23 @@
         <article class="rule-card">
           <strong>Aluguel</strong>
           <p>Todo dia 05 · Moradia · R$ 0,00</p>
-          <span class="rule-pill">Em breve</span>
+          {% if current_user.plan != 'pro' %}
+            <span class="rule-pill locked">Pro</span>
+          {% endif %}
         </article>
         <article class="rule-card">
           <strong>Internet</strong>
           <p>Todo dia 10 · Serviços · R$ 0,00</p>
-          <span class="rule-pill">Em breve</span>
+          {% if current_user.plan != 'pro' %}
+            <span class="rule-pill locked">Pro</span>
+          {% endif %}
         </article>
         <article class="rule-card">
           <strong>Cartão</strong>
           <p>Todo dia 15 · Outros · R$ 0,00</p>
-          <span class="rule-pill">Em breve</span>
+          {% if current_user.plan != 'pro' %}
+            <span class="rule-pill locked">Pro</span>
+          {% endif %}
         </article>
       </div>
     </section>
@@ -109,23 +211,35 @@
           <h3 class="panel-title">Lembretes</h3>
           <p class="panel-subtitle">Receba alertas antes do vencimento das despesas.</p>
         </div>
+        <div class="panel-actions">
+          <button class="btn-secondary" type="button" disabled>Novo lembrete</button>
+          {% if current_user.plan != 'pro' %}
+            <a class="lock-pill" href="/app/upgrade?plan=pro">Disponível no Pro</a>
+          {% endif %}
+        </div>
       </div>
 
       <div class="rules-grid">
         <article class="rule-card">
           <strong>Despesas vencendo</strong>
           <p>Avisar 3 dias antes de “Despesas não pagas”.</p>
-          <span class="rule-pill">Em breve</span>
+          {% if current_user.plan != 'pro' %}
+            <span class="rule-pill locked">Pro</span>
+          {% endif %}
         </article>
         <article class="rule-card">
           <strong>Entrada confirmada</strong>
           <p>Marcar como recebida quando houver pagamento.</p>
-          <span class="rule-pill">Em breve</span>
+          {% if current_user.plan != 'pro' %}
+            <span class="rule-pill locked">Pro</span>
+          {% endif %}
         </article>
         <article class="rule-card">
           <strong>IA no WhatsApp</strong>
           <p>Classificar lançamentos via mensagem automática.</p>
-          <span class="rule-pill">Em breve</span>
+          {% if current_user.plan != 'pro' %}
+            <span class="rule-pill locked">Pro</span>
+          {% endif %}
         </article>
       </div>
     </section>
