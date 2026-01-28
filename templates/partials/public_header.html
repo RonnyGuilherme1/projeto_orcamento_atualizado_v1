@@ -1,18 +1,18 @@
 <header class="public-header">
-  <a class="brand" href="/" aria-label="Ir para página inicial">
+  <a class="brand" href="{{ MARKETING_BASE_URL }}/" aria-label="Ir para página inicial">
     <img class="brand-logo" src="/static/img/logo-recorte2.png" alt="Logo do sistema">
     <img class="brand-name" src="/static/img/nome_logo-recorte2.png" alt="Nome do sistema">
   </a>
 
   <nav class="public-nav" aria-label="Navegação">
-    <a class="nav-link" href="/">Início</a>
-    <a class="nav-link" href="/pricing">Planos</a>
+    <a class="nav-link" href="{{ MARKETING_BASE_URL }}/">Início</a>
+    <a class="nav-link" href="{{ MARKETING_BASE_URL }}/pricing.html">Planos</a>
     {% if current_user.is_authenticated %}
       <a class="nav-link" href="/app">Abrir sistema</a>
       <a class="nav-link" href="/logout">Sair</a>
     {% else %}
       <a class="nav-link" href="/login">Entrar</a>
-      <a class="nav-cta" href="/pricing{% if selected_plan %}?plan={{ selected_plan }}{% endif %}">Escolher plano</a>
+      <a class="nav-cta" href="{{ MARKETING_BASE_URL }}/pricing.html{% if selected_plan %}?plan={{ selected_plan }}{% endif %}">Escolher plano</a>
     {% endif %}
   </nav>
 </header>

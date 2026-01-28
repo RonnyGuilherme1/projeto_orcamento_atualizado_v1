@@ -1,6 +1,6 @@
 import re
 
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app
 from flask_login import login_user, logout_user, login_required, current_user
 
 from models.extensions import db
@@ -194,4 +194,5 @@ def verify(token):
 @login_required
 def logout():
     logout_user()
-    return redirect(url_for("marketing_home"))
+    base = current_app.config.get("MARKETING_BASE_URL", "https://controledeorcamento.onrender.com").rstrip("/")
+    return redirect(f"{base}/")

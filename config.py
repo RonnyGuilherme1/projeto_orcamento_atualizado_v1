@@ -66,6 +66,9 @@ class Config:
     # URL pública do app (Render). Ex: https://seuapp.onrender.com
     APP_BASE_URL = os.getenv("APP_BASE_URL", "http://127.0.0.1:5000")
 
+    # URL do site de marketing (estático). Ex: https://controledeorcamento.onrender.com
+    MARKETING_BASE_URL = os.getenv("MARKETING_BASE_URL", "https://controledeorcamento.onrender.com").rstrip("/")
+
     # Resend (envio de e-mail)
     RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
     EMAIL_FROM = os.getenv("EMAIL_FROM", "Orcamento <onboarding@resend.dev>")

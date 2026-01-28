@@ -114,6 +114,7 @@ def inject_plan_helpers():
             }
 
     return {
+        "MARKETING_BASE_URL": app.config.get("MARKETING_BASE_URL", "https://controledeorcamento.onrender.com").rstrip("/"),
         "PLANS": PLANS,
         "has_feature": has_feature,
         "abacatepay_card_enabled": card_enabled,
@@ -313,18 +314,19 @@ def _build_billing_history(user, orders, include_remote: bool = False) -> list[d
 
 @app.get("/")
 def marketing_home():
-    """Página pública de apresentação (marketing)."""
-    return render_template("home.html")
-
+    """Redireciona para o site de marketing (estático)."""
+    base = app.config.get("MARKETING_BASE_URL", "https://controledeorcamento.onrender.com").rstrip("/")
+    return redirect(f"{base}/")
 
 @app.get("/pricing")
 def pricing():
-    """Página pública de planos."""
-    selected_plan = (request.args.get("plan") or "plus").strip().lower()
-    if not is_valid_plan(selected_plan):
-        selected_plan = "plus"
-    return render_template("pricing.html", selected_plan=selected_plan)
-
+    """Redireciona para a página de planos no site de marketing."""
+    base = app.config.get("MARKETING_BASE_URL", "https://controledeorcamento.onrender.com").rstrip("/")
+    plan = request.args.get("plan")
+    url = f"{base}/pricing.html"
+    if plan:
+        url += f"?plan={plan}"
+    return redirect(url)
 
 @app.get("/buy")
 @login_required
