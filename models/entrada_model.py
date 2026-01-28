@@ -22,6 +22,7 @@ class Entrada(db.Model):
     valor = db.Column(db.Float, nullable=False)
     metodo = db.Column(db.String(24), nullable=True)
     tags = db.Column(db.String(255), nullable=True)
+    recurrence_id = db.Column(db.Integer, db.ForeignKey("recurrences.id"), nullable=True)
 
     # Status financeiro (despesa/receita)
     status = db.Column(db.String(30), nullable=True)  # em_andamento | pago | nao_pago | recebido
@@ -70,6 +71,10 @@ def _migrate_sqlite_schema(conn) -> None:
     # tags
     if not _column_exists(conn, "entradas", "tags"):
         conn.execute(text("ALTER TABLE entradas ADD COLUMN tags VARCHAR(255)"))
+
+    # recurrence_id
+    if not _column_exists(conn, "entradas", "recurrence_id"):
+        conn.execute(text("ALTER TABLE entradas ADD COLUMN recurrence_id INTEGER"))
 
     # Backfill: updated_at
     conn.execute(text("UPDATE entradas SET updated_at = COALESCE(updated_at, created_at)"))
@@ -140,6 +145,8 @@ def init_db(app):
         # IMPORTANTE: garante que a tabela user_profiles entra no metadata
         from models.user_profile_model import UserProfile  # noqa: F401
         from models.automation_rule_model import AutomationRule, RuleExecution  # noqa: F401
+        from models.recurrence_model import Recurrence, RecurrenceExecution  # noqa: F401
+        from models.reminder_model import Reminder  # noqa: F401
 
 
         db.create_all()
@@ -206,6 +213,12 @@ def _migrate_postgres_schema(conn) -> None:
     # tags
     if not _column_exists_postgres(conn, "entradas", "tags"):
         conn.execute(text("ALTER TABLE public.entradas ADD COLUMN IF NOT EXISTS tags VARCHAR(255)"))
+
+    # recurrence_id
+    if not _column_exists_postgres(conn, "entradas", "recurrence_id"):
+        conn.execute(
+            text("ALTER TABLE public.entradas ADD COLUMN IF NOT EXISTS recurrence_id INTEGER")
+        )
 
     # Backfill: updated_at
     conn.execute(text("UPDATE public.entradas SET updated_at = COALESCE(updated_at, created_at)"))

@@ -15,8 +15,8 @@
         </div>
         <div class="panel-actions rules-hero-actions">
           <button class="btn-primary" type="button" id="rule-new">Nova regra</button>
-          <button class="btn-secondary" type="button" disabled>Nova recorrência</button>
-          <button class="btn-secondary" type="button" disabled>Novo lembrete</button>
+          <button class="btn-secondary" type="button" data-recurrence-new>Nova recorrencia</button>
+          <button class="btn-secondary" type="button" data-reminder-new>Novo lembrete</button>
         </div>
       </div>
 
@@ -56,27 +56,27 @@
         <article class="template-card">
           <strong>Salário → Renda + recebido</strong>
           <p>Se descrição contém “Salário”.</p>
-          <button class="btn-tertiary" type="button" disabled>Usar template</button>
+          <button class="btn-tertiary" type="button" data-template="salary">Usar template</button>
         </article>
         <article class="template-card">
           <strong>Uber → Transporte</strong>
           <p>Classificar automaticamente despesas.</p>
-          <button class="btn-tertiary" type="button" disabled>Usar template</button>
+          <button class="btn-tertiary" type="button" data-template="uber">Usar template</button>
         </article>
         <article class="template-card">
           <strong>Aluguel mensal dia 5</strong>
           <p>Recorrência fixa com categoria Moradia.</p>
-          <button class="btn-tertiary" type="button" disabled>Usar template</button>
+          <button class="btn-tertiary" type="button" data-template="rent">Usar template</button>
         </article>
         <article class="template-card">
           <strong>Lembrete 3 dias antes</strong>
           <p>Alerta antes do vencimento.</p>
-          <button class="btn-tertiary" type="button" disabled>Usar template</button>
+          <button class="btn-tertiary" type="button" data-template="reminder">Usar template</button>
         </article>
         <article class="template-card">
           <strong>Revisar categoria Outros</strong>
           <p>Se valor &gt; R$ 200, pedir revisão.</p>
-          <button class="btn-tertiary" type="button" disabled>Usar template</button>
+          <button class="btn-tertiary" type="button" data-template="review">Usar template</button>
         </article>
       </div>
     </section>
@@ -166,36 +166,15 @@
           <p class="panel-subtitle">Crie lançamentos automáticos para despesas fixas.</p>
         </div>
         <div class="panel-actions">
-          <button class="btn-secondary" type="button" disabled>Nova recorrência</button>
+          <button class="btn-secondary" type="button" data-recurrence-new>Nova recorrencia</button>
           {% if current_user.plan != 'pro' %}
             <a class="lock-pill" href="/app/upgrade?plan=pro">Disponível no Pro</a>
           {% endif %}
         </div>
       </div>
 
-      <div class="rules-grid">
-        <article class="rule-card">
-          <strong>Aluguel</strong>
-          <p>Todo dia 05 · Moradia · R$ 0,00</p>
-          {% if current_user.plan != 'pro' %}
-            <span class="rule-pill locked">Pro</span>
-          {% endif %}
-        </article>
-        <article class="rule-card">
-          <strong>Internet</strong>
-          <p>Todo dia 10 · Serviços · R$ 0,00</p>
-          {% if current_user.plan != 'pro' %}
-            <span class="rule-pill locked">Pro</span>
-          {% endif %}
-        </article>
-        <article class="rule-card">
-          <strong>Cartão</strong>
-          <p>Todo dia 15 · Outros · R$ 0,00</p>
-          {% if current_user.plan != 'pro' %}
-            <span class="rule-pill locked">Pro</span>
-          {% endif %}
-        </article>
-      </div>
+      <div class="rules-grid" id="recurrence-list"></div>
+      <div class="rules-empty" id="recurrence-empty">Nenhuma recorrencia criada.</div>
     </section>
 
     <section class="panel rules-section">
@@ -205,37 +184,194 @@
           <p class="panel-subtitle">Receba alertas antes do vencimento das despesas.</p>
         </div>
         <div class="panel-actions">
-          <button class="btn-secondary" type="button" disabled>Novo lembrete</button>
+          <button class="btn-secondary" type="button" data-reminder-new>Novo lembrete</button>
           {% if current_user.plan != 'pro' %}
             <a class="lock-pill" href="/app/upgrade?plan=pro">Disponível no Pro</a>
           {% endif %}
         </div>
       </div>
 
-      <div class="rules-grid">
-        <article class="rule-card">
-          <strong>Despesas vencendo</strong>
-          <p>Avisar 3 dias antes de “Despesas não pagas”.</p>
-          {% if current_user.plan != 'pro' %}
-            <span class="rule-pill locked">Pro</span>
-          {% endif %}
-        </article>
-        <article class="rule-card">
-          <strong>Entrada confirmada</strong>
-          <p>Marcar como recebida quando houver pagamento.</p>
-          {% if current_user.plan != 'pro' %}
-            <span class="rule-pill locked">Pro</span>
-          {% endif %}
-        </article>
-        <article class="rule-card">
-          <strong>IA no WhatsApp</strong>
-          <p>Classificar lançamentos via mensagem automática.</p>
-          {% if current_user.plan != 'pro' %}
-            <span class="rule-pill locked">Pro</span>
-          {% endif %}
-        </article>
-      </div>
+      <div class="rules-grid" id="reminder-list"></div>
+      <div class="rules-empty" id="reminder-empty">Nenhum lembrete criado.</div>
     </section>
+
+
+    <div id="recurrence-modal" class="modal-overlay hidden">
+      <div class="modal">
+        <div class="modal-header">
+          <h3 id="recurrence-modal-title">Nova recorrencia</h3>
+          <button id="recurrence-modal-close" class="modal-close" type="button" aria-label="Fechar">&times;</button>
+        </div>
+        <form id="recurrence-form" class="modal-body">
+          <input type="hidden" id="recurrence-id">
+
+          <label class="field span-all">
+            <span class="field-label">Nome</span>
+            <input type="text" id="recurrence-name" class="control" placeholder="Ex: Aluguel">
+          </label>
+
+          <label class="field">
+            <span class="field-label">Tipo</span>
+            <select id="recurrence-type" class="control">
+              <option value="despesa">Despesa</option>
+              <option value="receita">Receita</option>
+            </select>
+          </label>
+
+          <label class="field">
+            <span class="field-label">Dia do mes</span>
+            <input type="number" id="recurrence-day" class="control" value="5" min="1" max="31">
+          </label>
+
+          <label class="field">
+            <span class="field-label">Categoria</span>
+            <select id="recurrence-category" class="control">
+              <option value="salario">Salario</option>
+              <option value="extras">Extras</option>
+              <option value="moradia">Moradia</option>
+              <option value="mercado">Mercado</option>
+              <option value="transporte">Transporte</option>
+              <option value="servicos">Servicos</option>
+              <option value="outros">Outros</option>
+            </select>
+          </label>
+
+          <label class="field">
+            <span class="field-label">Valor</span>
+            <input type="number" step="0.01" id="recurrence-value" class="control" value="0">
+          </label>
+
+          <label class="field">
+            <span class="field-label">Status</span>
+            <select id="recurrence-status" class="control">
+              <option value="">Sem status</option>
+              <option value="em_andamento">Em andamento</option>
+              <option value="pago">Pago</option>
+              <option value="nao_pago">Nao pago</option>
+            </select>
+          </label>
+
+          <label class="field">
+            <span class="field-label">Metodo</span>
+            <select id="recurrence-method" class="control">
+              <option value="">Nao informado</option>
+              <option value="dinheiro">Dinheiro</option>
+              <option value="cartao">Cartao</option>
+              <option value="pix">Pix</option>
+            </select>
+          </label>
+
+          <label class="field span-all">
+            <span class="field-label">Descricao</span>
+            <input type="text" id="recurrence-description" class="control" placeholder="Ex: Aluguel mensal">
+          </label>
+
+          <label class="field span-all">
+            <span class="field-label">Tags</span>
+            <input type="text" id="recurrence-tags" class="control" placeholder="Ex: fixo, contrato">
+          </label>
+
+          <label class="field span-all">
+            <label class="check-pill">
+              <input type="checkbox" id="recurrence-enabled" checked>
+              <span>Ativa</span>
+            </label>
+          </label>
+
+          <div class="modal-actions">
+            <button id="recurrence-modal-cancel" type="button" class="btn-secondary">Cancelar</button>
+            <button type="submit" class="btn-primary">Salvar recorrencia</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div id="reminder-modal" class="modal-overlay hidden">
+      <div class="modal">
+        <div class="modal-header">
+          <h3 id="reminder-modal-title">Novo lembrete</h3>
+          <button id="reminder-modal-close" class="modal-close" type="button" aria-label="Fechar">&times;</button>
+        </div>
+        <form id="reminder-form" class="modal-body">
+          <input type="hidden" id="reminder-id">
+
+          <label class="field span-all">
+            <span class="field-label">Nome</span>
+            <input type="text" id="reminder-name" class="control" placeholder="Ex: Vencimentos">
+          </label>
+
+          <label class="field">
+            <span class="field-label">Dias antes</span>
+            <input type="number" id="reminder-days" class="control" value="3" min="1" max="60">
+          </label>
+
+          <label class="field">
+            <span class="field-label">Tipo</span>
+            <select id="reminder-type" class="control">
+              <option value="">Todos</option>
+              <option value="despesa">Despesa</option>
+              <option value="receita">Receita</option>
+            </select>
+          </label>
+
+          <label class="field">
+            <span class="field-label">Categoria</span>
+            <select id="reminder-category" class="control">
+              <option value="">Todas</option>
+              <option value="salario">Salario</option>
+              <option value="extras">Extras</option>
+              <option value="moradia">Moradia</option>
+              <option value="mercado">Mercado</option>
+              <option value="transporte">Transporte</option>
+              <option value="servicos">Servicos</option>
+              <option value="outros">Outros</option>
+            </select>
+          </label>
+
+          <label class="field">
+            <span class="field-label">Status</span>
+            <select id="reminder-status" class="control">
+              <option value="">Todos</option>
+              <option value="em_andamento">Em andamento</option>
+              <option value="pago">Pago</option>
+              <option value="nao_pago">Nao pago</option>
+            </select>
+          </label>
+
+          <label class="field">
+            <span class="field-label">Metodo</span>
+            <select id="reminder-method" class="control">
+              <option value="">Todos</option>
+              <option value="dinheiro">Dinheiro</option>
+              <option value="cartao">Cartao</option>
+              <option value="pix">Pix</option>
+            </select>
+          </label>
+
+          <label class="field">
+            <span class="field-label">Valor minimo</span>
+            <input type="number" step="0.01" id="reminder-min" class="control" placeholder="0.00">
+          </label>
+
+          <label class="field">
+            <span class="field-label">Valor maximo</span>
+            <input type="number" step="0.01" id="reminder-max" class="control" placeholder="0.00">
+          </label>
+
+          <label class="field span-all">
+            <label class="check-pill">
+              <input type="checkbox" id="reminder-enabled" checked>
+              <span>Ativo</span>
+            </label>
+          </label>
+
+          <div class="modal-actions">
+            <button id="reminder-modal-cancel" type="button" class="btn-secondary">Cancelar</button>
+            <button type="submit" class="btn-primary">Salvar lembrete</button>
+          </div>
+        </form>
+      </div>
+    </div>
     <div id="rule-modal" class="modal-overlay hidden">
       <div class="modal">
         <div class="modal-header">

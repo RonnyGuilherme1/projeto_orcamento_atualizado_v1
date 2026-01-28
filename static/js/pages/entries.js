@@ -14,15 +14,22 @@
   const filtroTrimestreReceitas = document.getElementById("filtro-trimestre-receitas");
   const filtroTrimestreDespesas = document.getElementById("filtro-trimestre-despesas");
 
-  const filterSearch = document.getElementById("filter-search");
-  const filterStart = document.getElementById("filter-start");
-  const filterEnd = document.getElementById("filter-end");
-  const filterType = document.getElementById("filter-type");
-  const filterStatus = document.getElementById("filter-status");
-  const filterCategory = document.getElementById("filter-category");
-  const filterMin = document.getElementById("filter-min");
-  const filterMax = document.getElementById("filter-max");
-  const filterClear = document.getElementById("filters-clear");
+  const receitaFilterSearch = document.getElementById("receita-filter-search");
+  const receitaFilterStart = document.getElementById("receita-filter-start");
+  const receitaFilterEnd = document.getElementById("receita-filter-end");
+  const receitaFilterCategory = document.getElementById("receita-filter-category");
+  const receitaFilterMin = document.getElementById("receita-filter-min");
+  const receitaFilterMax = document.getElementById("receita-filter-max");
+  const receitaFilterClear = document.getElementById("receita-filter-clear");
+
+  const despesaFilterSearch = document.getElementById("despesa-filter-search");
+  const despesaFilterStart = document.getElementById("despesa-filter-start");
+  const despesaFilterEnd = document.getElementById("despesa-filter-end");
+  const despesaFilterStatus = document.getElementById("despesa-filter-status");
+  const despesaFilterCategory = document.getElementById("despesa-filter-category");
+  const despesaFilterMin = document.getElementById("despesa-filter-min");
+  const despesaFilterMax = document.getElementById("despesa-filter-max");
+  const despesaFilterClear = document.getElementById("despesa-filter-clear");
 
   /* Modal */
   const modalOverlay = document.getElementById("modal-overlay");
@@ -43,6 +50,7 @@
 
   let entradas = [];
   let editandoId = null;
+  const filterMenuReset = {};
 
   const CATEGORY_LABELS = {
     salario: "Salário",
@@ -184,6 +192,74 @@
     selectEl.addEventListener("change", updateFromSelect);
   }
 
+  function toggleFilterExtras(rowEl, key, active) {
+    if (!rowEl) return;
+    rowEl.querySelectorAll(`[data-filter-key="${key}"]`).forEach((el) => {
+      el.classList.toggle("is-active", active);
+      if (!active) {
+        el.querySelectorAll("input, select").forEach((input) => {
+          if (input instanceof HTMLSelectElement) {
+            if (Array.from(input.options).some(opt => opt.value === "all")) {
+              input.value = "all";
+            } else {
+              input.value = "";
+            }
+            syncCustomSelect(input);
+          } else if (input instanceof HTMLInputElement) {
+            input.value = "";
+          }
+        });
+      }
+    });
+    const hasActive = rowEl.querySelector(".filter-extra.is-active");
+    rowEl.classList.toggle("is-visible", !!hasActive);
+  }
+
+  function setupFilterMenu(menuKey) {
+    const menuBtn = document.querySelector(`[data-filter-menu="${menuKey}"]`);
+    const menuPanel = document.querySelector(`[data-filter-menu-panel="${menuKey}"]`);
+    const rowEl = document.querySelector(`[data-filter-row="${menuKey}"]`);
+    if (!menuBtn || !menuPanel || !rowEl) return;
+
+    const buttons = Array.from(menuPanel.querySelectorAll("button[data-filter-key]"));
+    buttons.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const key = btn.dataset.filterKey;
+        toggleFilterExtras(rowEl, key, true);
+        btn.classList.remove("is-active");
+        btn.dataset.hidden = "true";
+        btn.style.display = "none";
+        menuBtn.parentElement?.classList.remove("open");
+        renderHistoricos();
+      });
+    });
+
+    menuBtn.addEventListener("click", (ev) => {
+      ev.stopPropagation();
+      menuBtn.parentElement?.classList.toggle("open");
+    });
+
+    document.addEventListener("click", (ev) => {
+      if (!menuBtn.parentElement?.contains(ev.target)) {
+        menuBtn.parentElement?.classList.remove("open");
+      }
+    });
+
+    function resetAll() {
+      buttons.forEach((btn) => {
+        btn.classList.remove("is-active");
+        btn.dataset.hidden = "false";
+        btn.style.display = "";
+        const key = btn.dataset.filterKey;
+        toggleFilterExtras(rowEl, key, false);
+      });
+      menuBtn.parentElement?.classList.remove("open");
+    }
+
+    filterMenuReset[menuKey] = resetAll;
+    resetAll();
+  }
+
   function fmtBRL(valor) {
     const num = Number(valor) || 0;
     return num.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -205,40 +281,30 @@
     });
   }
 
-  function applyAdvancedFilters(lista) {
+  function applyCommonFilters(lista, filters) {
     let filtradas = [...(lista || [])];
 
-    const search = (filterSearch?.value || "").trim().toLowerCase();
+    const search = (filters.search?.value || "").trim().toLowerCase();
     if (search) {
       filtradas = filtradas.filter(item => String(item.descricao || "").toLowerCase().includes(search));
     }
 
-    const start = filterStart?.value;
+    const start = filters.start?.value;
     if (start) {
       filtradas = filtradas.filter(item => String(item.data || "") >= start);
     }
 
-    const end = filterEnd?.value;
+    const end = filters.end?.value;
     if (end) {
       filtradas = filtradas.filter(item => String(item.data || "") <= end);
     }
 
-    const tipo = filterType?.value || "all";
-    if (tipo !== "all") {
-      filtradas = filtradas.filter(item => item.tipo === tipo);
-    }
-
-    const status = filterStatus?.value || "all";
-    if (status !== "all") {
-      filtradas = filtradas.filter(item => item.tipo === "despesa" && (item.status || "em_andamento") === status);
-    }
-
-    const categoria = filterCategory?.value || "all";
+    const categoria = filters.category?.value || "all";
     if (categoria !== "all") {
       filtradas = filtradas.filter(item => String(item.categoria || "").toLowerCase() === categoria);
     }
 
-    const minRaw = filterMin?.value;
+    const minRaw = filters.min?.value;
     if (minRaw !== undefined && minRaw !== "") {
       const min = Number(minRaw);
       if (Number.isFinite(min)) {
@@ -246,12 +312,41 @@
       }
     }
 
-    const maxRaw = filterMax?.value;
+    const maxRaw = filters.max?.value;
     if (maxRaw !== undefined && maxRaw !== "") {
       const max = Number(maxRaw);
       if (Number.isFinite(max)) {
         filtradas = filtradas.filter(item => Number(item.valor || 0) <= max);
       }
+    }
+
+    return filtradas;
+  }
+
+  function applyReceitaFilters(lista) {
+    return applyCommonFilters(lista, {
+      search: receitaFilterSearch,
+      start: receitaFilterStart,
+      end: receitaFilterEnd,
+      category: receitaFilterCategory,
+      min: receitaFilterMin,
+      max: receitaFilterMax
+    });
+  }
+
+  function applyDespesaFilters(lista) {
+    let filtradas = applyCommonFilters(lista, {
+      search: despesaFilterSearch,
+      start: despesaFilterStart,
+      end: despesaFilterEnd,
+      category: despesaFilterCategory,
+      min: despesaFilterMin,
+      max: despesaFilterMax
+    });
+
+    const status = despesaFilterStatus?.value || "all";
+    if (status !== "all") {
+      filtradas = filtradas.filter(item => (item.status || "em_andamento") === status);
     }
 
     return filtradas;
@@ -314,15 +409,6 @@
     syncCustomSelect(editStatus);
   }
 
-  function atualizarStatusFiltro() {
-    if (!filterType || !filterStatus) return;
-    const isReceitaOnly = filterType.value === "receita";
-    filterStatus.disabled = isReceitaOnly;
-    filterStatus.closest(".field")?.classList.toggle("hidden", isReceitaOnly);
-    if (isReceitaOnly) filterStatus.value = "all";
-    syncCustomSelect(filterStatus);
-  }
-
   function linhaHTML(e, isDespesa) {
     const status = isDespesa ? (statusLabel(e.status) || "") : "";
     const categoria = String(e.categoria || "outros");
@@ -374,12 +460,17 @@
   }
 
   function renderHistoricos() {
-    const filtradas = applyAdvancedFilters(entradas);
-    const receitas = filtradas.filter(e => e.tipo === "receita");
-    const despesas = filtradas.filter(e => e.tipo === "despesa");
+    const receitas = entradas.filter(e => e.tipo === "receita");
+    const despesas = entradas.filter(e => e.tipo === "despesa");
 
-    const receitasFiltradas = filtrarPorTrimestre(receitas, filtroTrimestreReceitas?.value || "todos");
-    const despesasFiltradas = filtrarPorTrimestre(despesas, filtroTrimestreDespesas?.value || "todos");
+    const receitasFiltradas = filtrarPorTrimestre(
+      applyReceitaFilters(receitas),
+      filtroTrimestreReceitas?.value || "todos"
+    );
+    const despesasFiltradas = filtrarPorTrimestre(
+      applyDespesaFilters(despesas),
+      filtroTrimestreDespesas?.value || "todos"
+    );
 
     renderListaHistorico(receitasDiv, receitasFiltradas, false);
     renderListaHistorico(despesasDiv, despesasFiltradas, true);
@@ -458,49 +549,55 @@
   filtroTrimestreReceitas?.addEventListener("change", renderHistoricos);
   filtroTrimestreDespesas?.addEventListener("change", renderHistoricos);
 
-  filterSearch?.addEventListener("input", renderHistoricos);
-  filterStart?.addEventListener("change", renderHistoricos);
-  filterEnd?.addEventListener("change", renderHistoricos);
-  filterType?.addEventListener("change", () => {
-    atualizarStatusFiltro();
-    renderHistoricos();
-  });
-  filterStatus?.addEventListener("change", renderHistoricos);
-  filterCategory?.addEventListener("change", renderHistoricos);
-  filterMin?.addEventListener("input", renderHistoricos);
-  filterMax?.addEventListener("input", renderHistoricos);
-
-  filterClear?.addEventListener("click", () => {
-    if (filterSearch) filterSearch.value = "";
-    if (filterStart) filterStart.value = "";
-    if (filterEnd) filterEnd.value = "";
-    if (filterType) filterType.value = "all";
-    if (filterStatus) filterStatus.value = "all";
-    if (filterCategory) filterCategory.value = "all";
-    if (filterMin) filterMin.value = "";
-    if (filterMax) filterMax.value = "";
-
-    atualizarStatusFiltro();
-    [filterType, filterStatus, filterCategory].forEach(syncCustomSelect);
-    renderHistoricos();
+  [
+    receitaFilterSearch,
+    receitaFilterStart,
+    receitaFilterEnd,
+    receitaFilterCategory,
+    receitaFilterMin,
+    receitaFilterMax,
+    despesaFilterSearch,
+    despesaFilterStart,
+    despesaFilterEnd,
+    despesaFilterStatus,
+    despesaFilterCategory,
+    despesaFilterMin,
+    despesaFilterMax
+  ].forEach((el) => {
+    if (!el) return;
+    const eventName = el.tagName === "INPUT" && el.type === "text" ? "input" : "change";
+    el.addEventListener(eventName, renderHistoricos);
   });
 
-  function applyFiltersFromQuery() {
-    const params = new URLSearchParams(window.location.search);
-    if (!params || params.toString() === "") return;
+  receitaFilterMin?.addEventListener("input", renderHistoricos);
+  receitaFilterMax?.addEventListener("input", renderHistoricos);
+  despesaFilterMin?.addEventListener("input", renderHistoricos);
+  despesaFilterMax?.addEventListener("input", renderHistoricos);
 
-    if (filterSearch && params.get("search")) filterSearch.value = params.get("search");
-    if (filterStart && params.get("start")) filterStart.value = params.get("start");
-    if (filterEnd && params.get("end")) filterEnd.value = params.get("end");
-    if (filterType && params.get("type")) filterType.value = params.get("type");
-    if (filterStatus && params.get("status")) filterStatus.value = params.get("status");
-    if (filterCategory && params.get("category")) filterCategory.value = params.get("category");
-    if (filterMin && params.get("min")) filterMin.value = params.get("min");
-    if (filterMax && params.get("max")) filterMax.value = params.get("max");
+  receitaFilterClear?.addEventListener("click", () => {
+    if (receitaFilterSearch) receitaFilterSearch.value = "";
+    if (receitaFilterStart) receitaFilterStart.value = "";
+    if (receitaFilterEnd) receitaFilterEnd.value = "";
+    if (receitaFilterCategory) receitaFilterCategory.value = "all";
+    if (receitaFilterMin) receitaFilterMin.value = "";
+    if (receitaFilterMax) receitaFilterMax.value = "";
+    [receitaFilterCategory].forEach(syncCustomSelect);
+    filterMenuReset.receita?.();
+    renderHistoricos();
+  });
 
-    atualizarStatusFiltro();
-    [filterType, filterStatus, filterCategory].forEach(syncCustomSelect);
-  }
+  despesaFilterClear?.addEventListener("click", () => {
+    if (despesaFilterSearch) despesaFilterSearch.value = "";
+    if (despesaFilterStart) despesaFilterStart.value = "";
+    if (despesaFilterEnd) despesaFilterEnd.value = "";
+    if (despesaFilterStatus) despesaFilterStatus.value = "all";
+    if (despesaFilterCategory) despesaFilterCategory.value = "all";
+    if (despesaFilterMin) despesaFilterMin.value = "";
+    if (despesaFilterMax) despesaFilterMax.value = "";
+    [despesaFilterStatus, despesaFilterCategory].forEach(syncCustomSelect);
+    filterMenuReset.despesa?.();
+    renderHistoricos();
+  });
 
   modalCloseBtn?.addEventListener("click", fecharModal);
   modalCancelBtn?.addEventListener("click", fecharModal);
@@ -566,7 +663,6 @@
   });
 
   atualizarStatusFormPrincipal();
-  atualizarStatusFiltro();
   bindAcoesListas();
   [
     inputTipo,
@@ -577,12 +673,13 @@
     editTipo,
     editStatus,
     editCategoria,
-    filterType,
-    filterStatus,
-    filterCategory,
+    receitaFilterCategory,
+    despesaFilterStatus,
+    despesaFilterCategory,
     inputMetodo,
     editMetodo
   ].forEach(initCustomSelect);
-  applyFiltersFromQuery();
+  setupFilterMenu("receita");
+  setupFilterMenu("despesa");
   carregarDados();
 })();

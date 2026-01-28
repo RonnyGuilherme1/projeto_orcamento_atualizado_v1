@@ -12,6 +12,45 @@
   const outputBox = document.getElementById("rules-output");
   const rulesEmpty = document.getElementById("rules-empty");
 
+  const recurrenceList = document.getElementById("recurrence-list");
+  const recurrenceEmpty = document.getElementById("recurrence-empty");
+  const recurrenceNewBtns = document.querySelectorAll("[data-recurrence-new]");
+  const recurrenceModal = document.getElementById("recurrence-modal");
+  const recurrenceModalClose = document.getElementById("recurrence-modal-close");
+  const recurrenceModalCancel = document.getElementById("recurrence-modal-cancel");
+  const recurrenceModalTitle = document.getElementById("recurrence-modal-title");
+  const recurrenceForm = document.getElementById("recurrence-form");
+  const recurrenceId = document.getElementById("recurrence-id");
+  const recurrenceName = document.getElementById("recurrence-name");
+  const recurrenceType = document.getElementById("recurrence-type");
+  const recurrenceDay = document.getElementById("recurrence-day");
+  const recurrenceCategory = document.getElementById("recurrence-category");
+  const recurrenceValue = document.getElementById("recurrence-value");
+  const recurrenceStatus = document.getElementById("recurrence-status");
+  const recurrenceMethod = document.getElementById("recurrence-method");
+  const recurrenceDescription = document.getElementById("recurrence-description");
+  const recurrenceTags = document.getElementById("recurrence-tags");
+  const recurrenceEnabled = document.getElementById("recurrence-enabled");
+
+  const reminderList = document.getElementById("reminder-list");
+  const reminderEmpty = document.getElementById("reminder-empty");
+  const reminderNewBtns = document.querySelectorAll("[data-reminder-new]");
+  const reminderModal = document.getElementById("reminder-modal");
+  const reminderModalClose = document.getElementById("reminder-modal-close");
+  const reminderModalCancel = document.getElementById("reminder-modal-cancel");
+  const reminderModalTitle = document.getElementById("reminder-modal-title");
+  const reminderForm = document.getElementById("reminder-form");
+  const reminderId = document.getElementById("reminder-id");
+  const reminderName = document.getElementById("reminder-name");
+  const reminderDays = document.getElementById("reminder-days");
+  const reminderType = document.getElementById("reminder-type");
+  const reminderCategory = document.getElementById("reminder-category");
+  const reminderStatus = document.getElementById("reminder-status");
+  const reminderMethod = document.getElementById("reminder-method");
+  const reminderMin = document.getElementById("reminder-min");
+  const reminderMax = document.getElementById("reminder-max");
+  const reminderEnabled = document.getElementById("reminder-enabled");
+
   const summaryRules = document.getElementById("summary-rules");
   const summaryRecurring = document.getElementById("summary-recurring");
   const summaryReminders = document.getElementById("summary-reminders");
@@ -48,6 +87,8 @@
   const actionMethod = document.getElementById("action-method");
 
   let rules = [];
+  let recurrences = [];
+  let reminders = [];
 
   const CATEGORY_LABELS = {
     salario: "Salario",
@@ -211,6 +252,33 @@
     }
   };
 
+  const RECURRENCE_TEMPLATES = {
+    rent: {
+      name: "Aluguel",
+      tipo: "despesa",
+      day_of_month: 5,
+      categoria: "moradia",
+      valor: 0,
+      status: "em_andamento",
+      metodo: "",
+      descricao: "Aluguel",
+      tags: "fixo"
+    }
+  };
+
+  const REMINDER_TEMPLATES = {
+    reminder: {
+      name: "Lembrete 3 dias",
+      days_before: 3,
+      tipo: "despesa",
+      categoria: "",
+      status: "nao_pago",
+      metodo: "",
+      min_value: null,
+      max_value: null
+    }
+  };
+
   function escapeHtml(value) {
     return String(value || "")
       .replace(/&/g, "&amp;")
@@ -265,8 +333,8 @@
     if (summaryRules) {
       summaryRules.textContent = String(rules.filter(rule => rule.is_enabled).length);
     }
-    if (summaryRecurring) summaryRecurring.textContent = "0";
-    if (summaryReminders) summaryReminders.textContent = "0";
+    if (summaryRecurring) summaryRecurring.textContent = String(recurrences.filter(item => item.is_enabled).length);
+    if (summaryReminders) summaryReminders.textContent = String(reminders.filter(item => item.is_enabled).length);
   }
 
   function renderRules() {
@@ -318,6 +386,68 @@
       `;
     }).join("");
 
+    updateSummary();
+  }
+
+  function renderRecurrences() {
+    if (!recurrenceList) return;
+    if (!recurrences || recurrences.length === 0) {
+      recurrenceList.innerHTML = "";
+      recurrenceEmpty?.classList.remove("hidden");
+      updateSummary();
+      return;
+    }
+    recurrenceEmpty?.classList.add("hidden");
+    recurrenceList.innerHTML = recurrences.map(item => {
+      const tipo = item.tipo === "receita" ? "Receita" : "Despesa";
+      const cat = CATEGORY_LABELS[item.categoria] || item.categoria;
+      return `
+        <article class="rule-card" data-id="${item.id}">
+          <strong>${escapeHtml(item.name)}</strong>
+          <p>${tipo} · Dia ${item.day_of_month} · ${escapeHtml(cat)} · R$ ${Number(item.valor || 0).toFixed(2)}</p>
+          <div class="rule-actions">
+            <label class="switch">
+              <input type="checkbox" data-action="rec-toggle" ${item.is_enabled ? "checked" : ""}>
+              <span class="switch-track"></span>
+              <span class="switch-label">Ativo</span>
+            </label>
+            <button class="btn-tertiary" type="button" data-action="rec-edit">Editar</button>
+            <button class="btn-tertiary" type="button" data-action="rec-run">Gerar agora</button>
+          </div>
+        </article>
+      `;
+    }).join("");
+    updateSummary();
+  }
+
+  function renderReminders() {
+    if (!reminderList) return;
+    if (!reminders || reminders.length === 0) {
+      reminderList.innerHTML = "";
+      reminderEmpty?.classList.remove("hidden");
+      updateSummary();
+      return;
+    }
+    reminderEmpty?.classList.add("hidden");
+    reminderList.innerHTML = reminders.map(item => {
+      const tipo = item.tipo ? (item.tipo === "receita" ? "Receita" : "Despesa") : "Todos";
+      const cat = item.categoria ? (CATEGORY_LABELS[item.categoria] || item.categoria) : "Todas";
+      return `
+        <article class="rule-card" data-id="${item.id}">
+          <strong>${escapeHtml(item.name)}</strong>
+          <p>${tipo} · ${cat} · ${item.days_before} dias antes</p>
+          <div class="rule-actions">
+            <label class="switch">
+              <input type="checkbox" data-action="rem-toggle" ${item.is_enabled ? "checked" : ""}>
+              <span class="switch-track"></span>
+              <span class="switch-label">Ativo</span>
+            </label>
+            <button class="btn-tertiary" type="button" data-action="rem-edit">Editar</button>
+            <button class="btn-tertiary" type="button" data-action="rem-test">Testar</button>
+          </div>
+        </article>
+      `;
+    }).join("");
     updateSummary();
   }
 
@@ -403,6 +533,77 @@
     openModal({ ...template, _template: true });
   }
 
+  function closeRecurrenceModal() {
+    recurrenceModal?.classList.add("hidden");
+  }
+
+  function openRecurrenceModal(item) {
+    if (!recurrenceModal) return;
+    const isTemplate = !!(item && item._template);
+    recurrenceModalTitle.textContent = item && !isTemplate ? "Editar recorrencia" : "Nova recorrencia";
+    recurrenceId.value = isTemplate ? "" : (item?.id || "");
+    recurrenceName.value = item?.name || "";
+    recurrenceType.value = item?.tipo || "despesa";
+    recurrenceDay.value = item?.day_of_month ?? 5;
+    recurrenceCategory.value = item?.categoria || "outros";
+    recurrenceValue.value = item?.valor ?? 0;
+    recurrenceStatus.value = item?.status || "";
+    recurrenceMethod.value = item?.metodo || "";
+    recurrenceDescription.value = item?.descricao || "";
+    recurrenceTags.value = item?.tags || "";
+    recurrenceEnabled.checked = item ? (item.is_enabled !== undefined ? !!item.is_enabled : true) : true;
+
+    [
+      recurrenceType,
+      recurrenceCategory,
+      recurrenceStatus,
+      recurrenceMethod
+    ].forEach(syncCustomSelect);
+
+    recurrenceModal.classList.remove("hidden");
+  }
+
+  function openRecurrenceTemplate(key) {
+    const template = RECURRENCE_TEMPLATES[key];
+    if (!template) return;
+    openRecurrenceModal({ ...template, _template: true });
+  }
+
+  function closeReminderModal() {
+    reminderModal?.classList.add("hidden");
+  }
+
+  function openReminderModal(item) {
+    if (!reminderModal) return;
+    const isTemplate = !!(item && item._template);
+    reminderModalTitle.textContent = item && !isTemplate ? "Editar lembrete" : "Novo lembrete";
+    reminderId.value = isTemplate ? "" : (item?.id || "");
+    reminderName.value = item?.name || "";
+    reminderDays.value = item?.days_before ?? 3;
+    reminderType.value = item?.tipo || "";
+    reminderCategory.value = item?.categoria || "";
+    reminderStatus.value = item?.status || "";
+    reminderMethod.value = item?.metodo || "";
+    reminderMin.value = item?.min_value ?? "";
+    reminderMax.value = item?.max_value ?? "";
+    reminderEnabled.checked = item ? (item.is_enabled !== undefined ? !!item.is_enabled : true) : true;
+
+    [
+      reminderType,
+      reminderCategory,
+      reminderStatus,
+      reminderMethod
+    ].forEach(syncCustomSelect);
+
+    reminderModal.classList.remove("hidden");
+  }
+
+  function openReminderTemplate(key) {
+    const template = REMINDER_TEMPLATES[key];
+    if (!template) return;
+    openReminderModal({ ...template, _template: true });
+  }
+
   function buildConditions() {
     const conditions = [];
     if (condDescription.value.trim()) {
@@ -456,6 +657,22 @@
     renderRules();
   }
 
+  async function fetchRecurrences() {
+    if (!recurrenceList) return;
+    const res = await fetch("/api/recurrences");
+    const data = await res.json();
+    recurrences = data.recurrences || [];
+    renderRecurrences();
+  }
+
+  async function fetchReminders() {
+    if (!reminderList) return;
+    const res = await fetch("/api/reminders");
+    const data = await res.json();
+    reminders = data.reminders || [];
+    renderReminders();
+  }
+
   async function saveRule(ev) {
     ev.preventDefault();
     const payload = {
@@ -494,6 +711,65 @@
     await fetchRules();
   }
 
+  async function saveRecurrence(ev) {
+    ev.preventDefault();
+    const payload = {
+      name: recurrenceName.value.trim() || "Nova recorrencia",
+      tipo: recurrenceType.value,
+      day_of_month: Number(recurrenceDay.value || 1),
+      categoria: recurrenceCategory.value,
+      valor: Number(recurrenceValue.value || 0),
+      status: recurrenceStatus.value || null,
+      metodo: recurrenceMethod.value || null,
+      descricao: recurrenceDescription.value.trim() || recurrenceName.value.trim(),
+      tags: recurrenceTags.value.trim() || null,
+      is_enabled: recurrenceEnabled.checked
+    };
+    const id = recurrenceId.value;
+    const url = id ? `/api/recurrences/${id}` : "/api/recurrences";
+    const method = id ? "PUT" : "POST";
+    const res = await fetch(url, {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) {
+      alert("Nao foi possivel salvar a recorrencia.");
+      return;
+    }
+    closeRecurrenceModal();
+    await fetchRecurrences();
+  }
+
+  async function saveReminder(ev) {
+    ev.preventDefault();
+    const payload = {
+      name: reminderName.value.trim() || "Novo lembrete",
+      days_before: Number(reminderDays.value || 3),
+      tipo: reminderType.value || null,
+      categoria: reminderCategory.value || null,
+      status: reminderStatus.value || null,
+      metodo: reminderMethod.value || null,
+      min_value: reminderMin.value !== "" ? Number(reminderMin.value) : null,
+      max_value: reminderMax.value !== "" ? Number(reminderMax.value) : null,
+      is_enabled: reminderEnabled.checked
+    };
+    const id = reminderId.value;
+    const url = id ? `/api/reminders/${id}` : "/api/reminders";
+    const method = id ? "PUT" : "POST";
+    const res = await fetch(url, {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) {
+      alert("Nao foi possivel salvar o lembrete.");
+      return;
+    }
+    closeReminderModal();
+    await fetchReminders();
+  }
+
   async function toggleRule(id, enabled) {
     await fetch(`/api/rules/${id}/toggle`, {
       method: "PATCH",
@@ -501,6 +777,24 @@
       body: JSON.stringify({ is_enabled: enabled })
     });
     await fetchRules();
+  }
+
+  async function toggleRecurrence(id, enabled) {
+    await fetch(`/api/recurrences/${id}/toggle`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ is_enabled: enabled })
+    });
+    await fetchRecurrences();
+  }
+
+  async function toggleReminder(id, enabled) {
+    await fetch(`/api/reminders/${id}/toggle`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ is_enabled: enabled })
+    });
+    await fetchReminders();
   }
 
   function buildFilterPayload() {
@@ -571,6 +865,33 @@
     showOutput("Log da regra", items);
   }
 
+  async function runRecurrence(item) {
+    const res = await fetch(`/api/recurrences/${item.id}/run`, { method: "POST" });
+    const data = await res.json();
+    if (!res.ok) {
+      alert("Nao foi possivel gerar a recorrencia.");
+      return;
+    }
+    if (data.created) {
+      showOutput("Recorrencia gerada", [`Entrada criada #${data.entry_id}`]);
+    } else {
+      showOutput("Recorrencia ja gerada", [`Entrada existente #${data.entry_id}`]);
+    }
+  }
+
+  async function testReminder(item) {
+    const res = await fetch(`/api/reminders/${item.id}/test`, { method: "POST" });
+    const data = await res.json();
+    if (!res.ok) {
+      showOutput("Erro ao testar lembrete", []);
+      return;
+    }
+    const items = (data.preview || []).map(entry => {
+      return `#${entry.id} ${entry.date || "--"} - ${escapeHtml(entry.descricao)} (${entry.valor})`;
+    });
+    showOutput(`Lembrete: ${data.matched || 0} encontrados`, items);
+  }
+
   ruleNewBtn?.addEventListener("click", () => openModal(null));
   ruleModalClose?.addEventListener("click", closeModal);
   ruleModalCancel?.addEventListener("click", closeModal);
@@ -582,9 +903,31 @@
   document.querySelectorAll("[data-template]").forEach((btn) => {
     btn.addEventListener("click", () => {
       const key = btn.getAttribute("data-template");
-      openTemplate(key);
+      if (RULE_TEMPLATES[key]) openTemplate(key);
+      if (RECURRENCE_TEMPLATES[key]) openRecurrenceTemplate(key);
+      if (REMINDER_TEMPLATES[key]) openReminderTemplate(key);
     });
   });
+
+  recurrenceNewBtns?.forEach((btn) => {
+    btn.addEventListener("click", () => openRecurrenceModal(null));
+  });
+  recurrenceModalClose?.addEventListener("click", closeRecurrenceModal);
+  recurrenceModalCancel?.addEventListener("click", closeRecurrenceModal);
+  recurrenceModal?.addEventListener("click", (ev) => {
+    if (ev.target === recurrenceModal) closeRecurrenceModal();
+  });
+  recurrenceForm?.addEventListener("submit", saveRecurrence);
+
+  reminderNewBtns?.forEach((btn) => {
+    btn.addEventListener("click", () => openReminderModal(null));
+  });
+  reminderModalClose?.addEventListener("click", closeReminderModal);
+  reminderModalCancel?.addEventListener("click", closeReminderModal);
+  reminderModal?.addEventListener("click", (ev) => {
+    if (ev.target === reminderModal) closeReminderModal();
+  });
+  reminderForm?.addEventListener("submit", saveReminder);
 
   rulesList.addEventListener("click", (ev) => {
     const btn = ev.target.closest("button[data-action]");
@@ -612,6 +955,52 @@
     toggleRule(id, input.checked);
   });
 
+  recurrenceList?.addEventListener("click", (ev) => {
+    const btn = ev.target.closest("button[data-action]");
+    if (!btn) return;
+    const item = btn.closest("[data-id]");
+    if (!item) return;
+    const id = Number(item.dataset.id);
+    const rec = recurrences.find(r => r.id === id);
+    if (!rec) return;
+    const action = btn.dataset.action;
+    if (action === "rec-edit") openRecurrenceModal(rec);
+    if (action === "rec-run") runRecurrence(rec);
+  });
+
+  recurrenceList?.addEventListener("change", (ev) => {
+    const input = ev.target;
+    if (!(input instanceof HTMLInputElement)) return;
+    if (input.dataset.action !== "rec-toggle") return;
+    const item = input.closest("[data-id]");
+    if (!item) return;
+    const id = Number(item.dataset.id);
+    toggleRecurrence(id, input.checked);
+  });
+
+  reminderList?.addEventListener("click", (ev) => {
+    const btn = ev.target.closest("button[data-action]");
+    if (!btn) return;
+    const item = btn.closest("[data-id]");
+    if (!item) return;
+    const id = Number(item.dataset.id);
+    const rem = reminders.find(r => r.id === id);
+    if (!rem) return;
+    const action = btn.dataset.action;
+    if (action === "rem-edit") openReminderModal(rem);
+    if (action === "rem-test") testReminder(rem);
+  });
+
+  reminderList?.addEventListener("change", (ev) => {
+    const input = ev.target;
+    if (!(input instanceof HTMLInputElement)) return;
+    if (input.dataset.action !== "rem-toggle") return;
+    const item = input.closest("[data-id]");
+    if (!item) return;
+    const id = Number(item.dataset.id);
+    toggleReminder(id, input.checked);
+  });
+
   initAllSelects(document);
   const observer = new MutationObserver((mutations) => {
     mutations.forEach((mutation) => {
@@ -628,4 +1017,6 @@
   observer.observe(document.body, { childList: true, subtree: true });
 
   fetchRules();
+  fetchRecurrences();
+  fetchReminders();
 })();

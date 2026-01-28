@@ -1,0 +1,324 @@
+/* Compact UI overrides: reduce text and control sizes across the project. */
+:root {
+  --ui-scale: 0.9;
+  --topbar-h: calc(56px * var(--ui-scale));
+}
+
+@media (max-width: 720px) {
+  :root {
+    --ui-scale: 0.95;
+  }
+}
+
+body.app-body,
+body.public-body {
+  font-size: calc(14px * var(--ui-scale));
+  line-height: 1.45;
+}
+
+body.app-body .panel-title {
+  font-size: calc(18px * var(--ui-scale));
+}
+
+body.app-body .panel-subtitle {
+  font-size: calc(13px * var(--ui-scale));
+}
+
+body.app-body .page-title {
+  font-size: calc(16px * var(--ui-scale));
+}
+
+body.app-body .topbar-welcome {
+  font-size: calc(15px * var(--ui-scale));
+}
+
+body.app-body .welcome-name {
+  font-size: calc(16px * var(--ui-scale));
+}
+
+body.app-body .field label,
+body.app-body .field .field-label {
+  font-size: calc(12px * var(--ui-scale));
+}
+
+body.app-body .control,
+body.app-body input,
+body.app-body select,
+body.app-body textarea {
+  font-size: calc(13px * var(--ui-scale));
+}
+
+body.app-body .control {
+  height: calc(44px * var(--ui-scale));
+  padding: calc(10px * var(--ui-scale)) calc(12px * var(--ui-scale));
+  border-radius: calc(14px * var(--ui-scale));
+}
+
+body.app-body textarea.control {
+  min-height: calc(90px * var(--ui-scale));
+}
+
+body.app-body .select-trigger {
+  padding-right: calc(34px * var(--ui-scale));
+  display: flex;
+  align-items: center;
+}
+
+body.app-body .select-trigger::after {
+  right: calc(12px * var(--ui-scale));
+  border-left-width: calc(5px * var(--ui-scale));
+  border-right-width: calc(5px * var(--ui-scale));
+  border-top-width: calc(6px * var(--ui-scale));
+}
+
+body.app-body .select-options {
+  top: calc(100% + calc(6px * var(--ui-scale)));
+  padding: calc(6px * var(--ui-scale));
+  border-radius: calc(12px * var(--ui-scale));
+}
+
+body.app-body .select-option {
+  font-size: calc(13px * var(--ui-scale));
+  padding: calc(8px * var(--ui-scale)) calc(10px * var(--ui-scale));
+  border-radius: calc(8px * var(--ui-scale));
+}
+
+body.app-body.theme-light .filter-menu {
+  background: #ffffff;
+  border-color: rgba(15, 23, 32, 0.2);
+  box-shadow: 0 12px 26px rgba(15, 23, 32, 0.14);
+}
+
+body.app-body.theme-light .filter-menu button {
+  color: var(--text);
+}
+
+body.app-body.theme-light .filter-menu button:hover {
+  background: rgba(15, 23, 32, 0.06);
+}
+
+body.app-body.theme-light .filter-menu button.is-active {
+  background: rgba(76, 175, 80, 0.18);
+  color: #0f1720;
+}
+
+body.app-body.theme-light .filter-extra-row.is-visible {
+  background: #ffffff;
+  border-color: rgba(15, 23, 32, 0.18);
+  box-shadow: 0 10px 22px rgba(15, 23, 32, 0.08);
+}
+
+body.app-body .btn-primary,
+body.app-body .btn-secondary {
+  height: calc(46px * var(--ui-scale));
+  padding: 0 calc(16px * var(--ui-scale));
+  font-size: calc(13px * var(--ui-scale));
+  border-radius: calc(14px * var(--ui-scale));
+}
+
+body.app-body .btn {
+  padding: calc(10px * var(--ui-scale)) calc(12px * var(--ui-scale));
+  font-size: calc(13px * var(--ui-scale));
+  border-radius: calc(14px * var(--ui-scale));
+}
+
+body.app-body .btn-tertiary {
+  height: calc(40px * var(--ui-scale));
+  padding: 0 calc(14px * var(--ui-scale));
+  font-size: calc(12px * var(--ui-scale));
+  border-radius: calc(10px * var(--ui-scale));
+}
+
+body.app-body.theme-light .btn-tertiary {
+  background: rgba(15, 23, 32, 0.05);
+  border-color: rgba(15, 23, 32, 0.2);
+  color: var(--text);
+}
+
+body.app-body.theme-light .btn-tertiary:hover {
+  background: rgba(15, 23, 32, 0.1);
+}
+
+body.app-body .btn-icon {
+  height: calc(34px * var(--ui-scale));
+  width: calc(34px * var(--ui-scale));
+  border-radius: calc(10px * var(--ui-scale));
+}
+
+body.app-body .icon-btn {
+  height: calc(44px * var(--ui-scale));
+  width: calc(44px * var(--ui-scale));
+  border-radius: calc(14px * var(--ui-scale));
+}
+
+body.app-body .nav-item {
+  font-size: calc(10px * var(--ui-scale));
+  padding: calc(8px * var(--ui-scale)) calc(10px * var(--ui-scale));
+  border-radius: calc(11px * var(--ui-scale));
+}
+
+body.app-body .nav-section {
+  font-size: calc(9px * var(--ui-scale));
+}
+
+body.app-body .sidebar-sub {
+  font-size: calc(10px * var(--ui-scale));
+}
+
+body.app-body .sidebar-user-name {
+  font-size: calc(10px * var(--ui-scale));
+}
+
+body.app-body .sidebar-user-plan {
+  font-size: calc(9px * var(--ui-scale));
+}
+
+body.app-body .pill {
+  font-size: calc(9px * var(--ui-scale));
+  padding: calc(2px * var(--ui-scale)) calc(6px * var(--ui-scale));
+}
+
+body.app-body .status-warning {
+  font-size: calc(12px * var(--ui-scale));
+  padding: calc(6px * var(--ui-scale)) calc(10px * var(--ui-scale));
+}
+
+body.app-body .flash {
+  font-size: calc(13px * var(--ui-scale));
+  padding: calc(10px * var(--ui-scale)) calc(12px * var(--ui-scale));
+  border-radius: calc(14px * var(--ui-scale));
+}
+
+body.app-body .topbar-search {
+  height: calc(36px * var(--ui-scale));
+  padding: 0 calc(12px * var(--ui-scale));
+  border-radius: calc(10px * var(--ui-scale));
+}
+
+body.app-body .topbar-search .search-input {
+  font-size: calc(12px * var(--ui-scale));
+  min-width: calc(200px * var(--ui-scale));
+}
+
+body.app-body .topbar-search .search-kbd {
+  font-size: calc(10px * var(--ui-scale));
+  padding: calc(2px * var(--ui-scale)) calc(6px * var(--ui-scale));
+  border-radius: calc(6px * var(--ui-scale));
+}
+
+body.app-body .search-group-title {
+  font-size: calc(11px * var(--ui-scale));
+}
+
+body.app-body .search-item {
+  font-size: calc(12px * var(--ui-scale));
+  padding: calc(8px * var(--ui-scale)) calc(10px * var(--ui-scale));
+  border-radius: calc(10px * var(--ui-scale));
+}
+
+body.app-body .badge {
+  min-width: calc(16px * var(--ui-scale));
+  height: calc(16px * var(--ui-scale));
+  font-size: calc(9px * var(--ui-scale));
+}
+
+body.app-body .notification-item,
+body.app-body .notification-empty {
+  font-size: calc(12px * var(--ui-scale));
+}
+
+body.app-body .modal-header h3 {
+  font-size: calc(16px * var(--ui-scale));
+}
+
+body.app-body .modal-close {
+  width: calc(40px * var(--ui-scale));
+  height: calc(40px * var(--ui-scale));
+  border-radius: calc(14px * var(--ui-scale));
+  font-size: calc(20px * var(--ui-scale));
+}
+
+body.app-body .lista-header {
+  font-size: calc(11px * var(--ui-scale));
+  padding: calc(8px * var(--ui-scale)) calc(10px * var(--ui-scale));
+}
+
+body.app-body .categoria-chip {
+  font-size: calc(11px * var(--ui-scale));
+  padding: calc(4px * var(--ui-scale)) calc(8px * var(--ui-scale));
+}
+
+body.public-body .public-title {
+  font-size: calc(22px * var(--ui-scale));
+}
+
+body.public-body .public-subtitle {
+  font-size: calc(13px * var(--ui-scale));
+}
+
+body.public-body .nav-link {
+  font-size: calc(13px * var(--ui-scale));
+  padding: calc(8px * var(--ui-scale)) calc(10px * var(--ui-scale));
+}
+
+body.public-body .nav-cta {
+  font-size: calc(13px * var(--ui-scale));
+  padding: calc(9px * var(--ui-scale)) calc(12px * var(--ui-scale));
+  border-radius: calc(12px * var(--ui-scale));
+}
+
+body.public-body label {
+  font-size: calc(12px * var(--ui-scale));
+}
+
+body.public-body input,
+body.public-body select,
+body.public-body textarea {
+  font-size: calc(13px * var(--ui-scale));
+  padding: calc(11px * var(--ui-scale)) calc(12px * var(--ui-scale));
+  border-radius: calc(14px * var(--ui-scale));
+}
+
+body.public-body .btn-primary {
+  height: calc(42px * var(--ui-scale));
+  font-size: calc(13px * var(--ui-scale));
+  border-radius: calc(14px * var(--ui-scale));
+}
+
+body.public-body .pill {
+  font-size: calc(12px * var(--ui-scale));
+  padding: calc(6px * var(--ui-scale)) calc(12px * var(--ui-scale));
+}
+
+body.public-body .plan-card-body h3 {
+  font-size: calc(16px * var(--ui-scale));
+}
+
+body.public-body .plan-card-body .value {
+  font-size: calc(18px * var(--ui-scale));
+}
+
+body.public-body .plan-card-body .period,
+body.public-body .plan-card-body .plan-list,
+body.public-body .plan-summary-title,
+body.public-body .plan-summary-price,
+body.public-body .plan-summary-list {
+  font-size: calc(12px * var(--ui-scale));
+}
+
+body.public-body .plan-summary-header strong {
+  font-size: calc(15px * var(--ui-scale));
+}
+
+body.public-body .plan-badge {
+  font-size: calc(12px * var(--ui-scale));
+  padding: calc(4px * var(--ui-scale)) calc(10px * var(--ui-scale));
+}
+
+body.public-body .public-footer {
+  font-size: calc(12px * var(--ui-scale));
+}
+
+body.public-body .public-footer-links {
+  font-size: calc(13px * var(--ui-scale));
+}
