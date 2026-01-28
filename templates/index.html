@@ -11,6 +11,194 @@
     <!-- CARDS (TRIMESTRES) -->
     <div id="cards" class="cards-trimestres"></div>
 
+    <!-- WIDGETS (ATALHOS / ANÁLISES POR PLANO) -->
+    <section class="panel widgets-panel">
+      <div class="panel-head">
+        <div>
+          <h2 class="panel-title">Atalhos &amp; Análises</h2>
+          <p class="panel-subtitle">Resumo do mês e recursos disponíveis no seu plano (com bloqueio igual ao menu).</p>
+        </div>
+      </div>
+
+      <div class="widgets-grid">
+        {# Gráficos (Plus/Pro) #}
+        {% if has_feature('charts') %}
+          <a class="widget-card" href="/app/charts" aria-label="Abrir gráficos">
+            <div class="widget-head">
+              <div class="widget-title">
+                <span class="widget-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14v4"/><path d="M12 10v8"/><path d="M17 6v12"/></svg>
+                </span>
+                <strong>Gráficos</strong>
+              </div>
+              <span class="pill">Plus</span>
+            </div>
+            <div class="widget-kpis">
+              <div class="kpi"><span>Receitas</span><strong id="dash-charts-income">R$ 0,00</strong></div>
+              <div class="kpi"><span>Despesas</span><strong id="dash-charts-expense">R$ 0,00</strong></div>
+              <div class="kpi"><span>Saldo</span><strong id="dash-charts-balance">R$ 0,00</strong></div>
+            </div>
+            <div class="widget-spark" aria-hidden="true" id="dash-charts-spark"></div>
+            <div class="widget-footer"><span id="dash-charts-period" class="muted">Mês de referência</span><span class="widget-cta">Ver gráficos →</span></div>
+          </a>
+        {% else %}
+          <a class="widget-card locked" href="/app/upgrade" aria-label="Fazer upgrade para liberar gráficos">
+            <div class="widget-head">
+              <div class="widget-title">
+                <span class="widget-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14v4"/><path d="M12 10v8"/><path d="M17 6v12"/></svg>
+                </span>
+                <strong>Gráficos</strong>
+              </div>
+              <span class="pill">Plus</span>
+            </div>
+            <p class="widget-desc">Desbloqueie gráficos mensais/anuais e distribuição por categoria.</p>
+            <div class="widget-footer"><span class="muted">Recurso bloqueado</span><span class="widget-cta">Fazer upgrade →</span></div>
+          </a>
+        {% endif %}
+
+        {# Insights (Plus/Pro) #}
+        {% if has_feature('insights') %}
+          <a class="widget-card" href="/app/insights" aria-label="Abrir insights">
+            <div class="widget-head">
+              <div class="widget-title">
+                <span class="widget-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3H5a2 2 0 0 0-2 2v5"/><path d="M14 21h5a2 2 0 0 0 2-2v-5"/><path d="M21 10V5a2 2 0 0 0-2-2h-5"/><path d="M3 14v5a2 2 0 0 0 2 2h5"/><path d="M8 8h8v8H8z"/></svg>
+                </span>
+                <strong>Insights</strong>
+              </div>
+              <span class="pill">Plus</span>
+            </div>
+            <div class="widget-lines">
+              <div class="line"><span>Top categoria</span><strong id="dash-insights-top-cat">-</strong></div>
+              <div class="line"><span>Maior saída</span><strong id="dash-insights-top-exp">R$ 0,00</strong></div>
+              <div class="line"><span>Variação (despesas)</span><strong id="dash-insights-var">-</strong></div>
+            </div>
+            <div class="widget-footer"><span id="dash-insights-period" class="muted">Mês de referência</span><span class="widget-cta">Ver insights →</span></div>
+          </a>
+        {% else %}
+          <a class="widget-card locked" href="/app/upgrade" aria-label="Fazer upgrade para liberar insights">
+            <div class="widget-head">
+              <div class="widget-title">
+                <span class="widget-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3H5a2 2 0 0 0-2 2v5"/><path d="M14 21h5a2 2 0 0 0 2-2v-5"/><path d="M21 10V5a2 2 0 0 0-2-2h-5"/><path d="M3 14v5a2 2 0 0 0 2 2h5"/><path d="M8 8h8v8H8z"/></svg>
+                </span>
+                <strong>Insights</strong>
+              </div>
+              <span class="pill">Plus</span>
+            </div>
+            <p class="widget-desc">Veja variações do período e onde você está gastando mais.</p>
+            <div class="widget-footer"><span class="muted">Recurso bloqueado</span><span class="widget-cta">Fazer upgrade →</span></div>
+          </a>
+        {% endif %}
+
+        {# Regras & Automação (Plus/Pro - feature "filters") #}
+        {% if has_feature('filters') %}
+          <a class="widget-card" href="/app/filters" aria-label="Abrir regras e automação">
+            <div class="widget-head">
+              <div class="widget-title">
+                <span class="widget-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 3H2l8 9v7l4 2v-9z"/></svg>
+                </span>
+                <strong>Regras &amp; automação</strong>
+              </div>
+              <span class="pill">Plus</span>
+            </div>
+            <div class="widget-kpis">
+              <div class="kpi"><span>Ativas</span><strong id="dash-rules-active">0</strong></div>
+              <div class="kpi"><span>Total</span><strong id="dash-rules-total">0</strong></div>
+              <div class="kpi"><span>Execuções</span><strong id="dash-rules-runs">0</strong></div>
+            </div>
+            <div class="widget-footer"><span id="dash-rules-last" class="muted">Última: -</span><span class="widget-cta">Abrir automação →</span></div>
+          </a>
+        {% else %}
+          <a class="widget-card locked" href="/app/upgrade" aria-label="Fazer upgrade para liberar regras e automação">
+            <div class="widget-head">
+              <div class="widget-title">
+                <span class="widget-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 3H2l8 9v7l4 2v-9z"/></svg>
+                </span>
+                <strong>Regras &amp; automação</strong>
+              </div>
+              <span class="pill">Plus</span>
+            </div>
+            <p class="widget-desc">Classifique lançamentos automaticamente por descrição, categoria e status.</p>
+            <div class="widget-footer"><span class="muted">Recurso bloqueado</span><span class="widget-cta">Fazer upgrade →</span></div>
+          </a>
+        {% endif %}
+
+        {# Projeção (Pro) #}
+        {% if has_feature('projection') %}
+          <a class="widget-card" href="/app/projection" aria-label="Abrir projeção">
+            <div class="widget-head">
+              <div class="widget-title">
+                <span class="widget-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-7"/></svg>
+                </span>
+                <strong>Projeção</strong>
+              </div>
+              <span class="pill">Pro</span>
+            </div>
+            <div class="widget-lines">
+              <div class="line"><span>Saldo projetado</span><strong id="dash-proj-saldo">R$ 0,00</strong></div>
+              <div class="line"><span>Despesas pendentes</span><strong id="dash-proj-pend">R$ 0,00</strong></div>
+              <div class="line"><span>Até</span><strong id="dash-proj-ate">-</strong></div>
+            </div>
+            <div class="widget-footer"><span id="dash-proj-ref" class="muted">Base: hoje</span><span class="widget-cta">Abrir projeção →</span></div>
+          </a>
+        {% else %}
+          <a class="widget-card locked" href="/app/upgrade" aria-label="Fazer upgrade para liberar projeção">
+            <div class="widget-head">
+              <div class="widget-title">
+                <span class="widget-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-7"/></svg>
+                </span>
+                <strong>Projeção</strong>
+              </div>
+              <span class="pill">Pro</span>
+            </div>
+            <p class="widget-desc">Simule saldo futuro, datas de pagamento e cenários do seu mês.</p>
+            <div class="widget-footer"><span class="muted">Recurso bloqueado</span><span class="widget-cta">Fazer upgrade →</span></div>
+          </a>
+        {% endif %}
+
+        {# Relatórios (Pro) #}
+        {% if has_feature('reports') %}
+          <a class="widget-card" href="/app/reports" aria-label="Abrir relatórios">
+            <div class="widget-head">
+              <div class="widget-title">
+                <span class="widget-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h10a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M8 7h8"/><path d="M8 11h8"/><path d="M8 15h5"/></svg>
+                </span>
+                <strong>Relatórios</strong>
+              </div>
+              <span class="pill">Pro</span>
+            </div>
+            <div class="widget-kpis">
+              <div class="kpi"><span>Lançamentos</span><strong id="dash-rep-count">0</strong></div>
+              <div class="kpi"><span>Receitas</span><strong id="dash-rep-inc">R$ 0,00</strong></div>
+              <div class="kpi"><span>Despesas</span><strong id="dash-rep-exp">R$ 0,00</strong></div>
+            </div>
+            <div class="widget-footer"><span id="dash-rep-period" class="muted">Mês de referência</span><span class="widget-cta">Abrir relatórios →</span></div>
+          </a>
+        {% else %}
+          <a class="widget-card locked" href="/app/upgrade" aria-label="Fazer upgrade para liberar relatórios">
+            <div class="widget-head">
+              <div class="widget-title">
+                <span class="widget-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h10a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M8 7h8"/><path d="M8 11h8"/><path d="M8 15h5"/></svg>
+                </span>
+                <strong>Relatórios</strong>
+              </div>
+              <span class="pill">Pro</span>
+            </div>
+            <p class="widget-desc">Gere resumos, exporte e acompanhe evolução do orçamento com relatórios.</p>
+            <div class="widget-footer"><span class="muted">Recurso bloqueado</span><span class="widget-cta">Fazer upgrade →</span></div>
+          </a>
+        {% endif %}
+      </div>
+    </section>
+
     <!-- RESUMO POR DATA (DETALHADO) -->
     <section class="panel resumo-panel">
       <div class="panel-head">

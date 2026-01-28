@@ -698,6 +698,10 @@ body.app-body .panel-actions{
   display:none !important;
 }
 
+.muted{
+  color: var(--muted);
+}
+
 .cards-trimestres{
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 24px;
@@ -752,6 +756,219 @@ body.app-body .panel-actions{
 
 .trimestre .card strong.saldo-positivo{ color: #4caf50; }
 .trimestre .card strong.saldo-negativo{ color: #ff4d4f; }
+
+/* ---------------------------
+   Dashboard: widgets por plano
+---------------------------- */
+
+.widgets-panel{
+  margin-bottom: 18px;
+}
+
+.widgets-grid{
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.widget-card{
+  text-decoration: none;
+  color: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 18px;
+  padding: 14px 14px 12px;
+  background: rgba(0, 0, 0, 0.18);
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.38);
+  transition: transform 140ms ease, border-color 140ms ease, background 140ms ease;
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+.widget-card:hover{
+  transform: translateY(-1px);
+  border-color: rgba(76, 175, 80, 0.35);
+  background: rgba(0, 0, 0, 0.22);
+}
+
+.widget-card.locked{
+  opacity: 0.82;
+}
+
+.widget-head{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.widget-title{
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.widget-title strong{
+  font-size: 13px;
+  font-weight: 950;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.widget-icon{
+  width: 34px;
+  height: 34px;
+  border-radius: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.90);
+}
+
+.widget-kpis{
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.widget-kpis .kpi{
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 14px;
+  padding: 10px 10px;
+  min-width: 0;
+}
+
+.widget-kpis .kpi span{
+  color: rgba(255, 255, 255, 0.70);
+  font-size: 11px;
+  font-weight: 850;
+  display: block;
+}
+
+.widget-kpis .kpi strong{
+  font-size: 13px;
+  font-weight: 950;
+  letter-spacing: -0.01em;
+  display: block;
+  margin-top: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.widget-lines{
+  display: grid;
+  gap: 10px;
+}
+
+.widget-lines .line{
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 14px;
+  padding: 10px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.widget-lines .line span{
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.widget-lines .line strong{
+  font-size: 13px;
+  font-weight: 950;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.widget-desc{
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.35;
+  margin: 0;
+}
+
+.widget-footer{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  padding-top: 10px;
+}
+
+.widget-cta{
+  font-weight: 950;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.widget-spark{
+  height: 70px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 10px 10px 22px;
+  overflow: hidden;
+}
+
+.spark-bar{
+  flex: 1;
+  min-width: 0;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: rgba(255, 255, 255, 0.08);
+  position: relative;
+}
+
+.spark-bar.pos{
+  border-color: rgba(76, 175, 80, 0.40);
+  background: rgba(76, 175, 80, 0.18);
+}
+
+.spark-bar.neg{
+  border-color: rgba(255, 77, 79, 0.35);
+  background: rgba(255, 77, 79, 0.12);
+}
+
+.spark-label{
+  position: absolute;
+  bottom: -18px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 10px;
+  font-weight: 900;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+@media (max-width: 1100px){
+.widgets-grid{
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+}
+
+@media (max-width: 720px){
+.widgets-grid{
+  grid-template-columns: 1fr;
+}
+}
 
 @media (max-width: 1200px){
 .cards-trimestres{
