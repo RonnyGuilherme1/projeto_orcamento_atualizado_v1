@@ -22,6 +22,7 @@ class Entrada(db.Model):
     valor = db.Column(db.Float, nullable=False)
     metodo = db.Column(db.String(24), nullable=True)
     tags = db.Column(db.String(255), nullable=True)
+    priority = db.Column(db.String(10), nullable=False, default='media')  # alta | media | baixa
     recurrence_id = db.Column(db.Integer, db.ForeignKey("recurrences.id"), nullable=True)
 
     # Status financeiro (despesa/receita)
@@ -105,7 +106,13 @@ def _migrate_sqlite_schema(conn) -> None:
         )
     )
 
-    # ---------------- users (planos) ----------------
+    
+    # priority (PRO)
+    if not _column_exists(conn, "entradas", "priority"):
+        conn.execute(text("ALTER TABLE entradas ADD COLUMN priority VARCHAR(10)"))
+        conn.execute(text("UPDATE entradas SET priority = COALESCE(priority, 'media')"))
+
+# ---------------- users (planos) ----------------
     if not _column_exists(conn, "users", "plan"):
         conn.execute(text("ALTER TABLE users ADD COLUMN plan VARCHAR(20)"))
         conn.execute(text("UPDATE users SET plan = COALESCE(plan, 'basic')"))
@@ -147,6 +154,7 @@ def init_db(app):
         from models.automation_rule_model import AutomationRule, RuleExecution  # noqa: F401
         from models.recurrence_model import Recurrence, RecurrenceExecution  # noqa: F401
         from models.reminder_model import Reminder  # noqa: F401
+        from models.projection_scenario_model import ProjectionScenario  # noqa: F401
 
 
         db.create_all()
@@ -213,6 +221,10 @@ def _migrate_postgres_schema(conn) -> None:
     # tags
     if not _column_exists_postgres(conn, "entradas", "tags"):
         conn.execute(text("ALTER TABLE public.entradas ADD COLUMN IF NOT EXISTS tags VARCHAR(255)"))
+
+    # priority (PRO)
+    if not _column_exists_postgres(conn, "entradas", "priority"):
+        conn.execute(text("ALTER TABLE public.entradas ADD COLUMN IF NOT EXISTS priority VARCHAR(10)"))
 
     # recurrence_id
     if not _column_exists_postgres(conn, "entradas", "recurrence_id"):
