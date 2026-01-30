@@ -1,10 +1,11 @@
 (function () {
   const cardsRoot = document.getElementById("cards");
-  const filtroData = document.getElementById("filtro-data");
-  const listaDia = document.getElementById("lista-dia");
+  const filtroDe = document.getElementById("filtro-de");
+  const filtroAte = document.getElementById("filtro-ate");
+  const listaPeriodo = document.getElementById("lista-periodo");
   const totalReceitaEl = document.getElementById("total-receita");
   const totalDespesaEl = document.getElementById("total-despesa");
-  const saldoDiaEl = document.getElementById("saldo-dia");
+  const saldoPeriodoEl = document.getElementById("saldo-periodo");
 
   // Widgets (por plano)
   const wChartsIncome = document.getElementById("dash-charts-income");
@@ -34,7 +35,7 @@
   const wRepPeriod = document.getElementById("dash-rep-period");
 
   // Esta página não existe? Sai sem fazer nada.
-  if (!cardsRoot && !filtroData && !listaDia) return;
+  if (!cardsRoot && !filtroDe && !listaPeriodo) return;
 
   const meses = [
     "Janeiro", "Fevereiro", "Março",
@@ -244,8 +245,10 @@
 
     // Mês de referência: filtro-data (se preenchido) -> última entrada -> hoje
     let ref = null;
-    if (filtroData && filtroData.value) {
-      ref = parseISODate(filtroData.value);
+    if (filtroAte && filtroAte.value) {
+      ref = parseISODate(filtroAte.value);
+    } else if (filtroDe && filtroDe.value) {
+      ref = parseISODate(filtroDe.value);
     }
     if (!ref && entradas.length) {
       // acha a maior data
@@ -373,72 +376,64 @@
     });
   }
 
-  async function renderResumoPorData(dataSelecionada) {
-    if (!listaDia) return;
+  
+  async function renderResumoPorPeriodo(de, ate) {
+    if (!listaPeriodo) return;
 
-    listaDia.innerHTML = "";
+    listaPeriodo.innerHTML = "";
 
-    if (totalReceitaEl) totalReceitaEl.textContent = "R$ 0,00";
-    if (totalDespesaEl) totalDespesaEl.textContent = "R$ 0,00";
-    if (saldoDiaEl) {
-      saldoDiaEl.textContent = "R$ 0,00";
-      saldoDiaEl.className = "";
+    if (totalReceitaEl) totalReceitaEl.textContent = fmtBRL(0);
+    if (totalDespesaEl) totalDespesaEl.textContent = fmtBRL(0);
+    if (saldoPeriodoEl) {
+      saldoPeriodoEl.textContent = fmtBRL(0);
+      saldoPeriodoEl.className = "";
     }
 
-    if (!dataSelecionada) return;
+    if (!de || !ate) return;
+
+    // Normaliza: se o usuário inverter, trava em um período válido
+    if (ate < de) {
+      ate = de;
+      if (filtroAte) filtroAte.value = ate;
+    }
 
     try {
-      const res = await fetch(`/resumo-ciclo?data=${encodeURIComponent(dataSelecionada)}`);
+      const res = await fetch(`/resumo-periodo?de=${encodeURIComponent(de)}&ate=${encodeURIComponent(ate)}`);
       const resumo = await res.json();
 
       if (!res.ok) {
         const msg = resumo && resumo.error ? resumo.error : "Erro ao carregar resumo";
-        listaDia.innerHTML = `<div class="linha-dia"><span>${msg}</span><span></span></div>`;
+        listaPeriodo.innerHTML = `<div class="linha-dia"><span>${msg}</span><span></span></div>`;
         return;
       }
 
-      const saldoAnterior = Number(resumo.saldo_anterior) || 0;
-      const receitasNoDia = Number(resumo.receitas_no_dia) || 0;
-      const saldoAposReceber = Number(resumo.saldo_apos_receber) || 0;
-      const totalDespesasPendentes = Number(resumo.total_despesas_pendentes) || 0;
-      const saldoProjetado = Number(resumo.saldo_projetado) || 0;
-      const ate = resumo.ate || "";
+      const totalReceitas = Number(resumo.total_receitas) || 0;
+      const totalDespesas = Number(resumo.total_despesas) || 0;
+      const saldoPeriodo = Number(resumo.saldo_periodo) || 0;
 
-      listaDia.innerHTML += `
+      const receitas = Array.isArray(resumo.receitas) ? resumo.receitas : [];
+      const despesas = Array.isArray(resumo.despesas) ? resumo.despesas : [];
+
+      // Receitas
+      listaPeriodo.innerHTML += `
         <div class="linha-dia">
-          <span>Saldo anterior</span>
-          <span>${fmtBRL(saldoAnterior)}</span>
-        </div>
-        <div class="linha-dia">
-          <span>Receitas no dia</span>
-          <span>${fmtBRL(receitasNoDia)}</span>
-        </div>
-        <div class="linha-dia">
-          <span>Saldo após receber</span>
-          <span>${fmtBRL(saldoAposReceber)}</span>
+          <span><strong>Receitas do período</strong></span>
+          <span></span>
         </div>
       `;
 
-      const despesas = Array.isArray(resumo.despesas_pendentes) ? resumo.despesas_pendentes : [];
-      if (despesas.length === 0) {
-        listaDia.innerHTML += `
+      if (receitas.length === 0) {
+        listaPeriodo.innerHTML += `
           <div class="linha-dia">
-            <span>Despesas pendentes até ${ate || "o fim do mês"}</span>
+            <span>-</span>
             <span>${fmtBRL(0)}</span>
           </div>
         `;
       } else {
-        listaDia.innerHTML += `
-          <div class="linha-dia">
-            <span><strong>Despesas pendentes</strong></span>
-            <span></span>
-          </div>
-        `;
-
-        despesas.forEach(d => {
-          const v = Number(d.valor) || 0;
-          const label = `${d.data} - ${d.descricao}`;
-          listaDia.innerHTML += `
+        receitas.forEach(r => {
+          const v = Number(r.valor) || 0;
+          const label = `${r.data} - ${r.descricao}`;
+          listaPeriodo.innerHTML += `
             <div class="linha-dia">
               <span>${label}</span>
               <span>${fmtBRL(v)}</span>
@@ -447,22 +442,69 @@
         });
       }
 
-      if (totalReceitaEl) totalReceitaEl.textContent = fmtBRL(receitasNoDia);
-      if (totalDespesaEl) totalDespesaEl.textContent = fmtBRL(totalDespesasPendentes);
+      // Despesas
+      listaPeriodo.innerHTML += `
+        <div class="linha-dia" style="margin-top:10px;">
+          <span><strong>Despesas do período</strong></span>
+          <span></span>
+        </div>
+      `;
 
-      if (saldoDiaEl) {
-        saldoDiaEl.textContent = fmtBRL(saldoProjetado);
-        saldoDiaEl.className = saldoProjetado >= 0 ? "positivo" : "negativo";
+      if (despesas.length === 0) {
+        listaPeriodo.innerHTML += `
+          <div class="linha-dia">
+            <span>-</span>
+            <span>${fmtBRL(0)}</span>
+          </div>
+        `;
+      } else {
+        despesas.forEach(d => {
+          const v = Number(d.valor) || 0;
+          const st = (d.status === "pago") ? "Pago" : "Pendente";
+          const label = `${d.data} - ${d.descricao} (${st})`;
+          listaPeriodo.innerHTML += `
+            <div class="linha-dia">
+              <span>${label}</span>
+              <span>${fmtBRL(v)}</span>
+            </div>
+          `;
+        });
       }
 
-      listaDia.innerHTML += `
-        <div class="linha-dia">
-          <span><strong>Saldo projetado:</strong></span>
-          <span><strong>${fmtBRL(saldoProjetado)}</strong></span>
+      // Totais (painel lateral)
+      if (totalReceitaEl) totalReceitaEl.textContent = fmtBRL(totalReceitas);
+      if (totalDespesaEl) totalDespesaEl.textContent = fmtBRL(totalDespesas);
+
+      if (saldoPeriodoEl) {
+        saldoPeriodoEl.textContent = fmtBRL(saldoPeriodo);
+        saldoPeriodoEl.className = saldoPeriodo >= 0 ? "positivo" : "negativo";
+      }
+
+      // Linha final no card (reforço)
+      listaPeriodo.innerHTML += `
+        <div class="linha-dia" style="margin-top:10px;">
+          <span><strong>Saldo do período</strong></span>
+          <span><strong>${fmtBRL(saldoPeriodo)}</strong></span>
         </div>
       `;
     } catch (err) {
-      listaDia.innerHTML = `<div class="linha-dia"><span>Erro ao carregar resumo</span><span></span></div>`;
+      listaPeriodo.innerHTML = `<div class="linha-dia"><span>Erro ao carregar resumo</span><span></span></div>`;
+    }
+  }
+
+
+
+  function setDefaultPeriodoSeVazio() {
+    if (!filtroDe || !filtroAte) return;
+    const now = new Date();
+    const today = `${now.getFullYear()}-${pad2(now.getMonth() + 1)}-${pad2(now.getDate())}`;
+    const first = `${now.getFullYear()}-${pad2(now.getMonth() + 1)}-01`;
+
+    if (!filtroDe.value) filtroDe.value = first;
+    if (!filtroAte.value) filtroAte.value = today;
+
+    if (filtroAte.value && filtroDe.value && filtroAte.value < filtroDe.value) {
+      filtroAte.value = filtroDe.value;
     }
   }
 
@@ -477,19 +519,30 @@
     hydrateRulesWidget();
     hydrateProjectionWidget();
 
-    if (filtroData && filtroData.value) {
-      await renderResumoPorData(filtroData.value);
+    setDefaultPeriodoSeVazio();
+
+    if (filtroDe && filtroAte && filtroDe.value && filtroAte.value) {
+      await renderResumoPorPeriodo(filtroDe.value, filtroAte.value);
     }
   }
 
-  if (filtroData) {
-    filtroData.addEventListener("change", async () => {
-      await renderResumoPorData(filtroData.value);
+  async function onPeriodoChange() {
+    if (!filtroDe || !filtroAte) return;
+    if (!filtroDe.value || !filtroAte.value) return;
 
-      // Quando o usuário troca a data, atualiza as prévias do mês de referência também.
-      hydratePlanWidgets();
-    });
+    if (filtroAte.value < filtroDe.value) {
+      filtroAte.value = filtroDe.value;
+    }
+
+    await renderResumoPorPeriodo(filtroDe.value, filtroAte.value);
+
+    // Quando o usuário troca o período, atualiza as prévias do mês de referência também.
+    hydratePlanWidgets();
   }
 
+  if (filtroDe) filtroDe.addEventListener("change", onPeriodoChange);
+  if (filtroAte) filtroAte.addEventListener("change", onPeriodoChange);
+
   carregarDados();
+
 })();

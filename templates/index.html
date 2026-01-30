@@ -199,47 +199,52 @@
       </div>
     </section>
 
-    <!-- RESUMO POR DATA (DETALHADO) -->
+    <!-- RESUMO POR PERÍODO (SOMENTE MOVIMENTO NO INTERVALO) -->
     <section class="panel resumo-panel">
       <div class="panel-head">
         <div>
-          <h2 class="panel-title">Resumo por Data</h2>
-          <p class="panel-subtitle">Visão de caixa: saldo anterior, receitas do dia e despesas pendentes até o fim do mês.</p>
+          <h2 class="panel-title">Resumo por Período</h2>
+          <p class="panel-subtitle">Mostra apenas receitas e despesas dentro do intervalo selecionado (sem projeções futuras).</p>
         </div>
         <div class="panel-actions">
           <label class="field">
-            <span class="field-label">Data</span>
-            <input type="date" id="filtro-data" class="control" />
+            <span class="field-label">De</span>
+            <input type="date" id="filtro-de" class="control" />
+          </label>
+          <label class="field">
+            <span class="field-label">Até</span>
+            <input type="date" id="filtro-ate" class="control" />
           </label>
         </div>
       </div>
 
       <div class="resumo-grid">
-        <div id="lista-dia" class="lista-dia"></div>
+        <div id="lista-periodo" class="lista-dia"></div>
 
         <div class="resumo-totais">
           <div class="totais-row">
-            <span>Receitas (no dia)</span>
+            <span>Receitas (no período)</span>
             <strong id="total-receita">R$ 0,00</strong>
           </div>
           <div class="totais-row">
-            <span>Despesas pendentes</span>
+            <span>Despesas (no período)</span>
             <strong id="total-despesa">R$ 0,00</strong>
           </div>
           <div class="totais-sep"></div>
           <div class="totais-row totals-saldo">
-            <span>Saldo projetado</span>
-            <strong id="saldo-dia">R$ 0,00</strong>
+            <span>Saldo do período</span>
+            <strong id="saldo-periodo">R$ 0,00</strong>
           </div>
 
           <div class="hint">
-            Dica: ajuste a data para simular o fluxo até o fim do mês.
+            Dica: selecione “De” e “Até” para ver somente o movimento dentro do intervalo.
           </div>
         </div>
       </div>
     </section>
 
-  </div>
+
+</div>
 {% endblock %}
 
 {% block scripts %}

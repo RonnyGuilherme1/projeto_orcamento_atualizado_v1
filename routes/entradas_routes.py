@@ -320,3 +320,113 @@ def resumo_ciclo():
             ],
         }
     )
+
+
+# =========================================================
+# Resumo por PERÍODO (somente o intervalo; sem projeções futuras)
+# =========================================================
+@entradas_bp.route("/resumo-periodo")
+@login_required
+def resumo_periodo():
+    blocked = _require_verified()
+    if blocked:
+        return blocked
+
+    try:
+        de = _parse_date_param(request.args.get("de"), "de")
+        ate = _parse_date_param(request.args.get("ate"), "ate")
+    except ValueError as ex:
+        return jsonify({"error": str(ex)}), 400
+
+    if ate < de:
+        return jsonify({"error": "'ate' não pode ser menor que 'de'"}), 400
+
+    # Excluir "sobras" (ex.: 'Sobra do mês passado') do resumo, conforme pedido.
+    desc_lower = func.lower(func.coalesce(Entrada.descricao, ""))
+    filtro_sobra = (
+        ~desc_lower.like("%sobra do mês%")
+        & ~desc_lower.like("%sobra do mes%")
+        & ~desc_lower.like("%saldo do mês anterior%")
+        & ~desc_lower.like("%saldo do mes anterior%")
+    )
+
+    total_receitas = (
+        db.session.query(func.coalesce(func.sum(Entrada.valor), 0.0))
+        .filter(
+            Entrada.user_id == current_user.id,
+            Entrada.tipo == "receita",
+            Entrada.data >= de,
+            Entrada.data <= ate,
+            filtro_sobra,
+        )
+        .scalar()
+    )
+    total_receitas = float(total_receitas or 0)
+
+    total_despesas = (
+        db.session.query(func.coalesce(func.sum(Entrada.valor), 0.0))
+        .filter(
+            Entrada.user_id == current_user.id,
+            Entrada.tipo == "despesa",
+            Entrada.data >= de,
+            Entrada.data <= ate,
+        )
+        .scalar()
+    )
+    total_despesas = float(total_despesas or 0)
+
+    saldo_periodo = total_receitas - total_despesas
+
+    receitas = (
+        Entrada.query
+        .filter(
+            Entrada.user_id == current_user.id,
+            Entrada.tipo == "receita",
+            Entrada.data >= de,
+            Entrada.data <= ate,
+            filtro_sobra,
+        )
+        .order_by(Entrada.data.asc(), Entrada.id.asc())
+        .all()
+    )
+
+    despesas = (
+        Entrada.query
+        .filter(
+            Entrada.user_id == current_user.id,
+            Entrada.tipo == "despesa",
+            Entrada.data >= de,
+            Entrada.data <= ate,
+        )
+        .order_by(Entrada.data.asc(), Entrada.id.asc())
+        .all()
+    )
+
+    return jsonify(
+        {
+            "de": de.isoformat(),
+            "ate": ate.isoformat(),
+            "total_receitas": round(total_receitas, 2),
+            "total_despesas": round(total_despesas, 2),
+            "saldo_periodo": round(saldo_periodo, 2),
+            "receitas": [
+                {
+                    "id": e.id,
+                    "data": e.data.isoformat(),
+                    "descricao": e.descricao,
+                    "valor": float(e.valor),
+                }
+                for e in receitas
+            ],
+            "despesas": [
+                {
+                    "id": e.id,
+                    "data": e.data.isoformat(),
+                    "descricao": e.descricao,
+                    "valor": float(e.valor),
+                    "status": e.status,
+                }
+                for e in despesas
+            ],
+        }
+    )
