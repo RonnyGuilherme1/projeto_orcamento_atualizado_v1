@@ -202,7 +202,11 @@
   }
 
   async function loadScenarios(selectId) {
+<<<<<<< HEAD
     const list = await fetchJSON('/app/projection/scenarios');
+=======
+    const list = await fetch('/app/projection/scenarios');
+>>>>>>> 748ac02aa6f96c785f54b96d19f576dafc3d1383
     scenarioSelect.innerHTML = '';
     const baseOpt = document.createElement('option');
     baseOpt.value = '0';
@@ -232,7 +236,11 @@
     }
 
     try {
+<<<<<<< HEAD
       const detail = await fetchJSON(`/app/projection/scenarios/${id}`);
+=======
+      const detail = await fetch(`/app/projection/scenarios/${id}`);
+>>>>>>> 748ac02aa6f96c785f54b96d19f576dafc3d1383
       state.scenarioName = detail.name || 'Cenário';
       state.overrides = detail.overrides || defaultOverrides();
       runDebounced();
@@ -247,7 +255,11 @@
       return;
     }
     try {
+<<<<<<< HEAD
       await fetchJSON(`/app/projection/scenarios/${state.scenarioId}`, {
+=======
+      await fetch(`/app/projection/scenarios/${state.scenarioId}`, {
+>>>>>>> 748ac02aa6f96c785f54b96d19f576dafc3d1383
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ overrides: state.overrides }),
@@ -264,7 +276,11 @@
     const name = prompt('Nome do novo cenário:', state.scenarioName === 'Base' ? 'Meu cenário 1' : `${state.scenarioName} (cópia)`);
     if (!name) return;
     try {
+<<<<<<< HEAD
       const out = await fetchJSON('/app/projection/scenarios', {
+=======
+      const out = await fetch('/app/projection/scenarios', {
+>>>>>>> 748ac02aa6f96c785f54b96d19f576dafc3d1383
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, overrides: state.overrides }),
@@ -284,7 +300,11 @@
     if (!state.scenarioId) return;
     if (!confirm('Excluir este cenário?')) return;
     try {
+<<<<<<< HEAD
       await fetchJSON(`/app/projection/scenarios/${state.scenarioId}`, { method: 'DELETE' });
+=======
+      await fetch(`/app/projection/scenarios/${state.scenarioId}`, { method: 'DELETE' });
+>>>>>>> 748ac02aa6f96c785f54b96d19f576dafc3d1383
       state.scenarioId = 0;
       state.scenarioName = 'Base';
       state.overrides = defaultOverrides();
@@ -313,7 +333,11 @@
     // valida datas
     if (!startInput.value || !endInput.value) return;
     try {
+<<<<<<< HEAD
       const data = await fetchJSON('/app/projection/data', {
+=======
+      const data = await fetch('/app/projection/data', {
+>>>>>>> 748ac02aa6f96c785f54b96d19f576dafc3d1383
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(buildPayload()),
@@ -489,7 +513,11 @@
   async function cyclePriority(entradaId, current) {
     const next = current === 'alta' ? 'media' : (current === 'media' ? 'baixa' : 'alta');
     try {
+<<<<<<< HEAD
       await fetchJSON(`/app/projection/entry/${entradaId}/priority`, {
+=======
+      await fetch(`/app/projection/entry/${entradaId}/priority`, {
+>>>>>>> 748ac02aa6f96c785f54b96d19f576dafc3d1383
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ priority: next }),
