@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from datetime import date, timedelta
 
 from sqlalchemy import func
@@ -9,6 +10,8 @@ from flask_login import login_required, current_user
 
 from models.extensions import db
 from models.entrada_model import Entrada
+from models.projection_scenario_model import ProjectionScenario
+from services.projection_engine import compute_projection
 from services.plans import PLANS, is_valid_plan
 from services.feature_gate import require_feature
 from services.checkout_store import (
@@ -598,6 +601,209 @@ def filters_page():
 @require_feature("projection")
 def projection_page():
     return render_template("projection.html")
+
+
+
+@analytics_bp.route("/app/projection/data", methods=["GET", "POST"])
+@login_required
+@require_feature("projection")
+def projection_data():
+    payload = request.get_json(silent=True) if request.method == "POST" else request.args
+    start_str = (payload.get("start") if payload else None) or None
+    end_str = (payload.get("end") if payload else None) or None
+    mode = (payload.get("mode") if payload else None) or "cash"
+
+    include_recurring = True
+    if payload and payload.get("include_recurring") is not None:
+        include_recurring = str(payload.get("include_recurring")).lower() in {"1", "true", "yes", "on"}
+
+    reserve_min = 0.0
+    if payload and payload.get("reserve_min") is not None:
+        try:
+            reserve_min = float(payload.get("reserve_min") or 0.0)
+        except (TypeError, ValueError):
+            reserve_min = 0.0
+
+    scenario_id = None
+    if payload and payload.get("scenario_id"):
+        try:
+            scenario_id = int(payload.get("scenario_id"))
+        except (TypeError, ValueError):
+            scenario_id = None
+
+    overrides = payload.get("overrides") if payload else None
+    if overrides is None and payload and payload.get("scenario_overrides"):
+        overrides = payload.get("scenario_overrides")
+
+    # Se scenario_id vier e overrides não, carregamos do banco
+    if scenario_id and overrides is None:
+        sc = (
+            db.session.query(ProjectionScenario)
+            .filter(ProjectionScenario.id == scenario_id, ProjectionScenario.user_id == current_user.id)
+            .first()
+        )
+        if sc:
+            try:
+                overrides = json.loads(sc.data_json or "{}")
+            except Exception:
+                overrides = {}
+
+    # datas
+    try:
+        start_dt = date.fromisoformat(start_str) if start_str else date.today()
+    except Exception:
+        start_dt = date.today()
+    try:
+        end_dt = date.fromisoformat(end_str) if end_str else (start_dt + timedelta(days=60))
+    except Exception:
+        end_dt = start_dt + timedelta(days=60)
+
+    # segurança: não permite período invertido
+    if end_dt < start_dt:
+        start_dt, end_dt = end_dt, start_dt
+
+    data_out = compute_projection(
+        user_id=current_user.id,
+        start=start_dt,
+        end=end_dt,
+        mode=mode,
+        include_recurring=include_recurring,
+        reserve_min=reserve_min,
+        overrides=overrides if isinstance(overrides, dict) else {},
+    )
+
+    # devolve também o cenário ativo (para o front persistir)
+    data_out["active_overrides"] = overrides if isinstance(overrides, dict) else {}
+    return jsonify(data_out)
+
+
+@analytics_bp.get("/app/projection/scenarios")
+@login_required
+@require_feature("projection")
+def projection_scenarios_list():
+    rows = (
+        db.session.query(ProjectionScenario)
+        .filter(ProjectionScenario.user_id == current_user.id)
+        .order_by(ProjectionScenario.updated_at.desc())
+        .all()
+    )
+    return jsonify(
+        [
+            {
+                "id": r.id,
+                "name": r.name,
+                "updated_at": r.updated_at.isoformat() if r.updated_at else None,
+            }
+            for r in rows
+        ]
+    )
+
+
+
+@analytics_bp.get("/app/projection/scenarios/<int:scenario_id>")
+@login_required
+@require_feature("projection")
+def projection_scenarios_get(scenario_id: int):
+    sc = (
+        db.session.query(ProjectionScenario)
+        .filter(ProjectionScenario.id == scenario_id, ProjectionScenario.user_id == current_user.id)
+        .first()
+    )
+    if not sc:
+        return jsonify({"error": "Cenário não encontrado"}), 404
+    try:
+        overrides = json.loads(sc.data_json or "{}")
+    except Exception:
+        overrides = {}
+    return jsonify({"id": sc.id, "name": sc.name, "overrides": overrides, "updated_at": sc.updated_at.isoformat() if sc.updated_at else None})
+
+
+@analytics_bp.post("/app/projection/scenarios")
+@login_required
+@require_feature("projection")
+def projection_scenarios_create():
+    payload = request.get_json(silent=True) or {}
+    name = (payload.get("name") or "").strip()[:80]
+    if not name:
+        return jsonify({"error": "Nome do cenário é obrigatório"}), 400
+
+    overrides = payload.get("overrides") or {}
+    try:
+        data_json = json.dumps(overrides, ensure_ascii=False)
+    except Exception:
+        data_json = "{}"
+
+    sc = ProjectionScenario(user_id=current_user.id, name=name, data_json=data_json)
+    db.session.add(sc)
+    db.session.commit()
+    return jsonify({"ok": True, "id": sc.id})
+
+
+@analytics_bp.put("/app/projection/scenarios/<int:scenario_id>")
+@login_required
+@require_feature("projection")
+def projection_scenarios_update(scenario_id: int):
+    sc = (
+        db.session.query(ProjectionScenario)
+        .filter(ProjectionScenario.id == scenario_id, ProjectionScenario.user_id == current_user.id)
+        .first()
+    )
+    if not sc:
+        return jsonify({"error": "Cenário não encontrado"}), 404
+
+    payload = request.get_json(silent=True) or {}
+    name = (payload.get("name") or "").strip()[:80]
+    if name:
+        sc.name = name
+
+    overrides = payload.get("overrides")
+    if overrides is not None:
+        try:
+            sc.data_json = json.dumps(overrides, ensure_ascii=False)
+        except Exception:
+            pass
+
+    db.session.commit()
+    return jsonify({"ok": True})
+
+
+@analytics_bp.delete("/app/projection/scenarios/<int:scenario_id>")
+@login_required
+@require_feature("projection")
+def projection_scenarios_delete(scenario_id: int):
+    sc = (
+        db.session.query(ProjectionScenario)
+        .filter(ProjectionScenario.id == scenario_id, ProjectionScenario.user_id == current_user.id)
+        .first()
+    )
+    if not sc:
+        return jsonify({"error": "Cenário não encontrado"}), 404
+
+    db.session.delete(sc)
+    db.session.commit()
+    return jsonify({"ok": True})
+
+
+@analytics_bp.post("/app/projection/entry/<int:entrada_id>/priority")
+@login_required
+@require_feature("projection")
+def projection_entry_priority(entrada_id: int):
+    payload = request.get_json(silent=True) or {}
+    priority = str(payload.get("priority") or "media").strip().lower()
+    if priority not in {"alta", "media", "baixa"}:
+        priority = "media"
+
+    e = (
+        db.session.query(Entrada)
+        .filter(Entrada.id == entrada_id, Entrada.user_id == current_user.id)
+        .first()
+    )
+    if not e:
+        return jsonify({"error": "Entrada não encontrada"}), 404
+
+    e.priority = priority
+    db.session.commit()
+    return jsonify({"ok": True, "priority": priority})
 
 
 @analytics_bp.get("/app/reports")

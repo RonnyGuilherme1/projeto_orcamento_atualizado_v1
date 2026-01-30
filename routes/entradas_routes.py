@@ -130,6 +130,7 @@ def add():
         status=status,
         paid_at=paid_at,
         received_at=received_at,
+        priority=(payload.get('priority') or 'media'),
     )
 
     db.session.add(e)
@@ -174,6 +175,8 @@ def edit(entrada_id):
         e.metodo = metodo
     if "tags" in payload:
         e.tags = tags
+    if "priority" in payload:
+        e.priority = payload.get("priority") or e.priority
 
     if tipo == "receita":
         e.status = None
