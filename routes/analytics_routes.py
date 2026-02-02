@@ -1,12 +1,14 @@
 from __future__ import annotations
 
+import csv
+import io
 import json
 import unicodedata
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 
 from sqlalchemy import func
 
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, make_response
 from flask_login import login_required, current_user
 
 from models.extensions import db
@@ -42,6 +44,13 @@ CATEGORIAS = {
 }
 
 STATUS_PADROES = {"pago", "em_andamento", "nao_pago"}
+
+MODE_LABELS = {
+    "cash": "Caixa",
+    "accrual": "Competência",
+}
+
+DEFAULT_REPORT_SECTIONS = {"summary", "dre", "flow", "categories", "recurring", "pending"}
 
 MESES = [
     "Janeiro",
@@ -191,7 +200,28 @@ def _method_matches(value: str | None, allowed: set[str]) -> bool:
     # fallback: cartao conta como credito ou debito se filtrado
     if norm == "cartao" and ("credito" in allowed or "debito" in allowed):
         return True
+    if norm in {"credito", "debito"} and "cartao" in allowed:
+        return True
     return False
+
+
+METHOD_LABELS = {
+    "pix": "PIX",
+    "credito": "Crédito",
+    "debito": "Débito",
+    "dinheiro": "Dinheiro",
+    "boleto": "Boleto",
+    "cartao": "Cartão",
+}
+
+
+def _method_label(value: str | None) -> str:
+    if not value:
+        return ""
+    norm = _normalize_method(value)
+    if norm in METHOD_LABELS:
+        return METHOD_LABELS[norm]
+    return value.strip().title()
 
 
 def _parse_list_param(value: str | None) -> set[str]:
@@ -203,6 +233,10 @@ def _parse_list_param(value: str | None) -> set[str]:
         if item:
             items.add(item)
     return items
+
+
+def _format_period_label(start: date, end: date) -> str:
+    return f"{start.strftime('%d/%m/%Y')} - {end.strftime('%d/%m/%Y')}"
 
 
 def _resolve_report_period(period: str | None, start_str: str | None, end_str: str | None) -> tuple[date, date]:
@@ -945,25 +979,18 @@ def reports_page():
     return render_template("reports.html")
 
 
-@analytics_bp.get("/app/reports/data")
-@login_required
-@require_feature("reports")
-def reports_data():
-    blocked = _require_verified_json()
-    if blocked:
-        return blocked
-
-    period = (request.args.get("period") or "month").strip().lower()
-    mode = (request.args.get("mode") or "cash").strip().lower()
-    type_filter = (request.args.get("type") or "all").strip().lower()
-    status_filter = (request.args.get("status") or "all").strip().lower()
-
-    categories = _parse_list_param(request.args.get("categories"))
-    methods = _parse_list_param(request.args.get("methods"))
-
-    start, end = _resolve_report_period(
-        period, request.args.get("start"), request.args.get("end")
-    )
+def _build_reports_payload(
+    period: str,
+    mode: str,
+    type_filter: str,
+    status_filter: str,
+    categories: set[str],
+    methods: set[str],
+    start_str: str | None,
+    end_str: str | None,
+    flow_limit: int | None = 500,
+) -> dict:
+    start, end = _resolve_report_period(period, start_str, end_str)
     length_days = (end - start).days + 1
 
     entries = (
@@ -1126,7 +1153,7 @@ def reports_data():
     flow_items = sorted(period_items, key=lambda item: (item[1], item[0].id or 0))
     flow_rows = []
     running = balance_start
-    limit = 500
+    limit = flow_limit if flow_limit else len(flow_items)
     for entry, event_date in flow_items[:limit]:
         delta = _entry_amount(entry)
         running += delta
@@ -1135,7 +1162,7 @@ def reports_data():
                 "date": event_date.isoformat(),
                 "description": entry.descricao,
                 "category": CATEGORIAS.get(_normalize_categoria(entry.categoria), "Outros"),
-                "method": entry.metodo or "",
+                "method": _method_label(entry.metodo),
                 "income": round(float(entry.valor), 2) if entry.tipo == "receita" else 0.0,
                 "expense": round(float(entry.valor), 2) if entry.tipo == "despesa" else 0.0,
                 "balance": round(running, 2),
@@ -1230,6 +1257,10 @@ def reports_data():
             alerts.append("Despesas muito altas em relacao as receitas.")
         elif ratio >= 85:
             alerts.append("Despesas acima da media das receitas.")
+        if net_total < 0:
+            alerts.append("Resultado liquido negativo no periodo.")
+        elif income_total and economy_pct < 10:
+            alerts.append("Economia abaixo de 10% das receitas.")
         if category_rows:
             top_cat = category_rows[0]
             if top_cat["percent"] >= 35:
@@ -1239,50 +1270,306 @@ def reports_data():
         if pending_total > 0:
             alerts.append(f"{len(pending_items)} pendencias abertas no periodo.")
 
-    return jsonify(
-        {
-            "period": {"start": start.isoformat(), "end": end.isoformat()},
-            "summary": {
+    comparison_note = ""
+    prev_pct = pct_change(net_total, prev_net)
+    avg_pct = pct_change(net_total, avg_net)
+    if prev_pct is None:
+        comparison_note = "Sem base para comparar com o periodo anterior."
+    elif prev_pct >= 0:
+        comparison_note = "Resultado acima do periodo anterior."
+    else:
+        comparison_note = "Resultado abaixo do periodo anterior."
+    if avg_pct is not None and abs(avg_pct) >= 5:
+        comparison_note += " Comparado a media de 3 periodos, houve variacao relevante."
+
+    return {
+        "period": {"start": start.isoformat(), "end": end.isoformat()},
+        "summary": {
+            "income": round(income_total, 2),
+            "expense": round(expense_total, 2),
+            "net": round(net_total, 2),
+            "economy_pct": economy_pct,
+        },
+        "comparison": {
+            "prev_pct": prev_pct,
+            "avg_pct": avg_pct,
+            "note": comparison_note,
+        },
+        "health": {
+            "ratio": ratio,
+            "status": health_status,
+            "alerts": alerts[:3],
+        },
+        "pending": {
+            "count": len(pending_items),
+            "total": round(pending_total, 2),
+            "impact": impact_balance,
+            "overdue": overdue,
+            "due_7": due_7,
+            "items": pending_rows,
+        },
+        "dre": {
+            "rows": dre_rows,
+            "total": {
                 "income": round(income_total, 2),
                 "expense": round(expense_total, 2),
                 "net": round(net_total, 2),
-                "economy_pct": economy_pct,
             },
-            "comparison": {
-                "prev_pct": pct_change(net_total, prev_net),
-                "avg_pct": pct_change(net_total, avg_net),
-            },
-            "health": {
-                "ratio": ratio,
-                "status": health_status,
-                "alerts": alerts[:3],
-            },
-            "pending": {
-                "count": len(pending_items),
-                "total": round(pending_total, 2),
-                "impact": impact_balance,
-                "overdue": overdue,
-                "due_7": due_7,
-                "items": pending_rows,
-            },
-            "dre": {
-                "rows": dre_rows,
-                "total": {
-                    "income": round(income_total, 2),
-                    "expense": round(expense_total, 2),
-                    "net": round(net_total, 2),
-                },
-            },
-            "flow": {
-                "rows": flow_rows,
-                "final_balance": round(running, 2),
-            },
-            "categories": {
-                "rows": category_rows,
-            },
-            "recurring": {
-                "items": recurring_items,
-            },
-            "updated_at": date.today().isoformat(),
-        }
+        },
+        "flow": {
+            "rows": flow_rows,
+            "final_balance": round(running, 2),
+        },
+        "categories": {
+            "rows": category_rows,
+        },
+        "recurring": {
+            "items": recurring_items,
+        },
+        "updated_at": date.today().isoformat(),
+    }
+
+
+@analytics_bp.get("/app/reports/data")
+@login_required
+@require_feature("reports")
+def reports_data():
+    blocked = _require_verified_json()
+    if blocked:
+        return blocked
+
+    period = (request.args.get("period") or "month").strip().lower()
+    mode = (request.args.get("mode") or "cash").strip().lower()
+    type_filter = (request.args.get("type") or "all").strip().lower()
+    status_filter = (request.args.get("status") or "all").strip().lower()
+
+    categories = _parse_list_param(request.args.get("categories"))
+    methods = _parse_list_param(request.args.get("methods"))
+
+    payload = _build_reports_payload(
+        period=period,
+        mode=mode,
+        type_filter=type_filter,
+        status_filter=status_filter,
+        categories=categories,
+        methods=methods,
+        start_str=request.args.get("start"),
+        end_str=request.args.get("end"),
+        flow_limit=500,
     )
+    return jsonify(payload)
+
+
+@analytics_bp.get("/app/reports/export/pdf")
+@login_required
+@require_feature("reports")
+def reports_export_pdf():
+    blocked = _require_verified_json()
+    if blocked:
+        return blocked
+
+    period = (request.args.get("period") or "month").strip().lower()
+    mode = (request.args.get("mode") or "cash").strip().lower()
+    type_filter = (request.args.get("type") or "all").strip().lower()
+    status_filter = (request.args.get("status") or "all").strip().lower()
+    detail = (request.args.get("detail") or "resumido").strip().lower()
+    if detail not in {"resumido", "detalhado"}:
+        detail = "resumido"
+
+    categories = _parse_list_param(request.args.get("categories"))
+    methods = _parse_list_param(request.args.get("methods"))
+    sections = _parse_list_param(request.args.get("sections"))
+    if not sections:
+        sections = set(DEFAULT_REPORT_SECTIONS)
+
+    flow_limit = 120 if detail == "resumido" else 500
+    payload = _build_reports_payload(
+        period=period,
+        mode=mode,
+        type_filter=type_filter,
+        status_filter=status_filter,
+        categories=categories,
+        methods=methods,
+        start_str=request.args.get("start"),
+        end_str=request.args.get("end"),
+        flow_limit=flow_limit,
+    )
+
+    def fmt_brl(valor: float) -> str:
+        num = float(valor) if valor is not None else 0.0
+        return f"R$ {num:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+
+    def fmt_date(value: str | None) -> str:
+        if not value:
+            return ""
+        try:
+            return date.fromisoformat(value).strftime("%d/%m/%Y")
+        except Exception:
+            return value
+
+    def fmt_date(value: str | None) -> str:
+        if not value:
+            return "-"
+        try:
+            return date.fromisoformat(value).strftime("%d/%m/%Y")
+        except Exception:
+            return value
+
+    period_label = _format_period_label(
+        date.fromisoformat(payload["period"]["start"]),
+        date.fromisoformat(payload["period"]["end"]),
+    )
+    mode_label = MODE_LABELS.get(mode, mode.title())
+    auto_print = str(request.args.get("print") or "").lower() in {"1", "true", "yes"}
+
+    return render_template(
+        "reports_print.html",
+        data=payload,
+        sections=sections,
+        detail=detail,
+        period_label=period_label,
+        mode_label=mode_label,
+        generated_at=datetime.now().strftime("%d/%m/%Y %H:%M"),
+        user_name=(getattr(current_user, "full_name", None) or current_user.email),
+        auto_print=auto_print,
+        type_filter=type_filter,
+        status_filter=status_filter,
+        fmt_brl=fmt_brl,
+        fmt_date=fmt_date,
+    )
+
+
+@analytics_bp.get("/app/reports/export/excel")
+@login_required
+@require_feature("reports")
+def reports_export_excel():
+    blocked = _require_verified_json()
+    if blocked:
+        return blocked
+
+    period = (request.args.get("period") or "month").strip().lower()
+    mode = (request.args.get("mode") or "cash").strip().lower()
+    type_filter = (request.args.get("type") or "all").strip().lower()
+    status_filter = (request.args.get("status") or "all").strip().lower()
+    detail = (request.args.get("detail") or "detalhado").strip().lower()
+    if detail not in {"resumido", "detalhado"}:
+        detail = "detalhado"
+
+    categories = _parse_list_param(request.args.get("categories"))
+    methods = _parse_list_param(request.args.get("methods"))
+    sections = _parse_list_param(request.args.get("sections"))
+    if not sections:
+        sections = set(DEFAULT_REPORT_SECTIONS)
+
+    flow_limit = 500 if detail == "resumido" else None
+    payload = _build_reports_payload(
+        period=period,
+        mode=mode,
+        type_filter=type_filter,
+        status_filter=status_filter,
+        categories=categories,
+        methods=methods,
+        start_str=request.args.get("start"),
+        end_str=request.args.get("end"),
+        flow_limit=flow_limit,
+    )
+
+    def fmt_brl(valor: float) -> str:
+        num = float(valor) if valor is not None else 0.0
+        return f"R$ {num:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+
+    output = io.StringIO()
+    writer = csv.writer(output, delimiter=";")
+
+    period_label = _format_period_label(
+        date.fromisoformat(payload["period"]["start"]),
+        date.fromisoformat(payload["period"]["end"]),
+    )
+    writer.writerow(["Relatorio financeiro"])
+    writer.writerow(["Usuario", getattr(current_user, "full_name", None) or current_user.email])
+    writer.writerow(["Periodo", period_label])
+    writer.writerow(["Regime", MODE_LABELS.get(mode, mode.title())])
+    writer.writerow([])
+
+    if "summary" in sections:
+        writer.writerow(["Resumo executivo"])
+        writer.writerow(["Total receitas", fmt_brl(payload["summary"]["income"])])
+        writer.writerow(["Total despesas", fmt_brl(payload["summary"]["expense"])])
+        writer.writerow(["Resultado liquido", fmt_brl(payload["summary"]["net"])])
+        writer.writerow(["% economia", f"{payload['summary']['economy_pct']}%"])
+        writer.writerow([])
+
+    if "dre" in sections:
+        writer.writerow(["DRE"])
+        writer.writerow(["Categoria", "Receitas", "Despesas", "Resultado"])
+        for row in payload["dre"]["rows"]:
+            writer.writerow([
+                row["label"],
+                fmt_brl(row["income"]),
+                fmt_brl(row["expense"]),
+                fmt_brl(row["net"]),
+            ])
+        writer.writerow([
+            "Resultado total",
+            fmt_brl(payload["dre"]["total"]["income"]),
+            fmt_brl(payload["dre"]["total"]["expense"]),
+            fmt_brl(payload["dre"]["total"]["net"]),
+        ])
+        writer.writerow([])
+
+    if "flow" in sections:
+        writer.writerow(["Fluxo de caixa"])
+        writer.writerow(["Data", "Descricao", "Categoria", "Metodo", "Entrada", "Saida", "Saldo"])
+        for row in payload["flow"]["rows"]:
+            writer.writerow([
+                fmt_date(row["date"]),
+                row["description"],
+                row["category"],
+                row["method"],
+                fmt_brl(row["income"]) if row["income"] else "",
+                fmt_brl(row["expense"]) if row["expense"] else "",
+                fmt_brl(row["balance"]),
+            ])
+        writer.writerow(["Saldo final", "", "", "", "", "", fmt_brl(payload["flow"]["final_balance"])])
+        writer.writerow([])
+
+    if "categories" in sections:
+        writer.writerow(["Categorias"])
+        writer.writerow(["Categoria", "Total", "%", "Variacao"])
+        for row in payload["categories"]["rows"]:
+            writer.writerow([
+                row["label"],
+                fmt_brl(row["total"]),
+                f"{row['percent']}%",
+                f"{row['delta']}%" if row.get("delta") is not None else "",
+            ])
+        writer.writerow([])
+
+    if "recurring" in sections:
+        writer.writerow(["Recorrencias (receitas)"])
+        writer.writerow(["Nome", "Frequencia", "Valor medio", "Confiabilidade"])
+        for item in payload["recurring"]["items"]:
+            writer.writerow([
+                item["name"],
+                item["frequency"],
+                fmt_brl(item["value"]),
+                f"{item['reliability']}%",
+            ])
+        writer.writerow([])
+
+    if "pending" in sections:
+        writer.writerow(["Pendencias"])
+        writer.writerow(["Vencimento", "Descricao", "Categoria", "Valor", "Dias atraso"])
+        for item in payload["pending"]["items"]:
+            writer.writerow([
+                fmt_date(item["date"]),
+                item["description"],
+                item["category"],
+                fmt_brl(item["value"]),
+                item["days_overdue"],
+            ])
+
+    response = make_response(output.getvalue())
+    response.headers["Content-Disposition"] = "attachment; filename=relatorio_financeiro.csv"
+    response.headers["Content-Type"] = "text/csv; charset=utf-8"
+    return response

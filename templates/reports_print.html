@@ -1,0 +1,217 @@
+﻿<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Relatorio financeiro</title>
+  <link rel="stylesheet" href="/static/css/reports_print.css" />
+</head>
+<body>
+  <div class="print-page">
+    <header class="print-header">
+      <img class="print-logo" src="{{ url_for('static', filename='img/logo-recorte2.png') }}" alt="Logo" />
+      <div class="print-title">
+        <h1>Relatorio financeiro</h1>
+        <div class="print-meta">
+          <span>Usuario: {{ user_name }}</span>
+          <span>Periodo: {{ period_label }}</span>
+          <span>Regime: {{ mode_label }}</span>
+          <span>Gerado em: {{ generated_at }}</span>
+        </div>
+        <div class="print-filters">
+          <span>Tipo: {{ 'Ambos' if type_filter == 'all' else ('Receitas' if type_filter == 'income' else 'Despesas') }}</span>
+          <span>Status: {{ 'Todos' if status_filter == 'all' else ('Pago/Recebido' if status_filter == 'paid' else 'Pendente') }}</span>
+        </div>
+      </div>
+    </header>
+
+    {% if 'summary' in sections %}
+      <section class="print-section">
+        <h2>Resumo executivo</h2>
+        <div class="summary-grid">
+          <div class="summary-card">
+            <span>Total receitas</span>
+            <strong>{{ fmt_brl(data.summary.income) }}</strong>
+          </div>
+          <div class="summary-card">
+            <span>Total despesas</span>
+            <strong>{{ fmt_brl(data.summary.expense) }}</strong>
+          </div>
+          <div class="summary-card">
+            <span>Resultado liquido</span>
+            <strong>{{ fmt_brl(data.summary.net) }}</strong>
+          </div>
+          <div class="summary-card">
+            <span>% economia</span>
+            <strong>{{ data.summary.economy_pct }}%</strong>
+          </div>
+        </div>
+        <div class="summary-note">
+          {{ data.comparison.note }}
+        </div>
+      </section>
+    {% endif %}
+
+    {% if 'dre' in sections %}
+      <section class="print-section">
+        <h2>DRE</h2>
+        <table class="print-table">
+          <thead>
+            <tr>
+              <th>Categoria</th>
+              <th>Receitas</th>
+              <th>Despesas</th>
+              <th>Resultado</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in data.dre.rows %}
+              <tr>
+                <td>{{ row.label }}</td>
+                <td>{{ fmt_brl(row.income) }}</td>
+                <td>{{ fmt_brl(row.expense) }}</td>
+                <td>{{ fmt_brl(row.net) }}</td>
+              </tr>
+            {% endfor %}
+            <tr class="total">
+              <td>Resultado total</td>
+              <td>{{ fmt_brl(data.dre.total.income) }}</td>
+              <td>{{ fmt_brl(data.dre.total.expense) }}</td>
+              <td>{{ fmt_brl(data.dre.total.net) }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+    {% endif %}
+
+    {% if 'flow' in sections %}
+      <section class="print-section">
+        <h2>Fluxo de caixa {% if detail == 'resumido' %}(resumido){% endif %}</h2>
+        <table class="print-table">
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>Descricao</th>
+              <th>Categoria</th>
+              <th>Metodo</th>
+              <th>Entrada</th>
+              <th>Saida</th>
+              <th>Saldo</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in data.flow.rows %}
+              <tr>
+                <td>{{ fmt_date(row.date) }}</td>
+                <td>{{ row.description }}</td>
+                <td>{{ row.category }}</td>
+                <td>{{ row.method }}</td>
+                <td>{{ fmt_brl(row.income) if row.income else '-' }}</td>
+                <td>{{ fmt_brl(row.expense) if row.expense else '-' }}</td>
+                <td>{{ fmt_brl(row.balance) }}</td>
+              </tr>
+            {% endfor %}
+            <tr class="total">
+              <td colspan="6">Saldo final</td>
+              <td>{{ fmt_brl(data.flow.final_balance) }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+    {% endif %}
+
+    {% if 'categories' in sections %}
+      <section class="print-section">
+        <h2>Categorias</h2>
+        <table class="print-table">
+          <thead>
+            <tr>
+              <th>Categoria</th>
+              <th>Total</th>
+              <th>%</th>
+              <th>Variacao</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in data.categories.rows %}
+              <tr>
+                <td>{{ row.label }}</td>
+                <td>{{ fmt_brl(row.total) }}</td>
+                <td>{{ row.percent }}%</td>
+                <td>{% if row.delta is not none %}{{ row.delta }}%{% else %}-{% endif %}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </section>
+    {% endif %}
+
+    {% if 'recurring' in sections %}
+      <section class="print-section">
+        <h2>Recorrencias</h2>
+        <table class="print-table">
+          <thead>
+            <tr>
+              <th>Nome</th>
+              <th>Frequencia</th>
+              <th>Valor medio</th>
+              <th>Confiabilidade</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in data.recurring.items %}
+              <tr>
+                <td>{{ item.name }}</td>
+                <td>{{ item.frequency }}</td>
+                <td>{{ fmt_brl(item.value) }}</td>
+                <td>{{ item.reliability }}%</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </section>
+    {% endif %}
+
+    {% if 'pending' in sections %}
+      <section class="print-section">
+        <h2>Pendencias</h2>
+        <table class="print-table">
+          <thead>
+            <tr>
+              <th>Vencimento</th>
+              <th>Descricao</th>
+              <th>Categoria</th>
+              <th>Valor</th>
+              <th>Dias atraso</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in data.pending.items %}
+              <tr>
+                <td>{{ fmt_date(item.date) }}</td>
+                <td>{{ item.description }}</td>
+                <td>{{ item.category }}</td>
+                <td>{{ fmt_brl(item.value) }}</td>
+                <td>{{ item.days_overdue }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </section>
+    {% endif %}
+
+    <footer class="print-footer">
+      <span>Relatorio oficial gerado pelo sistema.</span>
+      <span>Pagina <span class="pageNumber"></span> de <span class="totalPages"></span></span>
+    </footer>
+  </div>
+
+  {% if auto_print %}
+  <script>
+    window.addEventListener("load", () => {
+      window.print();
+    });
+  </script>
+  {% endif %}
+</body>
+</html>

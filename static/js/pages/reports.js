@@ -1,4 +1,4 @@
-(function () {
+ï»¿(function () {
   const page = document.querySelector("[data-reports-page]");
   if (!page) return;
 
@@ -55,27 +55,27 @@
 
   function fmtBRL(valor) {
     const num = Number(valor);
-    if (!Number.isFinite(num)) return "R$ —";
+    if (!Number.isFinite(num)) return "R$ â€”";
     return num.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
   }
 
   function fmtPct(valor) {
     const num = Number(valor);
-    if (!Number.isFinite(num)) return "—";
+    if (!Number.isFinite(num)) return "â€”";
     return `${num.toFixed(1).replace(".", ",")}%`;
   }
 
   function fmtPctSigned(valor) {
     const num = Number(valor);
-    if (!Number.isFinite(num)) return "—";
+    if (!Number.isFinite(num)) return "â€”";
     const sign = num >= 0 ? "+" : "";
     return `${sign}${num.toFixed(1).replace(".", ",")}%`;
   }
 
   function fmtDate(iso) {
-    if (!iso) return "—";
+    if (!iso) return "â€”";
     const dt = new Date(iso);
-    if (Number.isNaN(dt.getTime())) return "—";
+    if (Number.isNaN(dt.getTime())) return "â€”";
     return dt.toLocaleDateString("pt-BR");
   }
 
@@ -108,7 +108,7 @@
       .filter(Boolean);
   }
 
-  function buildQuery() {
+  function buildQueryParams() {
     const params = new URLSearchParams();
     if (periodSelect?.value) params.set("period", periodSelect.value);
     if (modeSelect?.value) params.set("mode", modeSelect.value);
@@ -126,7 +126,11 @@
     const methods = getSelectedValues(methodSelect);
     if (methods.length) params.set("methods", methods.join(","));
 
-    return params.toString();
+    return params;
+  }
+
+  function buildQuery() {
+    return buildQueryParams().toString();
   }
 
   function renderSummary(data) {
@@ -167,14 +171,14 @@
     }
 
     if (summaryEls.healthIndex) summaryEls.healthIndex.textContent = fmtPct(health.ratio);
-    if (summaryEls.healthStatus) summaryEls.healthStatus.textContent = health.status || "—";
+    if (summaryEls.healthStatus) summaryEls.healthStatus.textContent = health.status || "â€”";
 
     if (summaryEls.alerts) {
       const alerts = Array.isArray(health.alerts) && health.alerts.length ? health.alerts : ["Sem alertas relevantes."];
       summaryEls.alerts.innerHTML = alerts.map(item => `<li>${escapeHtml(item)}</li>`).join("");
     }
 
-    if (summaryEls.pendingCount) summaryEls.pendingCount.textContent = String(pending.count ?? "—");
+    if (summaryEls.pendingCount) summaryEls.pendingCount.textContent = String(pending.count ?? "â€”");
     if (summaryEls.pendingTotal) summaryEls.pendingTotal.textContent = fmtBRL(pending.total);
     if (summaryEls.pendingImpact) {
       summaryEls.pendingImpact.textContent = `Saldo se pagar tudo hoje: ${fmtBRL(pending.impact)}`;
@@ -226,9 +230,9 @@
           <td>${fmtDate(row.date)}</td>
           <td>${escapeHtml(row.description)}</td>
           <td>${escapeHtml(row.category)}</td>
-          <td>${escapeHtml(row.method || "—")}</td>
-          <td>${row.income ? fmtBRL(row.income) : "—"}</td>
-          <td>${row.expense ? fmtBRL(row.expense) : "—"}</td>
+          <td>${escapeHtml(row.method || "â€”")}</td>
+          <td>${row.income ? fmtBRL(row.income) : "â€”"}</td>
+          <td>${row.expense ? fmtBRL(row.expense) : "â€”"}</td>
           <td>${fmtBRL(row.balance)}</td>
         </tr>
       `;
@@ -249,7 +253,7 @@
     if (!categoryChart || !categoryBody) return;
     const rows = data?.categories?.rows || [];
     if (!rows.length) {
-      categoryChart.innerHTML = `<div class="category-bar" style="--pct: 0"><span>Sem dados</span><strong>—</strong></div>`;
+      categoryChart.innerHTML = `<div class="category-bar" style="--pct: 0"><span>Sem dados</span><strong>â€”</strong></div>`;
       categoryBody.innerHTML = `<tr><td colspan="4">Sem dados no periodo.</td></tr>`;
       return;
     }
@@ -264,7 +268,7 @@
     }).join("");
 
     categoryBody.innerHTML = rows.map(row => {
-      const delta = Number.isFinite(Number(row.delta)) ? fmtPctSigned(row.delta) : "—";
+      const delta = Number.isFinite(Number(row.delta)) ? fmtPctSigned(row.delta) : "â€”";
       return `
         <tr>
           <td>${escapeHtml(row.label)}</td>
@@ -288,7 +292,7 @@
       return `
         <article class="recurring-card">
           <h5>${escapeHtml(item.name)}</h5>
-          <p>${escapeHtml(item.frequency)} • Valor medio ${fmtBRL(item.value)}</p>
+          <p>${escapeHtml(item.frequency)} â€¢ Valor medio ${fmtBRL(item.value)}</p>
           <span class="recurring-badge">Confiabilidade ${fmtPct(item.reliability)}</span>
         </article>
       `;
@@ -301,8 +305,8 @@
     const items = pending.items || [];
 
     pendingSummary.innerHTML = `
-      <li>Vencidas: ${pending.overdue ?? "—"}</li>
-      <li>Vencem em 7 dias: ${pending.due_7 ?? "—"}</li>
+      <li>Vencidas: ${pending.overdue ?? "â€”"}</li>
+      <li>Vencem em 7 dias: ${pending.due_7 ?? "â€”"}</li>
       <li>Impacto no saldo: ${fmtBRL(pending.impact)}</li>
     `;
 
@@ -545,40 +549,40 @@
     });
   }
 
-  function exportCsv(rows) {
-    if (!rows || !rows.length) return;
-    const header = ["Data", "Descricao", "Categoria", "Metodo", "Entrada", "Saida", "Saldo"];
-    const lines = rows.map(row => {
-      return [
-        fmtDate(row.date),
-        row.description || "",
-        row.category || "",
-        row.method || "",
-        row.income ? row.income : "",
-        row.expense ? row.expense : "",
-        row.balance
-      ].map(value => `"${String(value).replace(/\"/g, '""')}"`).join(",");
+  function getExportOptions() {
+    const sections = [];
+    page.querySelectorAll("[data-export-section]").forEach(input => {
+      if (input.checked) sections.push(input.dataset.exportSection);
     });
-    const csv = [header.join(","), ...lines].join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "relatorio_fluxo_caixa.csv";
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    URL.revokeObjectURL(url);
+    const detail = document.getElementById("report-export-detail")?.value || "resumido";
+    return { sections, detail };
   }
 
   function handleExport(action) {
-    if (action === "print" || action === "pdf") {
-      window.print();
+    const params = buildQueryParams();
+    const options = getExportOptions();
+    if (options.sections.length) {
+      params.set("sections", options.sections.join(","));
+    }
+    if (options.detail) params.set("detail", options.detail);
+
+    let url = "";
+    if (action === "excel") {
+      url = `/app/reports/export/excel?${params.toString()}`;
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
       return;
     }
-    if (action === "excel") {
-      exportCsv(lastData?.flow?.rows || []);
+
+    if (action === "print") {
+      params.set("print", "1");
     }
+    url = `/app/reports/export/pdf?${params.toString()}`;
+    window.open(url, "_blank");
   }
 
   const controls = page.querySelectorAll(".reports-filters .control, .reports-range .control");

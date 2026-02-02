@@ -77,6 +77,7 @@
           <span class="field-label">Método</span>
           <select id="reports-method" class="control" multiple>
             <option value="pix">PIX</option>
+            <option value="cartao">Cartão</option>
             <option value="credito">Crédito</option>
             <option value="debito">Débito</option>
             <option value="dinheiro">Dinheiro</option>
@@ -202,7 +203,7 @@
                 <h4>DRE pessoal (Demonstrativo)</h4>
                 <p>Consolidação de receitas e despesas por categoria.</p>
               </div>
-              <button class="btn-secondary" type="button">Exportar PDF</button>
+              <button class="btn-secondary" type="button" data-export="pdf">Exportar PDF</button>
             </div>
             <table class="report-table">
               <thead>
@@ -223,7 +224,7 @@
                 <h4>Fluxo de caixa detalhado</h4>
                 <p>Timeline completa com saldo acumulado.</p>
               </div>
-              <button class="btn-secondary" type="button">Exportar Excel</button>
+              <button class="btn-secondary" type="button" data-export="excel">Exportar Excel</button>
             </div>
             <table class="report-table">
               <thead>
@@ -316,19 +317,19 @@
         </div>
         <div class="export-grid">
           <div class="export-options">
-            <label class="check-row"><input type="checkbox" checked /> Resumo executivo</label>
-            <label class="check-row"><input type="checkbox" checked /> DRE</label>
-            <label class="check-row"><input type="checkbox" checked /> Fluxo de caixa</label>
-            <label class="check-row"><input type="checkbox" /> Categorias</label>
-            <label class="check-row"><input type="checkbox" /> Recorrências</label>
-            <label class="check-row"><input type="checkbox" /> Pendências</label>
+            <label class="check-row"><input type="checkbox" data-export-section="summary" checked /> Resumo executivo</label>
+            <label class="check-row"><input type="checkbox" data-export-section="dre" checked /> DRE</label>
+            <label class="check-row"><input type="checkbox" data-export-section="flow" checked /> Fluxo de caixa</label>
+            <label class="check-row"><input type="checkbox" data-export-section="categories" /> Categorias</label>
+            <label class="check-row"><input type="checkbox" data-export-section="recurring" /> Recorrências</label>
+            <label class="check-row"><input type="checkbox" data-export-section="pending" /> Pendências</label>
           </div>
           <div class="export-details">
             <label class="field">
               <span class="field-label">Detalhamento</span>
-              <select class="control">
-                <option>Resumido</option>
-                <option>Detalhado</option>
+              <select class="control" id="report-export-detail">
+                <option value="resumido">Resumido</option>
+                <option value="detalhado">Detalhado</option>
               </select>
             </label>
             <div class="export-actions">
