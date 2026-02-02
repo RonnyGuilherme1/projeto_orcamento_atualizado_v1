@@ -1425,14 +1425,6 @@ def reports_export_pdf():
 
     def fmt_date(value: str | None) -> str:
         if not value:
-            return ""
-        try:
-            return date.fromisoformat(value).strftime("%d/%m/%Y")
-        except Exception:
-            return value
-
-    def fmt_date(value: str | None) -> str:
-        if not value:
             return "-"
         try:
             return date.fromisoformat(value).strftime("%d/%m/%Y")
@@ -1501,6 +1493,14 @@ def reports_export_excel():
     def fmt_brl(valor: float) -> str:
         num = float(valor) if valor is not None else 0.0
         return f"R$ {num:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+
+    def fmt_date(value: str | None) -> str:
+        if not value:
+            return ""
+        try:
+            return date.fromisoformat(value).strftime("%d/%m/%Y")
+        except Exception:
+            return value
 
     try:
         from openpyxl import Workbook
