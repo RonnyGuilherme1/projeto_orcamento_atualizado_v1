@@ -65,7 +65,7 @@
 
 .projection-controls{
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 12px;
   margin-top: 10px;
 }
@@ -85,6 +85,10 @@
   border: 1px solid rgba(255,255,255,0.10);
   background: rgba(255,255,255,0.04);
   border-radius: 14px;
+}
+
+.projection-toggle{
+  grid-column: 1 / -1;
 }
 
 .projection-toggle input[type="checkbox"]{
@@ -150,7 +154,7 @@
 .projection-grid{
   display: grid;
   gap: 18px;
-  grid-template-columns: minmax(0, 2.2fr) minmax(0, 1fr);
+  grid-template-columns: 1fr;
   align-items: start;
 }
 
@@ -158,16 +162,8 @@
   grid-column: 1 / -1;
 }
 
-.projection-timeline,
-.projection-calendar{
-  grid-column: 1 / 2;
-}
-
-.projection-coverage,
-.projection-risk,
-.projection-overrides,
-.projection-simulators{
-  grid-column: 2 / 3;
+.projection-grid > .panel{
+  grid-column: 1 / -1;
 }
 
 .kpi-grid{
@@ -329,6 +325,11 @@
   font-size: 13px;
   vertical-align: top;
   white-space: nowrap;
+}
+
+.timeline-table tbody td:nth-child(2){
+  white-space: normal;
+  max-width: 260px;
 }
 
 .timeline-table tbody tr:hover{
