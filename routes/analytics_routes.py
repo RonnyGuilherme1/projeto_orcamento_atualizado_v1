@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import unicodedata
 from datetime import date, timedelta
 
 from sqlalchemy import func
@@ -11,6 +12,7 @@ from flask_login import login_required, current_user
 from models.extensions import db
 from models.entrada_model import Entrada
 from models.projection_scenario_model import ProjectionScenario
+from models.recurrence_model import Recurrence, RecurrenceExecution
 from services.projection_engine import compute_projection
 from services.plans import PLANS, is_valid_plan
 from services.feature_gate import require_feature
@@ -155,6 +157,136 @@ def _summary_for_period(start: date, end: date) -> dict:
         "top_entries": [_entry_payload(item) for item in top_receitas]
         + [_entry_payload(item) for item in top_despesas],
     }
+
+
+def _normalize_text(value: str | None) -> str:
+    text = (value or "").strip().lower()
+    if not text:
+        return ""
+    text = "".join(
+        char for char in unicodedata.normalize("NFD", text) if unicodedata.category(char) != "Mn"
+    )
+    return text
+
+
+def _normalize_method(value: str | None) -> str:
+    text = _normalize_text(value)
+    if "cart" in text:
+        if "deb" in text:
+            return "debito"
+        if "cred" in text:
+            return "credito"
+        return "cartao"
+    return text
+
+
+def _method_matches(value: str | None, allowed: set[str]) -> bool:
+    if not allowed:
+        return True
+    norm = _normalize_method(value)
+    if not norm:
+        return False
+    if norm in allowed:
+        return True
+    # fallback: cartao conta como credito ou debito se filtrado
+    if norm == "cartao" and ("credito" in allowed or "debito" in allowed):
+        return True
+    return False
+
+
+def _parse_list_param(value: str | None) -> set[str]:
+    if not value:
+        return set()
+    items = set()
+    for part in value.split(","):
+        item = _normalize_text(part)
+        if item:
+            items.add(item)
+    return items
+
+
+def _resolve_report_period(period: str | None, start_str: str | None, end_str: str | None) -> tuple[date, date]:
+    today = date.today()
+    period = (period or "month").strip().lower()
+
+    if period == "30":
+        start = today - timedelta(days=29)
+        end = today
+    elif period == "quarter":
+        quarter = (today.month - 1) // 3
+        start_month = quarter * 3 + 1
+        start = date(today.year, start_month, 1)
+        end = last_day_of_month(date(today.year, start_month + 2, 1))
+    elif period == "year":
+        start = date(today.year, 1, 1)
+        end = date(today.year, 12, 31)
+    elif period == "custom":
+        start = _parse_iso_date(start_str) or date(today.year, today.month, 1)
+        end = _parse_iso_date(end_str) or last_day_of_month(start)
+    else:
+        start = date(today.year, today.month, 1)
+        end = last_day_of_month(start)
+
+    if end < start:
+        start, end = end, start
+    return start, end
+
+
+def _entry_event_date(entry: Entrada, mode: str) -> date | None:
+    if mode == "cash":
+        if entry.tipo == "receita":
+            return entry.received_at
+        return entry.paid_at
+    return entry.data
+
+
+def _entry_amount(entry: Entrada) -> float:
+    value = float(entry.valor or 0.0)
+    return value if entry.tipo == "receita" else -value
+
+
+def _filter_entries_for_period(
+    entries: list[Entrada],
+    start: date,
+    end: date,
+    mode: str,
+    type_filter: str,
+    status_filter: str,
+    categories: set[str],
+    methods: set[str],
+) -> list[tuple[Entrada, date]]:
+    items: list[tuple[Entrada, date]] = []
+    for entry in entries:
+        if type_filter == "income" and entry.tipo != "receita":
+            continue
+        if type_filter == "expense" and entry.tipo != "despesa":
+            continue
+
+        event_date = _entry_event_date(entry, mode)
+        if not event_date:
+            continue
+
+        if event_date < start or event_date > end:
+            continue
+
+        if categories:
+            cat = _normalize_categoria(getattr(entry, "categoria", None))
+            if cat not in categories:
+                continue
+
+        if not _method_matches(getattr(entry, "metodo", None), methods):
+            continue
+
+        status = (entry.status or "").strip().lower()
+        if status_filter == "paid":
+            if status not in {"pago", "recebido"}:
+                continue
+        elif status_filter == "pending":
+            if status in {"pago", "recebido"}:
+                continue
+
+        items.append((entry, event_date))
+    return items
 
 
 def _history_from_orders(orders):
@@ -811,3 +943,346 @@ def projection_entry_priority(entrada_id: int):
 @require_feature("reports")
 def reports_page():
     return render_template("reports.html")
+
+
+@analytics_bp.get("/app/reports/data")
+@login_required
+@require_feature("reports")
+def reports_data():
+    blocked = _require_verified_json()
+    if blocked:
+        return blocked
+
+    period = (request.args.get("period") or "month").strip().lower()
+    mode = (request.args.get("mode") or "cash").strip().lower()
+    type_filter = (request.args.get("type") or "all").strip().lower()
+    status_filter = (request.args.get("status") or "all").strip().lower()
+
+    categories = _parse_list_param(request.args.get("categories"))
+    methods = _parse_list_param(request.args.get("methods"))
+
+    start, end = _resolve_report_period(
+        period, request.args.get("start"), request.args.get("end")
+    )
+    length_days = (end - start).days + 1
+
+    entries = (
+        Entrada.query
+        .filter(Entrada.user_id == current_user.id)
+        .all()
+    )
+
+    def matches_filters(entry: Entrada, include_status: bool = True) -> bool:
+        if type_filter == "income" and entry.tipo != "receita":
+            return False
+        if type_filter == "expense" and entry.tipo != "despesa":
+            return False
+
+        if categories:
+            cat = _normalize_categoria(getattr(entry, "categoria", None))
+            if cat not in categories:
+                return False
+
+        if not _method_matches(getattr(entry, "metodo", None), methods):
+            return False
+
+        if include_status:
+            status = (entry.status or "").strip().lower()
+            if status_filter == "paid" and status not in {"pago", "recebido"}:
+                return False
+            if status_filter == "pending" and status in {"pago", "recebido"}:
+                return False
+
+        return True
+
+    filtered_all: list[tuple[Entrada, date]] = []
+    for entry in entries:
+        event_date = _entry_event_date(entry, mode)
+        if not event_date:
+            continue
+        if not matches_filters(entry):
+            continue
+        filtered_all.append((entry, event_date))
+
+    period_items = [
+        (entry, event_date)
+        for entry, event_date in filtered_all
+        if start <= event_date <= end
+    ]
+
+    prev_end = start - timedelta(days=1)
+    prev_start = prev_end - timedelta(days=length_days - 1)
+    prev_items = [
+        (entry, event_date)
+        for entry, event_date in filtered_all
+        if prev_start <= event_date <= prev_end
+    ]
+
+    def totals(items: list[tuple[Entrada, date]]) -> tuple[float, float, float]:
+        income = sum(float(e.valor) for e, _ in items if e.tipo == "receita")
+        expense = sum(float(e.valor) for e, _ in items if e.tipo == "despesa")
+        net = income - expense
+        return income, expense, net
+
+    income_total, expense_total, net_total = totals(period_items)
+    prev_income, prev_expense, prev_net = totals(prev_items)
+
+    avg_net_values: list[float] = []
+    for i in range(1, 4):
+        end_i = start - timedelta(days=length_days * i)
+        start_i = end_i - timedelta(days=length_days - 1)
+        items_i = [
+            (entry, event_date)
+            for entry, event_date in filtered_all
+            if start_i <= event_date <= end_i
+        ]
+        _, _, net_i = totals(items_i)
+        avg_net_values.append(net_i)
+
+    avg_net = sum(avg_net_values) / len(avg_net_values) if avg_net_values else 0.0
+
+    def pct_change(current: float, base: float) -> float | None:
+        if not base:
+            return None
+        return round(((current - base) / abs(base)) * 100, 1)
+
+    economy_pct = round((net_total / income_total) * 100, 1) if income_total else 0.0
+
+    ratio = round((expense_total / income_total) * 100, 1) if income_total else 0.0
+    if ratio <= 70:
+        health_status = "Equilibrio"
+    elif ratio <= 90:
+        health_status = "Atencao"
+    else:
+        health_status = "Critico"
+
+    # Categorias (despesas)
+    expense_by_cat: dict[str, float] = {key: 0.0 for key in CATEGORIAS}
+    for entry, _ in period_items:
+        if entry.tipo != "despesa":
+            continue
+        cat = _normalize_categoria(getattr(entry, "categoria", None))
+        expense_by_cat[cat] = expense_by_cat.get(cat, 0.0) + float(entry.valor)
+
+    prev_expense_by_cat: dict[str, float] = {key: 0.0 for key in CATEGORIAS}
+    for entry, _ in prev_items:
+        if entry.tipo != "despesa":
+            continue
+        cat = _normalize_categoria(getattr(entry, "categoria", None))
+        prev_expense_by_cat[cat] = prev_expense_by_cat.get(cat, 0.0) + float(entry.valor)
+
+    category_rows = []
+    for key, total in expense_by_cat.items():
+        if total <= 0:
+            continue
+        percent = (total / expense_total * 100) if expense_total else 0.0
+        prev_total = prev_expense_by_cat.get(key, 0.0)
+        delta = pct_change(total, prev_total)
+        label = CATEGORIAS.get(key, key.title())
+        category_rows.append(
+            {
+                "key": key,
+                "label": label,
+                "total": round(total, 2),
+                "percent": round(percent, 1),
+                "delta": delta,
+            }
+        )
+
+    category_rows.sort(key=lambda item: item["total"], reverse=True)
+
+    # DRE
+    dre_map: dict[str, dict] = {}
+    for entry, _ in period_items:
+        cat = _normalize_categoria(getattr(entry, "categoria", None))
+        label = CATEGORIAS.get(cat, cat.title())
+        if cat not in dre_map:
+            dre_map[cat] = {"label": label, "income": 0.0, "expense": 0.0}
+        if entry.tipo == "receita":
+            dre_map[cat]["income"] += float(entry.valor)
+        elif entry.tipo == "despesa":
+            dre_map[cat]["expense"] += float(entry.valor)
+
+    dre_rows = []
+    for _, row in dre_map.items():
+        income = float(row["income"])
+        expense = float(row["expense"])
+        dre_rows.append(
+            {
+                "label": row["label"],
+                "income": round(income, 2),
+                "expense": round(expense, 2),
+                "net": round(income - expense, 2),
+            }
+        )
+    dre_rows.sort(key=lambda item: abs(item["net"]), reverse=True)
+
+    # Fluxo de caixa
+    balance_start = 0.0
+    for entry, event_date in filtered_all:
+        if event_date < start:
+            balance_start += _entry_amount(entry)
+
+    flow_items = sorted(period_items, key=lambda item: (item[1], item[0].id or 0))
+    flow_rows = []
+    running = balance_start
+    limit = 500
+    for entry, event_date in flow_items[:limit]:
+        delta = _entry_amount(entry)
+        running += delta
+        flow_rows.append(
+            {
+                "date": event_date.isoformat(),
+                "description": entry.descricao,
+                "category": CATEGORIAS.get(_normalize_categoria(entry.categoria), "Outros"),
+                "method": entry.metodo or "",
+                "income": round(float(entry.valor), 2) if entry.tipo == "receita" else 0.0,
+                "expense": round(float(entry.valor), 2) if entry.tipo == "despesa" else 0.0,
+                "balance": round(running, 2),
+            }
+        )
+
+    # Pendencias
+    pending_items = []
+    if type_filter != "income" and status_filter != "paid":
+        for entry in entries:
+            if entry.tipo != "despesa":
+                continue
+            if (entry.status or "").strip().lower() == "pago":
+                continue
+            if not matches_filters(entry, include_status=False):
+                continue
+            if not entry.data:
+                continue
+            if entry.data < start or entry.data > end:
+                continue
+            pending_items.append(entry)
+
+    pending_total = sum(float(e.valor) for e in pending_items)
+    today = date.today()
+    overdue = sum(1 for e in pending_items if e.data and e.data < today)
+    due_7 = sum(1 for e in pending_items if e.data and today <= e.data <= today + timedelta(days=7))
+
+    cash_items = _filter_entries_for_period(
+        entries,
+        start,
+        end,
+        "cash",
+        type_filter,
+        status_filter,
+        categories,
+        methods,
+    )
+    cash_net = sum(_entry_amount(entry) for entry, _ in cash_items)
+    impact_balance = round(cash_net - pending_total, 2)
+
+    pending_rows = []
+    for entry in pending_items:
+        days_overdue = (today - entry.data).days if entry.data and entry.data < today else 0
+        pending_rows.append(
+            {
+                "date": entry.data.isoformat() if entry.data else None,
+                "description": entry.descricao,
+                "category": CATEGORIAS.get(_normalize_categoria(entry.categoria), "Outros"),
+                "value": round(float(entry.valor), 2),
+                "days_overdue": days_overdue,
+            }
+        )
+
+    # Recorrencias (receitas)
+    recurrences = (
+        Recurrence.query
+        .filter(Recurrence.user_id == current_user.id, Recurrence.tipo == "receita")
+        .all()
+    )
+    recurring_items = []
+    for rec in recurrences:
+        exec_count = (
+            RecurrenceExecution.query
+            .filter(RecurrenceExecution.user_id == current_user.id, RecurrenceExecution.recurrence_id == rec.id)
+            .count()
+        )
+        reliability = min(95, 50 + (exec_count * 5)) if rec.is_enabled else 50
+        frequency = rec.frequency or "mensal"
+        if frequency == "monthly":
+            frequency_label = "Mensal"
+        elif frequency == "weekly":
+            frequency_label = "Semanal"
+        elif frequency == "yearly":
+            frequency_label = "Anual"
+        else:
+            frequency_label = frequency.title()
+        recurring_items.append(
+            {
+                "name": rec.name,
+                "frequency": frequency_label,
+                "value": round(float(rec.valor), 2),
+                "reliability": reliability,
+            }
+        )
+
+    # Alertas
+    alerts = []
+    if income_total <= 0 and expense_total <= 0:
+        alerts.append("Sem lancamentos no periodo.")
+    else:
+        if ratio >= 95:
+            alerts.append("Despesas muito altas em relacao as receitas.")
+        elif ratio >= 85:
+            alerts.append("Despesas acima da media das receitas.")
+        if category_rows:
+            top_cat = category_rows[0]
+            if top_cat["percent"] >= 35:
+                alerts.append(
+                    f"Categoria {top_cat['label']} concentra {top_cat['percent']}% das despesas."
+                )
+        if pending_total > 0:
+            alerts.append(f"{len(pending_items)} pendencias abertas no periodo.")
+
+    return jsonify(
+        {
+            "period": {"start": start.isoformat(), "end": end.isoformat()},
+            "summary": {
+                "income": round(income_total, 2),
+                "expense": round(expense_total, 2),
+                "net": round(net_total, 2),
+                "economy_pct": economy_pct,
+            },
+            "comparison": {
+                "prev_pct": pct_change(net_total, prev_net),
+                "avg_pct": pct_change(net_total, avg_net),
+            },
+            "health": {
+                "ratio": ratio,
+                "status": health_status,
+                "alerts": alerts[:3],
+            },
+            "pending": {
+                "count": len(pending_items),
+                "total": round(pending_total, 2),
+                "impact": impact_balance,
+                "overdue": overdue,
+                "due_7": due_7,
+                "items": pending_rows,
+            },
+            "dre": {
+                "rows": dre_rows,
+                "total": {
+                    "income": round(income_total, 2),
+                    "expense": round(expense_total, 2),
+                    "net": round(net_total, 2),
+                },
+            },
+            "flow": {
+                "rows": flow_rows,
+                "final_balance": round(running, 2),
+            },
+            "categories": {
+                "rows": category_rows,
+            },
+            "recurring": {
+                "items": recurring_items,
+            },
+            "updated_at": date.today().isoformat(),
+        }
+    )

@@ -13,7 +13,7 @@
 
 .reports-hero{
   position: relative;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .reports-hero::before{
@@ -70,6 +70,8 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
   gap: 12px;
+  position: relative;
+  z-index: 2;
 }
 
 .reports-range{
@@ -551,7 +553,7 @@
   left: 0;
   right: 0;
   top: calc(100% + 6px);
-  z-index: 30;
+  z-index: 40;
   border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.10);
   background: #0f141b;
@@ -587,6 +589,76 @@
 .reports-page .select.is-disabled .select-trigger{
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.reports-page .multi-select{
+  position: relative;
+  width: 100%;
+}
+
+.reports-page .multi-trigger{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  text-align: left;
+  padding-right: 34px;
+  position: relative;
+}
+
+.reports-page .multi-trigger::after{
+  content: "";
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 6px solid rgba(255, 255, 255, 0.75);
+  transform: translateY(-40%);
+  pointer-events: none;
+}
+
+.reports-page .multi-options{
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 40;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: #0f141b;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.45);
+  padding: 6px;
+  display: none;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.reports-page .multi-select.open .multi-options{
+  display: block;
+}
+
+.reports-page .multi-option{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.reports-page .multi-option:hover{
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
+.reports-page .multi-option input{
+  accent-color: rgba(76,175,80,0.9);
 }
 
 .reports-page select[multiple].control{

@@ -16,9 +16,9 @@
           <p class="panel-subtitle">Gere relatórios completos do seu período, exporte e imprima para uso oficial.</p>
         </div>
         <div class="reports-hero-actions">
-          <button class="btn-secondary" type="button">Gerar PDF</button>
-          <button class="btn-secondary" type="button">Exportar Excel</button>
-          <button class="btn-secondary" type="button">Imprimir</button>
+          <button class="btn-secondary" type="button" data-export="pdf">Gerar PDF</button>
+          <button class="btn-secondary" type="button" data-export="excel">Exportar Excel</button>
+          <button class="btn-secondary" type="button" data-export="print">Imprimir</button>
         </div>
       </div>
 
@@ -63,23 +63,24 @@
         <label class="field">
           <span class="field-label">Categoria</span>
           <select id="reports-category" class="control" multiple>
-            <option>Moradia</option>
-            <option>Mercado</option>
-            <option>Transporte</option>
-            <option>Serviços</option>
-            <option>Saúde</option>
-            <option>Lazer</option>
+            <option value="salario">Salário</option>
+            <option value="extras">Extras</option>
+            <option value="moradia">Moradia</option>
+            <option value="mercado">Mercado</option>
+            <option value="transporte">Transporte</option>
+            <option value="servicos">Serviços</option>
+            <option value="outros">Outros</option>
           </select>
         </label>
 
         <label class="field">
           <span class="field-label">Método</span>
           <select id="reports-method" class="control" multiple>
-            <option>PIX</option>
-            <option>Crédito</option>
-            <option>Débito</option>
-            <option>Dinheiro</option>
-            <option>Boleto</option>
+            <option value="pix">PIX</option>
+            <option value="credito">Crédito</option>
+            <option value="debito">Débito</option>
+            <option value="dinheiro">Dinheiro</option>
+            <option value="boleto">Boleto</option>
           </select>
         </label>
       </div>
@@ -119,14 +120,16 @@
             <div class="report-metric">
               <div>
                 <span>Total receitas</span>
-                <strong>R$ 18.420,00</strong>
+                <strong id="report-total-income">R$ —</strong>
               </div>
               <div>
                 <span>Total despesas</span>
-                <strong>R$ 12.980,00</strong>
+                <strong id="report-total-expense">R$ —</strong>
               </div>
             </div>
-            <div class="report-highlight positive">Resultado líquido: R$ 5.440,00 (+29%)</div>
+            <div class="report-highlight positive" id="report-net-highlight">
+              Resultado líquido: <span id="report-net-result">R$ —</span> <span id="report-net-pct">(—)</span>
+            </div>
           </article>
 
           <article class="report-card">
@@ -134,14 +137,14 @@
             <div class="report-metric">
               <div>
                 <span>Vs período anterior</span>
-                <strong>+12,4%</strong>
+                <strong id="report-compare-prev">—</strong>
               </div>
               <div>
                 <span>Vs média 3 meses</span>
-                <strong>-3,2%</strong>
+                <strong id="report-compare-avg">—</strong>
               </div>
             </div>
-            <div class="report-highlight warning">Resultado melhorando, despesas ainda acima da média.</div>
+            <div class="report-highlight warning" id="report-compare-note">—</div>
           </article>
 
           <article class="report-card">
@@ -149,16 +152,15 @@
             <div class="report-metric">
               <div>
                 <span>Índice de equilíbrio</span>
-                <strong>70%</strong>
+                <strong id="report-health-index">—</strong>
               </div>
               <div>
                 <span>Status</span>
-                <strong>Estável</strong>
+                <strong id="report-health-status">—</strong>
               </div>
             </div>
-            <ul class="report-alerts">
-              <li>Gastos com Moradia acima da média.</li>
-              <li>Déficit recorrente em Transporte.</li>
+            <ul class="report-alerts" id="report-alerts">
+              <li>—</li>
             </ul>
           </article>
 
@@ -167,14 +169,14 @@
             <div class="report-metric">
               <div>
                 <span>Contas pendentes</span>
-                <strong>6</strong>
+                <strong id="report-pending-count">—</strong>
               </div>
               <div>
                 <span>Total pendente</span>
-                <strong>R$ 2.180,00</strong>
+                <strong id="report-pending-total">R$ —</strong>
               </div>
             </div>
-            <div class="report-highlight negative">Saldo se pagar tudo hoje: R$ 1.420,00</div>
+            <div class="report-highlight negative" id="report-pending-impact">Saldo se pagar tudo hoje: R$ —</div>
           </article>
         </div>
       </section>
@@ -211,26 +213,7 @@
                   <th>Resultado</th>
                 </tr>
               </thead>
-              <tbody>
-                <tr>
-                  <td>Moradia</td>
-                  <td>R$ 0,00</td>
-                  <td>R$ 3.200,00</td>
-                  <td>-R$ 3.200,00</td>
-                </tr>
-                <tr>
-                  <td>Salário</td>
-                  <td>R$ 12.500,00</td>
-                  <td>R$ 0,00</td>
-                  <td>R$ 12.500,00</td>
-                </tr>
-                <tr class="is-total">
-                  <td>Resultado total</td>
-                  <td>R$ 18.420,00</td>
-                  <td>R$ 12.980,00</td>
-                  <td>R$ 5.440,00</td>
-                </tr>
-              </tbody>
+              <tbody id="dre-body"></tbody>
             </table>
           </div>
 
@@ -254,30 +237,7 @@
                   <th>Saldo acumulado</th>
                 </tr>
               </thead>
-              <tbody>
-                <tr>
-                  <td>02/02/2026</td>
-                  <td>Salário</td>
-                  <td>Receitas</td>
-                  <td>PIX</td>
-                  <td>R$ 8.500,00</td>
-                  <td>—</td>
-                  <td>R$ 9.230,00</td>
-                </tr>
-                <tr>
-                  <td>05/02/2026</td>
-                  <td>Aluguel</td>
-                  <td>Moradia</td>
-                  <td>Boleto</td>
-                  <td>—</td>
-                  <td>R$ 2.200,00</td>
-                  <td>R$ 7.030,00</td>
-                </tr>
-                <tr class="is-total">
-                  <td colspan="6">Saldo final</td>
-                  <td>R$ 5.440,00</td>
-                </tr>
-              </tbody>
+              <tbody id="flow-body"></tbody>
             </table>
           </div>
 
@@ -289,20 +249,7 @@
               </div>
             </div>
             <div class="category-report">
-              <div class="category-chart">
-                <div class="category-bar" style="--pct: 42">
-                  <span>Moradia</span>
-                  <strong>42%</strong>
-                </div>
-                <div class="category-bar" style="--pct: 18">
-                  <span>Mercado</span>
-                  <strong>18%</strong>
-                </div>
-                <div class="category-bar" style="--pct: 13">
-                  <span>Transporte</span>
-                  <strong>13%</strong>
-                </div>
-              </div>
+              <div class="category-chart" id="category-chart"></div>
               <table class="report-table">
                 <thead>
                   <tr>
@@ -312,26 +259,7 @@
                     <th>Variação</th>
                   </tr>
                 </thead>
-                <tbody>
-                  <tr>
-                    <td>Moradia</td>
-                    <td>R$ 3.200,00</td>
-                    <td>42%</td>
-                    <td>+6%</td>
-                  </tr>
-                  <tr>
-                    <td>Mercado</td>
-                    <td>R$ 1.380,00</td>
-                    <td>18%</td>
-                    <td>-4%</td>
-                  </tr>
-                  <tr>
-                    <td>Transporte</td>
-                    <td>R$ 1.000,00</td>
-                    <td>13%</td>
-                    <td>+2%</td>
-                  </tr>
-                </tbody>
+                <tbody id="category-body"></tbody>
               </table>
             </div>
           </div>
@@ -343,23 +271,7 @@
                 <p>Fontes recorrentes detectadas automaticamente.</p>
               </div>
             </div>
-            <div class="recurring-grid">
-              <article class="recurring-card">
-                <h5>Salário CLT</h5>
-                <p>Mensal • Valor médio R$ 8.500,00</p>
-                <span class="recurring-badge">Confiabilidade 92%</span>
-              </article>
-              <article class="recurring-card">
-                <h5>Freelance</h5>
-                <p>Mensal • Valor médio R$ 1.200,00</p>
-                <span class="recurring-badge">Confiabilidade 68%</span>
-              </article>
-              <article class="recurring-card">
-                <h5>Rendimento investimentos</h5>
-                <p>Trimestral • Valor médio R$ 420,00</p>
-                <span class="recurring-badge">Confiabilidade 54%</span>
-              </article>
-            </div>
+            <div class="recurring-grid" id="recurring-grid"></div>
           </div>
 
           <div class="tab-panel" data-tab="pending">
@@ -372,10 +284,10 @@
             <div class="pending-grid">
               <div class="pending-card">
                 <h5>Resumo rápido</h5>
-                <ul>
-                  <li>Vencidas: 3</li>
-                  <li>Vencem em 7 dias: 2</li>
-                  <li>Impacto no saldo: R$ 1.880,00</li>
+                <ul id="pending-summary">
+                  <li>Vencidas: —</li>
+                  <li>Vencem em 7 dias: —</li>
+                  <li>Impacto no saldo: —</li>
                 </ul>
               </div>
               <table class="report-table">
@@ -388,22 +300,7 @@
                     <th>Dias atraso</th>
                   </tr>
                 </thead>
-                <tbody>
-                  <tr>
-                    <td>12/02/2026</td>
-                    <td>Financiamento carro</td>
-                    <td>Transporte</td>
-                    <td>R$ 820,00</td>
-                    <td>8 dias</td>
-                  </tr>
-                  <tr>
-                    <td>20/02/2026</td>
-                    <td>Curso</td>
-                    <td>Educação</td>
-                    <td>R$ 490,00</td>
-                    <td>2 dias</td>
-                  </tr>
-                </tbody>
+                <tbody id="pending-body"></tbody>
               </table>
             </div>
           </div>
@@ -435,8 +332,8 @@
               </select>
             </label>
             <div class="export-actions">
-              <button class="btn-primary" type="button">Gerar PDF agora</button>
-              <button class="btn-secondary" type="button">Exportar Excel</button>
+              <button class="btn-primary" type="button" data-export="pdf">Gerar PDF agora</button>
+              <button class="btn-secondary" type="button" data-export="excel">Exportar Excel</button>
             </div>
           </div>
         </div>
