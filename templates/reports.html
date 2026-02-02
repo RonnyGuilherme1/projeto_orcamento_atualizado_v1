@@ -1,2 +1,461 @@
-{% set title = "Relatórios" %}
-{% include "_analytics_placeholder.html" %}
+﻿{% extends "base_app.html" %}
+{% set page_class = 'page-reports' %}
+{% set page_css = ['/static/css/app_shell.css', '/static/css/app_base.css', '/static/css/reports.css'] %}
+
+{% block title %}Relatórios | Controle Financeiro{% endblock %}
+{% block page_title %}Relatórios{% endblock %}
+
+{% block content %}
+  {% set locked = not has_feature('reports') %}
+  <div class="page reports-page{% if locked %} is-locked{% endif %}" data-reports-page>
+    <section class="panel reports-hero">
+      <div class="reports-hero-top">
+        <div class="reports-hero-title">
+          <span class="pill pro-pill">Plano PRO</span>
+          <h2 class="panel-title">Relatórios</h2>
+          <p class="panel-subtitle">Gere relatórios completos do seu período, exporte e imprima para uso oficial.</p>
+        </div>
+        <div class="reports-hero-actions">
+          <button class="btn-secondary" type="button">Gerar PDF</button>
+          <button class="btn-secondary" type="button">Exportar Excel</button>
+          <button class="btn-secondary" type="button">Imprimir</button>
+        </div>
+      </div>
+
+      <div class="reports-filters">
+        <label class="field">
+          <span class="field-label">Período</span>
+          <select id="reports-period" class="control">
+            <option value="month">Mês atual</option>
+            <option value="30">Últimos 30 dias</option>
+            <option value="quarter">Trimestre</option>
+            <option value="year">Ano</option>
+            <option value="custom">Personalizado</option>
+          </select>
+        </label>
+
+        <label class="field">
+          <span class="field-label">Regime</span>
+          <select id="reports-mode" class="control">
+            <option value="cash">Caixa (pago/recebido)</option>
+            <option value="accrual">Competência (vencimento)</option>
+          </select>
+        </label>
+
+        <label class="field">
+          <span class="field-label">Tipo</span>
+          <select id="reports-type" class="control">
+            <option value="all">Ambos</option>
+            <option value="income">Receitas</option>
+            <option value="expense">Despesas</option>
+          </select>
+        </label>
+
+        <label class="field">
+          <span class="field-label">Status</span>
+          <select id="reports-status-filter" class="control">
+            <option value="all">Todos</option>
+            <option value="paid">Pago/Recebido</option>
+            <option value="pending">Pendente</option>
+          </select>
+        </label>
+
+        <label class="field">
+          <span class="field-label">Categoria</span>
+          <select id="reports-category" class="control" multiple>
+            <option>Moradia</option>
+            <option>Mercado</option>
+            <option>Transporte</option>
+            <option>Serviços</option>
+            <option>Saúde</option>
+            <option>Lazer</option>
+          </select>
+        </label>
+
+        <label class="field">
+          <span class="field-label">Método</span>
+          <select id="reports-method" class="control" multiple>
+            <option>PIX</option>
+            <option>Crédito</option>
+            <option>Débito</option>
+            <option>Dinheiro</option>
+            <option>Boleto</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="reports-range" data-range>
+        <label class="field">
+          <span class="field-label">De</span>
+          <input type="date" class="control" id="reports-start" />
+        </label>
+        <label class="field">
+          <span class="field-label">Até</span>
+          <input type="date" class="control" id="reports-end" />
+        </label>
+      </div>
+
+      <div class="reports-hero-footer">
+        <span class="reports-status" id="reports-status">Atualizado: —</span>
+        <button class="btn-secondary" type="button">Salvar modelo</button>
+      </div>
+    </section>
+
+    <section class="reports-grid">
+      <section class="panel reports-summary">
+        <div class="panel-head">
+          <div>
+            <h3 class="panel-title">Resumo executivo</h3>
+            <p class="panel-subtitle">Indicadores gerenciais para decisões rápidas.</p>
+          </div>
+          <div class="panel-actions">
+            <span class="report-pill">Gerencial</span>
+          </div>
+        </div>
+
+        <div class="report-cards">
+          <article class="report-card">
+            <h4>Resultado do período</h4>
+            <div class="report-metric">
+              <div>
+                <span>Total receitas</span>
+                <strong>R$ 18.420,00</strong>
+              </div>
+              <div>
+                <span>Total despesas</span>
+                <strong>R$ 12.980,00</strong>
+              </div>
+            </div>
+            <div class="report-highlight positive">Resultado líquido: R$ 5.440,00 (+29%)</div>
+          </article>
+
+          <article class="report-card">
+            <h4>Comparativo</h4>
+            <div class="report-metric">
+              <div>
+                <span>Vs período anterior</span>
+                <strong>+12,4%</strong>
+              </div>
+              <div>
+                <span>Vs média 3 meses</span>
+                <strong>-3,2%</strong>
+              </div>
+            </div>
+            <div class="report-highlight warning">Resultado melhorando, despesas ainda acima da média.</div>
+          </article>
+
+          <article class="report-card">
+            <h4>Saúde financeira</h4>
+            <div class="report-metric">
+              <div>
+                <span>Índice de equilíbrio</span>
+                <strong>70%</strong>
+              </div>
+              <div>
+                <span>Status</span>
+                <strong>Estável</strong>
+              </div>
+            </div>
+            <ul class="report-alerts">
+              <li>Gastos com Moradia acima da média.</li>
+              <li>Déficit recorrente em Transporte.</li>
+            </ul>
+          </article>
+
+          <article class="report-card">
+            <h4>Pendências e impacto</h4>
+            <div class="report-metric">
+              <div>
+                <span>Contas pendentes</span>
+                <strong>6</strong>
+              </div>
+              <div>
+                <span>Total pendente</span>
+                <strong>R$ 2.180,00</strong>
+              </div>
+            </div>
+            <div class="report-highlight negative">Saldo se pagar tudo hoje: R$ 1.420,00</div>
+          </article>
+        </div>
+      </section>
+
+      <section class="panel reports-tabs">
+        <div class="tabs-head">
+          <div class="tabs">
+            <button class="tab-btn is-active" type="button" data-tab="dre">DRE</button>
+            <button class="tab-btn" type="button" data-tab="flow">Fluxo de caixa</button>
+            <button class="tab-btn" type="button" data-tab="categories">Categorias</button>
+            <button class="tab-btn" type="button" data-tab="recurring">Recorrências</button>
+            <button class="tab-btn" type="button" data-tab="pending">Pendências</button>
+          </div>
+          <div class="tabs-actions">
+            <span class="tab-hint">Relatórios analíticos</span>
+          </div>
+        </div>
+
+        <div class="tab-panels">
+          <div class="tab-panel is-active" data-tab="dre">
+            <div class="panel-subhead">
+              <div>
+                <h4>DRE pessoal (Demonstrativo)</h4>
+                <p>Consolidação de receitas e despesas por categoria.</p>
+              </div>
+              <button class="btn-secondary" type="button">Exportar PDF</button>
+            </div>
+            <table class="report-table">
+              <thead>
+                <tr>
+                  <th>Categoria</th>
+                  <th>Total receitas</th>
+                  <th>Total despesas</th>
+                  <th>Resultado</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Moradia</td>
+                  <td>R$ 0,00</td>
+                  <td>R$ 3.200,00</td>
+                  <td>-R$ 3.200,00</td>
+                </tr>
+                <tr>
+                  <td>Salário</td>
+                  <td>R$ 12.500,00</td>
+                  <td>R$ 0,00</td>
+                  <td>R$ 12.500,00</td>
+                </tr>
+                <tr class="is-total">
+                  <td>Resultado total</td>
+                  <td>R$ 18.420,00</td>
+                  <td>R$ 12.980,00</td>
+                  <td>R$ 5.440,00</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="tab-panel" data-tab="flow">
+            <div class="panel-subhead">
+              <div>
+                <h4>Fluxo de caixa detalhado</h4>
+                <p>Timeline completa com saldo acumulado.</p>
+              </div>
+              <button class="btn-secondary" type="button">Exportar Excel</button>
+            </div>
+            <table class="report-table">
+              <thead>
+                <tr>
+                  <th>Data</th>
+                  <th>Descrição</th>
+                  <th>Categoria</th>
+                  <th>Método</th>
+                  <th>Entrada</th>
+                  <th>Saída</th>
+                  <th>Saldo acumulado</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>02/02/2026</td>
+                  <td>Salário</td>
+                  <td>Receitas</td>
+                  <td>PIX</td>
+                  <td>R$ 8.500,00</td>
+                  <td>—</td>
+                  <td>R$ 9.230,00</td>
+                </tr>
+                <tr>
+                  <td>05/02/2026</td>
+                  <td>Aluguel</td>
+                  <td>Moradia</td>
+                  <td>Boleto</td>
+                  <td>—</td>
+                  <td>R$ 2.200,00</td>
+                  <td>R$ 7.030,00</td>
+                </tr>
+                <tr class="is-total">
+                  <td colspan="6">Saldo final</td>
+                  <td>R$ 5.440,00</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="tab-panel" data-tab="categories">
+            <div class="panel-subhead">
+              <div>
+                <h4>Despesas por categoria</h4>
+                <p>Top categorias, variação e participação.</p>
+              </div>
+            </div>
+            <div class="category-report">
+              <div class="category-chart">
+                <div class="category-bar" style="--pct: 42">
+                  <span>Moradia</span>
+                  <strong>42%</strong>
+                </div>
+                <div class="category-bar" style="--pct: 18">
+                  <span>Mercado</span>
+                  <strong>18%</strong>
+                </div>
+                <div class="category-bar" style="--pct: 13">
+                  <span>Transporte</span>
+                  <strong>13%</strong>
+                </div>
+              </div>
+              <table class="report-table">
+                <thead>
+                  <tr>
+                    <th>Categoria</th>
+                    <th>Total</th>
+                    <th>%</th>
+                    <th>Variação</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Moradia</td>
+                    <td>R$ 3.200,00</td>
+                    <td>42%</td>
+                    <td>+6%</td>
+                  </tr>
+                  <tr>
+                    <td>Mercado</td>
+                    <td>R$ 1.380,00</td>
+                    <td>18%</td>
+                    <td>-4%</td>
+                  </tr>
+                  <tr>
+                    <td>Transporte</td>
+                    <td>R$ 1.000,00</td>
+                    <td>13%</td>
+                    <td>+2%</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="tab-panel" data-tab="recurring">
+            <div class="panel-subhead">
+              <div>
+                <h4>Receitas recorrentes &amp; previsibilidade</h4>
+                <p>Fontes recorrentes detectadas automaticamente.</p>
+              </div>
+            </div>
+            <div class="recurring-grid">
+              <article class="recurring-card">
+                <h5>Salário CLT</h5>
+                <p>Mensal • Valor médio R$ 8.500,00</p>
+                <span class="recurring-badge">Confiabilidade 92%</span>
+              </article>
+              <article class="recurring-card">
+                <h5>Freelance</h5>
+                <p>Mensal • Valor médio R$ 1.200,00</p>
+                <span class="recurring-badge">Confiabilidade 68%</span>
+              </article>
+              <article class="recurring-card">
+                <h5>Rendimento investimentos</h5>
+                <p>Trimestral • Valor médio R$ 420,00</p>
+                <span class="recurring-badge">Confiabilidade 54%</span>
+              </article>
+            </div>
+          </div>
+
+          <div class="tab-panel" data-tab="pending">
+            <div class="panel-subhead">
+              <div>
+                <h4>Inadimplência &amp; pendências</h4>
+                <p>Impacto no caixa caso regularize tudo hoje.</p>
+              </div>
+            </div>
+            <div class="pending-grid">
+              <div class="pending-card">
+                <h5>Resumo rápido</h5>
+                <ul>
+                  <li>Vencidas: 3</li>
+                  <li>Vencem em 7 dias: 2</li>
+                  <li>Impacto no saldo: R$ 1.880,00</li>
+                </ul>
+              </div>
+              <table class="report-table">
+                <thead>
+                  <tr>
+                    <th>Vencimento</th>
+                    <th>Descrição</th>
+                    <th>Categoria</th>
+                    <th>Valor</th>
+                    <th>Dias atraso</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>12/02/2026</td>
+                    <td>Financiamento carro</td>
+                    <td>Transporte</td>
+                    <td>R$ 820,00</td>
+                    <td>8 dias</td>
+                  </tr>
+                  <tr>
+                    <td>20/02/2026</td>
+                    <td>Curso</td>
+                    <td>Educação</td>
+                    <td>R$ 490,00</td>
+                    <td>2 dias</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel reports-export">
+        <div class="panel-head">
+          <div>
+            <h3 class="panel-title">Central de exportação</h3>
+            <p class="panel-subtitle">Escolha o que entra no PDF e gere seu relatório oficial.</p>
+          </div>
+        </div>
+        <div class="export-grid">
+          <div class="export-options">
+            <label class="check-row"><input type="checkbox" checked /> Resumo executivo</label>
+            <label class="check-row"><input type="checkbox" checked /> DRE</label>
+            <label class="check-row"><input type="checkbox" checked /> Fluxo de caixa</label>
+            <label class="check-row"><input type="checkbox" /> Categorias</label>
+            <label class="check-row"><input type="checkbox" /> Recorrências</label>
+            <label class="check-row"><input type="checkbox" /> Pendências</label>
+          </div>
+          <div class="export-details">
+            <label class="field">
+              <span class="field-label">Detalhamento</span>
+              <select class="control">
+                <option>Resumido</option>
+                <option>Detalhado</option>
+              </select>
+            </label>
+            <div class="export-actions">
+              <button class="btn-primary" type="button">Gerar PDF agora</button>
+              <button class="btn-secondary" type="button">Exportar Excel</button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    {% if locked %}
+      <div class="reports-lock">
+        <div class="lock-card">
+          <span class="pill">Plano PRO</span>
+          <h3>Relatórios completos são exclusivos do Plano Pro</h3>
+          <p>Desbloqueie PDFs oficiais, exportações e análises avançadas.</p>
+          <a class="btn-primary" href="/app/upgrade">Desbloquear no PRO</a>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+{% endblock %}
+
+{% block scripts %}
+  <script src="/static/js/pages/reports.js"></script>
+{% endblock %}
