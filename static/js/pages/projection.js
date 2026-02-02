@@ -112,6 +112,14 @@
     }
   }
 
+  function closeOpenSelects(except) {
+    if (!page) return;
+    page.querySelectorAll('.select.open').forEach((wrap) => {
+      if (except && wrap === except) return;
+      wrap.classList.remove('open');
+    });
+  }
+
   function initCustomSelect(selectEl) {
     if (!selectEl || selectEl.dataset.customized) return;
     selectEl.dataset.customized = 'true';
@@ -171,6 +179,7 @@
     trigger.addEventListener('click', (ev) => {
       ev.stopPropagation();
       if (selectEl.disabled) return;
+      closeOpenSelects(wrapper);
       wrapper.classList.toggle('open');
     });
 
@@ -392,6 +401,7 @@
 
   presets.forEach((btn) => {
     btn.addEventListener('click', () => {
+      closeOpenSelects();
       const preset = btn.getAttribute('data-preset');
       const start = startInput?.value || toISO(new Date());
       if (preset === 'eom') {
@@ -569,6 +579,7 @@
   async function runProjection() {
     // valida datas
     if (!startInput?.value || !endInput?.value) return;
+    closeOpenSelects();
     try {
       const data = await fetchJSON('/app/projection/data', {
         method: 'POST',
@@ -592,16 +603,24 @@
     const diff = Math.round((end - start) / 86400000);
     return diff >= 0 ? diff : 0;
   }
+
+  function setKpiCurrency(el, value) {
+    if (!el) return;
+    const num = Number(value || 0);
+    el.textContent = fmtBRL.format(num);
+    const card = el.closest('.kpi-card');
+    if (card) card.classList.toggle('is-negative', num < 0);
+  }
   function renderAll(data) {
     // KPIs
     if (initialLabel) initialLabel.textContent = `Saldo inicial: ${fmtBRL.format(Number(data.saldo_inicial || 0))}`;
-    if (kpiFinal) kpiFinal.textContent = fmtBRL.format(Number(data.saldo_final || 0));
-    if (kpiMin) kpiMin.textContent = fmtBRL.format(Number(data.min_saldo || 0));
+    setKpiCurrency(kpiFinal, data.saldo_final || 0);
+    setKpiCurrency(kpiMin, data.min_saldo || 0);
     if (kpiMinDate) kpiMinDate.textContent = fmtDate(data.min_saldo_date);
     if (kpiBreak) kpiBreak.textContent = data.break_date ? fmtDate(data.break_date) : '—';
     if (kpiCoverage) kpiCoverage.textContent = `${Number((data.coverage && data.coverage.percent) || 100).toFixed(1)}%`;
     if (kpiCoverageMeta) kpiCoverageMeta.textContent = `${(data.coverage && data.coverage.covered_count) || 0}/${(data.coverage && data.coverage.total_expenses) || 0}`;
-    if (kpiReserve) kpiReserve.textContent = fmtBRL.format(Number(data.recommended_reserve || 0));
+    setKpiCurrency(kpiReserve, data.recommended_reserve || 0);
 
     const rangeStart = (data.range && data.range.start) || startInput?.value;
     const runwayDays = calcRunwayDays(rangeStart, data.break_date);
@@ -708,6 +727,22 @@
     return span;
   }
 
+  function statusMeta(status) {
+    const raw = String(status || '').trim().toLowerCase();
+    if (!raw) return null;
+    if (['pago', 'paga', 'recebido', 'recebida', 'paid', 'received'].includes(raw)) {
+      const label = raw.startsWith('receb') ? 'Recebido' : 'Pago';
+      return { label, cls: 'status status-paid' };
+    }
+    if (['nao_pago', 'nao pago', 'não pago', 'pendente', 'atrasado', 'em_aberto', 'em aberto'].includes(raw)) {
+      return { label: 'Pendente', cls: 'status status-pending' };
+    }
+    if (['previsto', 'agendado', 'forecast', 'programado'].includes(raw)) {
+      return { label: 'Previsto', cls: 'status status-forecast' };
+    }
+    return { label: status, cls: 'status' };
+  }
+
   function renderTable(events) {
     if (!tbody) return;
     tbody.innerHTML = '';
@@ -746,14 +781,20 @@
 
       const tdVal = document.createElement('td');
       tdVal.textContent = fmtBRL.format(Number(ev.valor || 0));
+      tdVal.className = 'num';
       tr.appendChild(tdVal);
 
       const tdSaldo = document.createElement('td');
-      tdSaldo.textContent = fmtBRL.format(Number(ev.saldo_after || 0));
+      const saldoNum = Number(ev.saldo_after || 0);
+      tdSaldo.textContent = fmtBRL.format(saldoNum);
+      tdSaldo.className = 'num';
+      if (saldoNum < 0) tdSaldo.classList.add('is-negative');
       tr.appendChild(tdSaldo);
 
       const tdStatus = document.createElement('td');
-      tdStatus.textContent = (ev.status || '—');
+      const meta = statusMeta(ev.status);
+      if (meta) tdStatus.appendChild(badge(meta.label, meta.cls));
+      else tdStatus.textContent = '—';
       tr.appendChild(tdStatus);
 
       const tdCovered = document.createElement('td');
@@ -1231,6 +1272,8 @@
     updateScenarioStatus();
     updateLastRun();
     page.querySelectorAll('select.control').forEach((node) => initCustomSelect(node));
+    window.addEventListener('scroll', () => closeOpenSelects(), true);
+    window.addEventListener('resize', () => closeOpenSelects());
     try {
       await loadScenarios(0);
     } catch (e) {
