@@ -1055,6 +1055,8 @@ def _build_reports_payload(
     prev_income, prev_expense, prev_net = totals(prev_items)
 
     avg_net_values: list[float] = []
+    avg_income_values: list[float] = []
+    avg_expense_values: list[float] = []
     for i in range(1, 4):
         end_i = start - timedelta(days=length_days * i)
         start_i = end_i - timedelta(days=length_days - 1)
@@ -1063,10 +1065,14 @@ def _build_reports_payload(
             for entry, event_date in filtered_all
             if start_i <= event_date <= end_i
         ]
-        _, _, net_i = totals(items_i)
+        income_i, expense_i, net_i = totals(items_i)
         avg_net_values.append(net_i)
+        avg_income_values.append(income_i)
+        avg_expense_values.append(expense_i)
 
     avg_net = sum(avg_net_values) / len(avg_net_values) if avg_net_values else 0.0
+    avg_income = sum(avg_income_values) / len(avg_income_values) if avg_income_values else 0.0
+    avg_expense = sum(avg_expense_values) / len(avg_expense_values) if avg_expense_values else 0.0
 
     def pct_change(current: float, base: float) -> float | None:
         if not base:
@@ -1273,12 +1279,26 @@ def _build_reports_payload(
     comparison_note = ""
     prev_pct = pct_change(net_total, prev_net)
     avg_pct = pct_change(net_total, avg_net)
+    income_prev_pct = pct_change(income_total, prev_income)
+    expense_prev_pct = pct_change(expense_total, prev_expense)
+    income_avg_pct = pct_change(income_total, avg_income)
+    expense_avg_pct = pct_change(expense_total, avg_expense)
+
     if prev_pct is None:
         comparison_note = "Sem base para comparar com o periodo anterior."
     elif prev_pct >= 0:
         comparison_note = "Resultado acima do periodo anterior."
     else:
         comparison_note = "Resultado abaixo do periodo anterior."
+
+    if income_prev_pct is not None and expense_prev_pct is not None:
+        if income_prev_pct < 0 and expense_prev_pct > 0:
+            comparison_note += " Receitas cairam enquanto despesas subiram."
+        elif income_prev_pct > 0 and expense_prev_pct < 0:
+            comparison_note += " Receitas subiram e despesas cairam."
+        elif expense_prev_pct - income_prev_pct >= 5:
+            comparison_note += " Despesas cresceram mais que receitas."
+
     if avg_pct is not None and abs(avg_pct) >= 5:
         comparison_note += " Comparado a media de 3 periodos, houve variacao relevante."
 
@@ -1294,6 +1314,10 @@ def _build_reports_payload(
             "prev_pct": prev_pct,
             "avg_pct": avg_pct,
             "note": comparison_note,
+            "income_prev_pct": income_prev_pct,
+            "expense_prev_pct": expense_prev_pct,
+            "income_avg_pct": income_avg_pct,
+            "expense_avg_pct": expense_avg_pct,
         },
         "health": {
             "ratio": ratio,
@@ -1478,98 +1502,245 @@ def reports_export_excel():
         num = float(valor) if valor is not None else 0.0
         return f"R$ {num:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
-    output = io.StringIO()
-    writer = csv.writer(output, delimiter=";")
+    try:
+        from openpyxl import Workbook
+        from openpyxl.styles import Font, Alignment, PatternFill
+    except Exception:
+        output = io.StringIO()
+        writer = csv.writer(output, delimiter=";")
+
+        period_label = _format_period_label(
+            date.fromisoformat(payload["period"]["start"]),
+            date.fromisoformat(payload["period"]["end"]),
+        )
+        writer.writerow(["Relatorio financeiro"])
+        writer.writerow(["Usuario", getattr(current_user, "full_name", None) or current_user.email])
+        writer.writerow(["Periodo", period_label])
+        writer.writerow(["Regime", MODE_LABELS.get(mode, mode.title())])
+        writer.writerow([])
+
+        if "summary" in sections:
+            writer.writerow(["Resumo executivo"])
+            writer.writerow(["Total receitas", fmt_brl(payload["summary"]["income"])])
+            writer.writerow(["Total despesas", fmt_brl(payload["summary"]["expense"])])
+            writer.writerow(["Resultado liquido", fmt_brl(payload["summary"]["net"])])
+            writer.writerow(["% economia", f"{payload['summary']['economy_pct']}%"])
+            writer.writerow([])
+
+        if "dre" in sections:
+            writer.writerow(["DRE"])
+            writer.writerow(["Categoria", "Receitas", "Despesas", "Resultado"])
+            for row in payload["dre"]["rows"]:
+                writer.writerow([
+                    row["label"],
+                    fmt_brl(row["income"]),
+                    fmt_brl(row["expense"]),
+                    fmt_brl(row["net"]),
+                ])
+            writer.writerow([
+                "Resultado total",
+                fmt_brl(payload["dre"]["total"]["income"]),
+                fmt_brl(payload["dre"]["total"]["expense"]),
+                fmt_brl(payload["dre"]["total"]["net"]),
+            ])
+            writer.writerow([])
+
+        if "flow" in sections:
+            writer.writerow(["Fluxo de caixa"])
+            writer.writerow(["Data", "Descricao", "Categoria", "Metodo", "Entrada", "Saida", "Saldo"])
+            for row in payload["flow"]["rows"]:
+                writer.writerow([
+                    fmt_date(row["date"]),
+                    row["description"],
+                    row["category"],
+                    row["method"],
+                    fmt_brl(row["income"]) if row["income"] else "",
+                    fmt_brl(row["expense"]) if row["expense"] else "",
+                    fmt_brl(row["balance"]),
+                ])
+            writer.writerow(["Saldo final", "", "", "", "", "", fmt_brl(payload["flow"]["final_balance"])])
+            writer.writerow([])
+
+        if "categories" in sections:
+            writer.writerow(["Categorias"])
+            writer.writerow(["Categoria", "Total", "%", "Variacao"])
+            for row in payload["categories"]["rows"]:
+                writer.writerow([
+                    row["label"],
+                    fmt_brl(row["total"]),
+                    f"{row['percent']}%",
+                    f"{row['delta']}%" if row.get("delta") is not None else "",
+                ])
+            writer.writerow([])
+
+        if "recurring" in sections:
+            writer.writerow(["Recorrencias (receitas)"])
+            writer.writerow(["Nome", "Frequencia", "Valor medio", "Confiabilidade"])
+            for item in payload["recurring"]["items"]:
+                writer.writerow([
+                    item["name"],
+                    item["frequency"],
+                    fmt_brl(item["value"]),
+                    f"{item['reliability']}%",
+                ])
+            writer.writerow([])
+
+        if "pending" in sections:
+            writer.writerow(["Pendencias"])
+            writer.writerow(["Vencimento", "Descricao", "Categoria", "Valor", "Dias atraso"])
+            for item in payload["pending"]["items"]:
+                writer.writerow([
+                    fmt_date(item["date"]),
+                    item["description"],
+                    item["category"],
+                    fmt_brl(item["value"]),
+                    item["days_overdue"],
+                ])
+
+        response = make_response(output.getvalue())
+        response.headers["Content-Disposition"] = "attachment; filename=relatorio_financeiro.csv"
+        response.headers["Content-Type"] = "text/csv; charset=utf-8"
+        return response
+
+    wb = Workbook()
+    wb.remove(wb.active)
+    header_font = Font(bold=True, color="FFFFFF")
+    header_fill = PatternFill("solid", fgColor="1B7F4A")
+    title_font = Font(bold=True, size=13)
+
+    def add_sheet(title: str):
+        ws = wb.create_sheet(title)
+        ws.page_setup.fitToWidth = 1
+        return ws
+
+    def write_row(ws, row_idx: int, values, formats=None, bold=False):
+        for col_idx, value in enumerate(values, start=1):
+            cell = ws.cell(row=row_idx, column=col_idx, value=value)
+            if formats and col_idx - 1 < len(formats) and formats[col_idx - 1]:
+                cell.number_format = formats[col_idx - 1]
+            if bold:
+                cell.font = Font(bold=True)
+
+    currency_fmt = 'R$ #,##0.00'
+    percent_fmt = '0.0%'
 
     period_label = _format_period_label(
         date.fromisoformat(payload["period"]["start"]),
         date.fromisoformat(payload["period"]["end"]),
     )
-    writer.writerow(["Relatorio financeiro"])
-    writer.writerow(["Usuario", getattr(current_user, "full_name", None) or current_user.email])
-    writer.writerow(["Periodo", period_label])
-    writer.writerow(["Regime", MODE_LABELS.get(mode, mode.title())])
-    writer.writerow([])
+    user_label = getattr(current_user, "full_name", None) or current_user.email
 
     if "summary" in sections:
-        writer.writerow(["Resumo executivo"])
-        writer.writerow(["Total receitas", fmt_brl(payload["summary"]["income"])])
-        writer.writerow(["Total despesas", fmt_brl(payload["summary"]["expense"])])
-        writer.writerow(["Resultado liquido", fmt_brl(payload["summary"]["net"])])
-        writer.writerow(["% economia", f"{payload['summary']['economy_pct']}%"])
-        writer.writerow([])
+        ws = add_sheet("Resumo")
+        ws["A1"] = "Relatorio financeiro"
+        ws["A1"].font = title_font
+        ws.append(["Usuario", user_label])
+        ws.append(["Periodo", period_label])
+        ws.append(["Regime", MODE_LABELS.get(mode, mode.title())])
+        ws.append([])
+        write_row(ws, 6, ["Resumo executivo"], bold=True)
+        ws.append(["Total receitas", payload["summary"]["income"]])
+        ws.append(["Total despesas", payload["summary"]["expense"]])
+        ws.append(["Resultado liquido", payload["summary"]["net"]])
+        ws.append(["% economia", payload["summary"]["economy_pct"] / 100])
+        ws["B7"].number_format = currency_fmt
+        ws["B8"].number_format = currency_fmt
+        ws["B9"].number_format = currency_fmt
+        ws["B10"].number_format = percent_fmt
 
     if "dre" in sections:
-        writer.writerow(["DRE"])
-        writer.writerow(["Categoria", "Receitas", "Despesas", "Resultado"])
+        ws = add_sheet("DRE")
+        headers = ["Categoria", "Receitas", "Despesas", "Resultado"]
+        write_row(ws, 1, headers, bold=True)
+        for col in range(1, 5):
+            cell = ws.cell(row=1, column=col)
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.alignment = Alignment(horizontal="left")
+        row_idx = 2
         for row in payload["dre"]["rows"]:
-            writer.writerow([
-                row["label"],
-                fmt_brl(row["income"]),
-                fmt_brl(row["expense"]),
-                fmt_brl(row["net"]),
-            ])
-        writer.writerow([
-            "Resultado total",
-            fmt_brl(payload["dre"]["total"]["income"]),
-            fmt_brl(payload["dre"]["total"]["expense"]),
-            fmt_brl(payload["dre"]["total"]["net"]),
-        ])
-        writer.writerow([])
+            write_row(ws, row_idx, [row["label"], row["income"], row["expense"], row["net"]])
+            for col in (2, 3, 4):
+                ws.cell(row=row_idx, column=col).number_format = currency_fmt
+            row_idx += 1
+        write_row(ws, row_idx, ["Resultado total", payload["dre"]["total"]["income"], payload["dre"]["total"]["expense"], payload["dre"]["total"]["net"]], bold=True)
+        for col in (2, 3, 4):
+            ws.cell(row=row_idx, column=col).number_format = currency_fmt
 
     if "flow" in sections:
-        writer.writerow(["Fluxo de caixa"])
-        writer.writerow(["Data", "Descricao", "Categoria", "Metodo", "Entrada", "Saida", "Saldo"])
+        ws = add_sheet("Fluxo")
+        headers = ["Data", "Descricao", "Categoria", "Metodo", "Entrada", "Saida", "Saldo"]
+        write_row(ws, 1, headers, bold=True)
+        for col in range(1, 8):
+            cell = ws.cell(row=1, column=col)
+            cell.font = header_font
+            cell.fill = header_fill
+        row_idx = 2
         for row in payload["flow"]["rows"]:
-            writer.writerow([
+            write_row(ws, row_idx, [
                 fmt_date(row["date"]),
                 row["description"],
                 row["category"],
                 row["method"],
-                fmt_brl(row["income"]) if row["income"] else "",
-                fmt_brl(row["expense"]) if row["expense"] else "",
-                fmt_brl(row["balance"]),
+                row["income"] or None,
+                row["expense"] or None,
+                row["balance"],
             ])
-        writer.writerow(["Saldo final", "", "", "", "", "", fmt_brl(payload["flow"]["final_balance"])])
-        writer.writerow([])
+            for col in (5, 6, 7):
+                ws.cell(row=row_idx, column=col).number_format = currency_fmt
+            row_idx += 1
+        write_row(ws, row_idx, ["Saldo final", "", "", "", "", "", payload["flow"]["final_balance"]], bold=True)
+        ws.cell(row=row_idx, column=7).number_format = currency_fmt
 
     if "categories" in sections:
-        writer.writerow(["Categorias"])
-        writer.writerow(["Categoria", "Total", "%", "Variacao"])
+        ws = add_sheet("Categorias")
+        headers = ["Categoria", "Total", "%", "Variacao"]
+        write_row(ws, 1, headers, bold=True)
+        for col in range(1, 5):
+            cell = ws.cell(row=1, column=col)
+            cell.font = header_font
+            cell.fill = header_fill
+        row_idx = 2
         for row in payload["categories"]["rows"]:
-            writer.writerow([
-                row["label"],
-                fmt_brl(row["total"]),
-                f"{row['percent']}%",
-                f"{row['delta']}%" if row.get("delta") is not None else "",
-            ])
-        writer.writerow([])
+            write_row(ws, row_idx, [row["label"], row["total"], row["percent"] / 100, (row["delta"] / 100) if row.get("delta") is not None else None])
+            ws.cell(row=row_idx, column=2).number_format = currency_fmt
+            ws.cell(row=row_idx, column=3).number_format = percent_fmt
+            ws.cell(row=row_idx, column=4).number_format = percent_fmt
+            row_idx += 1
 
     if "recurring" in sections:
-        writer.writerow(["Recorrencias (receitas)"])
-        writer.writerow(["Nome", "Frequencia", "Valor medio", "Confiabilidade"])
+        ws = add_sheet("Recorrencias")
+        headers = ["Nome", "Frequencia", "Valor medio", "Confiabilidade"]
+        write_row(ws, 1, headers, bold=True)
+        for col in range(1, 5):
+            cell = ws.cell(row=1, column=col)
+            cell.font = header_font
+            cell.fill = header_fill
+        row_idx = 2
         for item in payload["recurring"]["items"]:
-            writer.writerow([
-                item["name"],
-                item["frequency"],
-                fmt_brl(item["value"]),
-                f"{item['reliability']}%",
-            ])
-        writer.writerow([])
+            write_row(ws, row_idx, [item["name"], item["frequency"], item["value"], item["reliability"] / 100])
+            ws.cell(row=row_idx, column=3).number_format = currency_fmt
+            ws.cell(row=row_idx, column=4).number_format = percent_fmt
+            row_idx += 1
 
     if "pending" in sections:
-        writer.writerow(["Pendencias"])
-        writer.writerow(["Vencimento", "Descricao", "Categoria", "Valor", "Dias atraso"])
+        ws = add_sheet("Pendencias")
+        headers = ["Vencimento", "Descricao", "Categoria", "Valor", "Dias atraso"]
+        write_row(ws, 1, headers, bold=True)
+        for col in range(1, 6):
+            cell = ws.cell(row=1, column=col)
+            cell.font = header_font
+            cell.fill = header_fill
+        row_idx = 2
         for item in payload["pending"]["items"]:
-            writer.writerow([
-                fmt_date(item["date"]),
-                item["description"],
-                item["category"],
-                fmt_brl(item["value"]),
-                item["days_overdue"],
-            ])
+            write_row(ws, row_idx, [fmt_date(item["date"]), item["description"], item["category"], item["value"], item["days_overdue"]])
+            ws.cell(row=row_idx, column=4).number_format = currency_fmt
+            row_idx += 1
 
+    output = io.BytesIO()
+    wb.save(output)
+    output.seek(0)
     response = make_response(output.getvalue())
-    response.headers["Content-Disposition"] = "attachment; filename=relatorio_financeiro.csv"
-    response.headers["Content-Type"] = "text/csv; charset=utf-8"
+    response.headers["Content-Disposition"] = "attachment; filename=relatorio_financeiro.xlsx"
+    response.headers["Content-Type"] = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     return response

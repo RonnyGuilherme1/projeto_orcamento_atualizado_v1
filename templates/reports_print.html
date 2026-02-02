@@ -7,6 +7,14 @@
   <link rel="stylesheet" href="/static/css/reports_print.css" />
 </head>
 <body>
+  {% set toc = [
+    ('summary', 'Resumo executivo'),
+    ('dre', 'DRE'),
+    ('flow', 'Fluxo de caixa'),
+    ('categories', 'Categorias'),
+    ('recurring', 'Recorrencias'),
+    ('pending', 'Pendencias')
+  ] %}
   <div class="print-page">
     <header class="print-header">
       <img class="print-logo" src="{{ url_for('static', filename='img/logo-recorte2.png') }}" alt="Logo" />
@@ -24,6 +32,19 @@
         </div>
       </div>
     </header>
+
+    {% if sections %}
+      <section class="print-section">
+        <h2>Sumario</h2>
+        <ul class="toc-list">
+          {% for key, label in toc %}
+            {% if key in sections %}
+              <li>{{ label }}</li>
+            {% endif %}
+          {% endfor %}
+        </ul>
+      </section>
+    {% endif %}
 
     {% if 'summary' in sections %}
       <section class="print-section">
@@ -159,7 +180,7 @@
             </tr>
           </thead>
           <tbody>
-            {% for item in data.recurring.items %}
+            {% for item in data.recurring["items"] %}
               <tr>
                 <td>{{ item.name }}</td>
                 <td>{{ item.frequency }}</td>
@@ -186,7 +207,7 @@
             </tr>
           </thead>
           <tbody>
-            {% for item in data.pending.items %}
+            {% for item in data.pending["items"] %}
               <tr>
                 <td>{{ fmt_date(item.date) }}</td>
                 <td>{{ item.description }}</td>
