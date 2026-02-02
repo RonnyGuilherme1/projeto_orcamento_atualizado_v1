@@ -3,10 +3,32 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Relatorio financeiro</title>
-  <link rel="stylesheet" href="/static/css/reports_print.css" />
+  <title>Relatorio Financeiro</title>
+  <link rel="stylesheet" href="/static/css/reports_pdf.css" />
 </head>
-<body>
+<body class="pdf-body">
+  <header class="pdf-header">
+    <div class="pdf-header-inner">
+      <img class="pdf-logo" src="{{ url_for('static', filename='img/logo-recorte2.png') }}" alt="Logo" />
+      <div class="pdf-header-text">
+        <div class="pdf-title">Relatorio Financeiro</div>
+        <div class="pdf-meta">
+          <span><strong>Usuario:</strong> {{ user_name }}</span>
+          <span><strong>Periodo:</strong> {{ period_label }}</span>
+          <span><strong>Regime:</strong> {{ mode_label }}</span>
+          <span><strong>Tipo:</strong> {{ 'Ambos' if type_filter == 'all' else ('Receitas' if type_filter == 'income' else 'Despesas') }}</span>
+          <span><strong>Status:</strong> {{ 'Todos' if status_filter == 'all' else ('Pago/Recebido' if status_filter == 'paid' else 'Pendente') }}</span>
+          <span><strong>Gerado em:</strong> {{ generated_at }}</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <footer class="pdf-footer">
+    <span>Relatorio oficial gerado pelo sistema.</span>
+    <span>Pagina <span class="pageNumber"></span> de <span class="totalPages"></span></span>
+  </footer>
+
   {% set toc = [
     ('summary', 'Resumo executivo'),
     ('dre', 'DRE'),
@@ -15,27 +37,28 @@
     ('recurring', 'Recorrencias'),
     ('pending', 'Pendencias')
   ] %}
-  <div class="print-page">
-    <header class="print-header">
-      <img class="print-logo" src="{{ url_for('static', filename='img/logo-recorte2.png') }}" alt="Logo" />
-      <div class="print-title">
-        <h1>Relatorio financeiro</h1>
-        <div class="print-meta">
-          <span>Usuario: {{ user_name }}</span>
-          <span>Periodo: {{ period_label }}</span>
-          <span>Regime: {{ mode_label }}</span>
-          <span>Gerado em: {{ generated_at }}</span>
-        </div>
-        <div class="print-filters">
-          <span>Tipo: {{ 'Ambos' if type_filter == 'all' else ('Receitas' if type_filter == 'income' else 'Despesas') }}</span>
-          <span>Status: {{ 'Todos' if status_filter == 'all' else ('Pago/Recebido' if status_filter == 'paid' else 'Pendente') }}</span>
+
+  <main class="pdf-content">
+    <section class="pdf-cover">
+      <div class="cover-band"></div>
+      <div class="cover-card">
+        <span class="cover-label">Relatorio Financeiro</span>
+        <h1>{{ user_name }}</h1>
+        <div class="cover-meta">
+          <div><strong>Periodo:</strong> {{ period_label }}</div>
+          <div><strong>Regime:</strong> {{ mode_label }}</div>
+          <div><strong>Gerado em:</strong> {{ generated_at }}</div>
         </div>
       </div>
-    </header>
+    </section>
 
     {% if sections %}
-      <section class="print-section">
-        <h2>Sumario</h2>
+      <section class="pdf-section pdf-toc">
+        <div class="section-head">
+          <h2>Sumario</h2>
+          <p class="section-subtitle">Visao geral das secoes geradas.</p>
+        </div>
+        <div class="section-divider"></div>
         <ul class="toc-list">
           {% for key, label in toc %}
             {% if key in sections %}
@@ -47,58 +70,91 @@
     {% endif %}
 
     {% if 'summary' in sections %}
-      <section class="print-section">
-        <h2>Resumo executivo</h2>
-        <div class="summary-grid">
-          <div class="summary-card">
-            <span>Total receitas</span>
-            <strong>{{ fmt_brl(data.summary.income) }}</strong>
+      {% set net_value = data.summary.net %}
+      {% set economy_label = '% economia' if net_value >= 0 else '% deficit' %}
+      {% set economy_value = data.summary.economy_pct if net_value >= 0 else (data.summary.economy_pct * -1) %}
+      <section class="pdf-section">
+        <div class="section-head">
+          <h2>Resumo executivo</h2>
+          <p class="section-subtitle">Indicadores gerenciais do periodo selecionado.</p>
+        </div>
+        <div class="section-divider"></div>
+
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <span class="kpi-label">Total receitas</span>
+            <span class="kpi-value">{{ fmt_brl(data.summary.income) }}</span>
           </div>
-          <div class="summary-card">
-            <span>Total despesas</span>
-            <strong>{{ fmt_brl(data.summary.expense) }}</strong>
+          <div class="kpi-card">
+            <span class="kpi-label">Total despesas</span>
+            <span class="kpi-value">{{ fmt_brl(data.summary.expense) }}</span>
           </div>
-          <div class="summary-card">
-            <span>Resultado liquido</span>
-            <strong>{{ fmt_brl(data.summary.net) }}</strong>
+          <div class="kpi-card {{ 'is-negative' if net_value < 0 else '' }}">
+            <span class="kpi-label">Resultado liquido</span>
+            <span class="kpi-value">{{ fmt_brl(net_value) }}</span>
           </div>
-          <div class="summary-card">
-            <span>% economia</span>
-            <strong>{{ data.summary.economy_pct }}%</strong>
+          <div class="kpi-card">
+            <span class="kpi-label">{{ economy_label }}</span>
+            <span class="kpi-value">{{ economy_value | round(1) }}%</span>
           </div>
         </div>
-        <div class="summary-note">
-          {{ data.comparison.note }}
+
+        <div class="note-box">
+          <strong>Observacoes do periodo</strong>
+          <ul>
+            <li>Resultado liquido de {{ fmt_brl(net_value) }} no periodo.</li>
+            {% if data.categories.rows and data.categories.rows|length > 0 %}
+              <li>Despesas concentradas em {{ data.categories.rows[0].label }} ({{ data.categories.rows[0].percent }}%).</li>
+            {% endif %}
+            {% if data.pending.total > 0 %}
+              <li>Pendencias impactam saldo em {{ fmt_brl(data.pending.impact) }}.</li>
+            {% endif %}
+            {% for alert in data.health.alerts %}
+              <li>{{ alert }}</li>
+            {% endfor %}
+          </ul>
         </div>
       </section>
     {% endif %}
 
     {% if 'dre' in sections %}
-      <section class="print-section">
-        <h2>DRE</h2>
-        <table class="print-table">
+      <section class="pdf-section">
+        <div class="section-head">
+          <h2>DRE</h2>
+          <p class="section-subtitle">Demonstrativo por categoria.</p>
+        </div>
+        <div class="section-divider"></div>
+        <table class="pdf-table">
           <thead>
             <tr>
               <th>Categoria</th>
-              <th>Receitas</th>
-              <th>Despesas</th>
-              <th>Resultado</th>
+              <th class="num">Receitas</th>
+              <th class="num">Despesas</th>
+              <th class="num">Resultado</th>
             </tr>
           </thead>
           <tbody>
             {% for row in data.dre.rows %}
               <tr>
                 <td>{{ row.label }}</td>
-                <td>{{ fmt_brl(row.income) }}</td>
-                <td>{{ fmt_brl(row.expense) }}</td>
-                <td>{{ fmt_brl(row.net) }}</td>
+                <td class="num">{{ fmt_brl(row.income) }}</td>
+                <td class="num">{{ fmt_brl(row.expense) }}</td>
+                <td class="num">
+                  <span class="{{ 'is-negative' if row.net < 0 else 'is-positive' if row.net > 0 else '' }}">
+                    {{ fmt_brl(row.net) }}
+                  </span>
+                </td>
               </tr>
             {% endfor %}
-            <tr class="total">
+            <tr class="total-row">
               <td>Resultado total</td>
-              <td>{{ fmt_brl(data.dre.total.income) }}</td>
-              <td>{{ fmt_brl(data.dre.total.expense) }}</td>
-              <td>{{ fmt_brl(data.dre.total.net) }}</td>
+              <td class="num">{{ fmt_brl(data.dre.total.income) }}</td>
+              <td class="num">{{ fmt_brl(data.dre.total.expense) }}</td>
+              <td class="num">
+                <span class="{{ 'is-negative' if data.dre.total.net < 0 else 'is-positive' if data.dre.total.net > 0 else '' }}">
+                  {{ fmt_brl(data.dre.total.net) }}
+                </span>
+              </td>
             </tr>
           </tbody>
         </table>
@@ -106,35 +162,41 @@
     {% endif %}
 
     {% if 'flow' in sections %}
-      <section class="print-section">
-        <h2>Fluxo de caixa {% if detail == 'resumido' %}(resumido){% endif %}</h2>
-        <table class="print-table">
+      <section class="pdf-section">
+        <div class="section-head">
+          <h2>Fluxo de caixa {% if detail == 'resumido' %}(resumido){% endif %}</h2>
+          <p class="section-subtitle">Movimentacoes cronologicas com saldo acumulado.</p>
+        </div>
+        <div class="section-divider"></div>
+        <table class="pdf-table pdf-table-flow">
           <thead>
             <tr>
               <th>Data</th>
               <th>Descricao</th>
               <th>Categoria</th>
               <th>Metodo</th>
-              <th>Entrada</th>
-              <th>Saida</th>
-              <th>Saldo</th>
+              <th class="num">Entrada</th>
+              <th class="num">Saida</th>
+              <th class="num">Saldo</th>
             </tr>
           </thead>
           <tbody>
             {% for row in data.flow.rows %}
               <tr>
                 <td>{{ fmt_date(row.date) }}</td>
-                <td>{{ row.description }}</td>
+                <td class="wrap">{{ row.description }}</td>
                 <td>{{ row.category }}</td>
                 <td>{{ row.method }}</td>
-                <td>{{ fmt_brl(row.income) if row.income else '-' }}</td>
-                <td>{{ fmt_brl(row.expense) if row.expense else '-' }}</td>
-                <td>{{ fmt_brl(row.balance) }}</td>
+                <td class="num">{% if row.income %}{{ fmt_brl(row.income) }}{% else %}-{% endif %}</td>
+                <td class="num">{% if row.expense %}{{ fmt_brl(row.expense) }}{% else %}-{% endif %}</td>
+                <td class="num">
+                  <span class="{{ 'is-negative' if row.balance < 0 else '' }}">{{ fmt_brl(row.balance) }}</span>
+                </td>
               </tr>
             {% endfor %}
-            <tr class="total">
+            <tr class="total-row">
               <td colspan="6">Saldo final</td>
-              <td>{{ fmt_brl(data.flow.final_balance) }}</td>
+              <td class="num">{{ fmt_brl(data.flow.final_balance) }}</td>
             </tr>
           </tbody>
         </table>
@@ -142,24 +204,32 @@
     {% endif %}
 
     {% if 'categories' in sections %}
-      <section class="print-section">
-        <h2>Categorias</h2>
-        <table class="print-table">
+      <section class="pdf-section">
+        <div class="section-head">
+          <h2>Categorias</h2>
+          <p class="section-subtitle">Distribuicao percentual das despesas.</p>
+        </div>
+        <div class="section-divider"></div>
+        <table class="pdf-table">
           <thead>
             <tr>
               <th>Categoria</th>
-              <th>Total</th>
-              <th>%</th>
-              <th>Variacao</th>
+              <th class="num">Total</th>
+              <th class="num">%</th>
+              <th class="num">Variacao</th>
             </tr>
           </thead>
           <tbody>
             {% for row in data.categories.rows %}
               <tr>
                 <td>{{ row.label }}</td>
-                <td>{{ fmt_brl(row.total) }}</td>
-                <td>{{ row.percent }}%</td>
-                <td>{% if row.delta is not none %}{{ row.delta }}%{% else %}-{% endif %}</td>
+                <td class="num">{{ fmt_brl(row.total) }}</td>
+                <td class="num">{{ row.percent }}%</td>
+                <td class="num">
+                  {% if row.delta is not none %}
+                    <span class="{{ 'is-negative' if row.delta < 0 else 'is-positive' if row.delta > 0 else '' }}">{{ row.delta }}%</span>
+                  {% else %}-{% endif %}
+                </td>
               </tr>
             {% endfor %}
           </tbody>
@@ -168,15 +238,19 @@
     {% endif %}
 
     {% if 'recurring' in sections %}
-      <section class="print-section">
-        <h2>Recorrencias</h2>
-        <table class="print-table">
+      <section class="pdf-section">
+        <div class="section-head">
+          <h2>Recorrencias</h2>
+          <p class="section-subtitle">Receitas recorrentes detectadas.</p>
+        </div>
+        <div class="section-divider"></div>
+        <table class="pdf-table">
           <thead>
             <tr>
               <th>Nome</th>
               <th>Frequencia</th>
-              <th>Valor medio</th>
-              <th>Confiabilidade</th>
+              <th class="num">Valor medio</th>
+              <th class="num">Confiabilidade</th>
             </tr>
           </thead>
           <tbody>
@@ -184,8 +258,8 @@
               <tr>
                 <td>{{ item.name }}</td>
                 <td>{{ item.frequency }}</td>
-                <td>{{ fmt_brl(item.value) }}</td>
-                <td>{{ item.reliability }}%</td>
+                <td class="num">{{ fmt_brl(item.value) }}</td>
+                <td class="num">{{ item.reliability }}%</td>
               </tr>
             {% endfor %}
           </tbody>
@@ -194,38 +268,37 @@
     {% endif %}
 
     {% if 'pending' in sections %}
-      <section class="print-section">
-        <h2>Pendencias</h2>
-        <table class="print-table">
+      <section class="pdf-section">
+        <div class="section-head">
+          <h2>Pendencias</h2>
+          <p class="section-subtitle">Despesas nao pagas no periodo.</p>
+        </div>
+        <div class="section-divider"></div>
+        <table class="pdf-table">
           <thead>
             <tr>
               <th>Vencimento</th>
               <th>Descricao</th>
               <th>Categoria</th>
-              <th>Valor</th>
-              <th>Dias atraso</th>
+              <th class="num">Valor</th>
+              <th class="num">Dias atraso</th>
             </tr>
           </thead>
           <tbody>
             {% for item in data.pending["items"] %}
               <tr>
                 <td>{{ fmt_date(item.date) }}</td>
-                <td>{{ item.description }}</td>
+                <td class="wrap">{{ item.description }}</td>
                 <td>{{ item.category }}</td>
-                <td>{{ fmt_brl(item.value) }}</td>
-                <td>{{ item.days_overdue }}</td>
+                <td class="num">{{ fmt_brl(item.value) }}</td>
+                <td class="num">{{ item.days_overdue }}</td>
               </tr>
             {% endfor %}
           </tbody>
         </table>
       </section>
     {% endif %}
-
-    <footer class="print-footer">
-      <span>Relatorio oficial gerado pelo sistema.</span>
-      <span>Pagina <span class="pageNumber"></span> de <span class="totalPages"></span></span>
-    </footer>
-  </div>
+  </main>
 
   {% if auto_print %}
   <script>

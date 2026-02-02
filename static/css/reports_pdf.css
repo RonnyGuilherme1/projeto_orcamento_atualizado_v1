@@ -1,0 +1,307 @@
+﻿@page {
+  size: A4;
+  margin: 16mm 14mm 18mm;
+}
+
+:root {
+  --ink: #1a1a1a;
+  --muted: #4b5563;
+  --line: #dfe3e8;
+  --soft: #f4f6f8;
+  --accent: #2ecc71;
+  --accent-dark: #1f9d55;
+  --danger: #e74c3c;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body.pdf-body {
+  margin: 0;
+  font-family: "Inter", system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+  color: var(--ink);
+  background: #fff;
+  font-size: 10.5px;
+  line-height: 1.4;
+}
+
+.pdf-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 72px;
+  background: var(--soft);
+  border-bottom: 1px solid var(--line);
+  padding: 10px 14mm;
+  z-index: 10;
+}
+
+.pdf-header-inner {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.pdf-logo {
+  width: 58px;
+  height: auto;
+}
+
+.pdf-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--accent-dark);
+}
+
+.pdf-meta {
+  margin-top: 4px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px 14px;
+  font-size: 9.5px;
+  color: var(--muted);
+}
+
+.pdf-meta strong {
+  font-weight: 600;
+}
+
+.pdf-footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 6px 14mm;
+  border-top: 1px solid var(--line);
+  font-size: 9px;
+  color: var(--muted);
+  display: flex;
+  justify-content: space-between;
+}
+
+.pdf-content {
+  padding: 88px 0 40px;
+}
+
+.pdf-cover {
+  position: relative;
+  min-height: 420px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 48px 36px;
+  margin-bottom: 20px;
+  overflow: hidden;
+  page-break-after: always;
+}
+
+.cover-band {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 110px;
+  background: linear-gradient(120deg, rgba(46, 204, 113, 0.25), rgba(244, 246, 248, 0.9));
+}
+
+.cover-card {
+  position: relative;
+  z-index: 1;
+  max-width: 360px;
+  margin-top: 40px;
+}
+
+.cover-label {
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 9px;
+  color: var(--accent-dark);
+  font-weight: 700;
+}
+
+.cover-card h1 {
+  margin: 8px 0 16px;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.cover-meta {
+  display: grid;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.pdf-section {
+  margin-bottom: 18px;
+}
+
+.pdf-toc {
+  page-break-after: always;
+}
+
+.section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.section-head h2 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.section-subtitle {
+  margin: 4px 0 0;
+  font-size: 10px;
+  color: var(--muted);
+}
+
+.section-divider {
+  height: 1px;
+  background: var(--line);
+  margin: 8px 0 12px;
+}
+
+.toc-list {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 4px;
+  font-size: 11px;
+}
+
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.kpi-card {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 12px;
+  position: relative;
+  background: #fff;
+}
+
+.kpi-card::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  border-radius: 10px 0 0 10px;
+  background: var(--accent);
+}
+
+.kpi-card.is-negative::before {
+  background: var(--danger);
+}
+
+.kpi-label {
+  font-size: 9.5px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.kpi-value {
+  display: block;
+  margin-top: 6px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.note-box {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: var(--soft);
+  font-size: 10px;
+}
+
+.note-box strong {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 10.5px;
+}
+
+.note-box ul {
+  margin: 0;
+  padding-left: 16px;
+  display: grid;
+  gap: 4px;
+}
+
+.pdf-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 9.8px;
+}
+
+.pdf-table thead {
+  display: table-header-group;
+}
+
+.pdf-table th,
+.pdf-table td {
+  border: 1px solid var(--line);
+  padding: 6px 8px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.pdf-table th {
+  background: var(--soft);
+  font-weight: 700;
+  font-size: 9.5px;
+}
+
+.pdf-table tbody tr:nth-child(even) {
+  background: #fafbfc;
+}
+
+.pdf-table .num {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.pdf-table .wrap {
+  max-width: 180px;
+  word-break: break-word;
+}
+
+.total-row td {
+  background: var(--soft);
+  font-weight: 700;
+}
+
+.is-negative {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+.is-positive {
+  color: var(--accent-dark);
+  font-weight: 600;
+}
+
+.pdf-table-flow tbody tr {
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+@media print {
+  .pdf-cover,
+  .pdf-section,
+  .pdf-table {
+    page-break-inside: avoid;
+  }
+}
