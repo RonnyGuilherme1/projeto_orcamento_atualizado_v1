@@ -12,13 +12,14 @@
 
 .projection-hero{
   position: relative;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .projection-hero::before{
   content: "";
   position: absolute;
   inset: 0;
+  border-radius: inherit;
   background:
     radial-gradient(600px 200px at 0% 0%, rgba(76,175,80,0.18), transparent 65%),
     radial-gradient(420px 220px at 100% 0%, rgba(158,228,159,0.14), transparent 70%);
@@ -70,6 +71,82 @@
   margin-top: 10px;
 }
 
+.projection-page .select{
+  position: relative;
+  width: 100%;
+}
+
+.projection-page .select-native{
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+  width: 0;
+  height: 0;
+}
+
+.projection-page .select-trigger{
+  text-align: left;
+  padding-right: 34px;
+  position: relative;
+}
+
+.projection-page .select-trigger::after{
+  content: "";
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 6px solid rgba(255, 255, 255, 0.75);
+  transform: translateY(-40%);
+  pointer-events: none;
+}
+
+.projection-page .select-options{
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 30;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: #0f141b;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.45);
+  padding: 6px;
+  display: none;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.projection-page .select.open .select-options{
+  display: block;
+}
+
+.projection-page .select-option{
+  width: 100%;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.88);
+  padding: 8px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.projection-page .select-option:hover,
+.projection-page .select-option.is-selected{
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+}
+
+.projection-page .select.is-disabled .select-trigger{
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .projection-controls select,
 .projection-controls input[type="date"],
 .projection-controls input[type="number"],
@@ -107,14 +184,20 @@
 }
 
 .scenario-row{
-  display: grid;
-  grid-template-columns: 1fr auto auto auto;
+  display: flex;
+  flex-wrap: wrap;
   gap: 10px;
   align-items: center;
 }
 
 .scenario-row select{
-  min-width: 260px;
+  min-width: 220px;
+  flex: 1 1 260px;
+}
+
+.scenario-row .btn-secondary{
+  flex: 0 0 auto;
+  white-space: nowrap;
 }
 
 .scenario-note{
@@ -154,7 +237,7 @@
 .projection-grid{
   display: grid;
   gap: 18px;
-  grid-template-columns: 1fr;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
   align-items: start;
 }
 
@@ -162,8 +245,23 @@
   grid-column: 1 / -1;
 }
 
-.projection-grid > .panel{
+.projection-grid > .projection-kpis,
+.projection-grid > .projection-timeline{
   grid-column: 1 / -1;
+}
+
+.projection-grid > .projection-calendar{
+  grid-column: span 8;
+}
+
+.projection-grid > .projection-coverage{
+  grid-column: span 4;
+}
+
+.projection-grid > .projection-risk,
+.projection-grid > .projection-overrides,
+.projection-grid > .projection-simulators{
+  grid-column: span 4;
 }
 
 .kpi-grid{
@@ -278,6 +376,10 @@
   font-size: 12px;
   font-weight: 850;
   color: rgba(255,255,255,0.7);
+}
+
+.timeline-legend span{
+  white-space: nowrap;
 }
 
 .legend-dot{
@@ -685,7 +787,7 @@
 .sim-grid{
   margin-top: 10px;
   display:grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 12px;
 }
 
@@ -805,14 +907,12 @@
   .projection-controls{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .kpi-grid{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .sim-grid{ grid-template-columns: 1fr; }
-  .scenario-row{ grid-template-columns: 1fr; }
-  .projection-grid{ grid-template-columns: 1fr; }
-  .projection-timeline,
-  .projection-calendar,
-  .projection-coverage,
-  .projection-risk,
-  .projection-overrides,
-  .projection-simulators{
+  .projection-grid{ grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .projection-grid > .projection-calendar,
+  .projection-grid > .projection-coverage,
+  .projection-grid > .projection-risk,
+  .projection-grid > .projection-overrides,
+  .projection-grid > .projection-simulators{
     grid-column: 1 / -1;
   }
   .calendar-summary{
