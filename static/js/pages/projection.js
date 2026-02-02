@@ -772,7 +772,7 @@
         const prBadge = badge(`Prior: ${pr}`, `priority ${pr}`);
         prBadge.title = 'Clique para alternar prioridade (Alta/Média/Baixa)';
         prBadge.addEventListener('click', () => cyclePriority(ev.id, pr));
-        tdActions.appendChild(prBadge);
+        wrap.appendChild(prBadge);
 
         const btnShift = document.createElement('button');
         btnShift.type = 'button';
