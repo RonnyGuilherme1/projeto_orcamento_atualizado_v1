@@ -82,6 +82,15 @@
   pointer-events: none;
   width: 0;
   height: 0;
+  display: none;
+}
+
+.projection-page .select select{
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+  width: 0;
+  height: 0;
 }
 
 .projection-page .select-trigger{
@@ -470,9 +479,13 @@
 .row-actions{
   display:flex;
   gap: 8px;
+  flex-wrap: nowrap;
+  align-items: center;
+  white-space: nowrap;
 }
 
 .row-actions button{
+  white-space: nowrap;
   height: 34px;
   padding: 0 10px;
   border-radius: 12px;
@@ -483,6 +496,12 @@
   cursor: pointer;
 }
 .row-actions button:hover{ background: rgba(255,255,255,0.07); }
+
+.timeline-table tbody td:last-child,
+.timeline-table thead th:last-child{
+  min-width: 140px;
+  white-space: nowrap;
+}
 
 .risk-list{
   display:grid;

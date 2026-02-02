@@ -455,6 +455,7 @@
     });
 
     scenarioSelect.value = String(selectId || state.scenarioId || 0);
+    initCustomSelect(scenarioSelect);
     rebuildCustomSelect(scenarioSelect);
     syncCustomSelect(scenarioSelect);
   }
@@ -1229,8 +1230,7 @@
     setTodayDefaults();
     updateScenarioStatus();
     updateLastRun();
-    initCustomSelect(modeSelect);
-    initCustomSelect(scenarioSelect);
+    page.querySelectorAll('select.control').forEach((node) => initCustomSelect(node));
     try {
       await loadScenarios(0);
     } catch (e) {
