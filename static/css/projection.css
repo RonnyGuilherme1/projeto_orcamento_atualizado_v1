@@ -309,6 +309,8 @@
 .projection-timeline .panel-actions{
   display:flex;
   align-items:center;
+  flex-wrap: nowrap;
+  white-space: nowrap;
 }
 
 .projection-balance{
@@ -380,15 +382,26 @@
 .timeline-legend{
   margin-top: 10px;
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 12px;
   font-size: 12px;
   font-weight: 850;
   color: rgba(255,255,255,0.7);
+  overflow-x: auto;
+  scrollbar-width: thin;
 }
 
 .timeline-legend span{
   white-space: nowrap;
+}
+
+.timeline-legend::-webkit-scrollbar{
+  height: 6px;
+}
+
+.timeline-legend::-webkit-scrollbar-thumb{
+  background: rgba(255,255,255,0.18);
+  border-radius: 999px;
 }
 
 .legend-dot{
