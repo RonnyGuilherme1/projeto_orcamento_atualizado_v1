@@ -1,3 +1,4 @@
+﻿
 (function () {
   const page = document.querySelector('[data-projection-page]');
   if (!page) return;
@@ -17,21 +18,50 @@
   const btnSave = el('scenario-save');
   const btnSaveAs = el('scenario-saveas');
   const btnDelete = el('scenario-delete');
+  const btnScenarioClear = el('scenario-clear');
 
   const kpiFinal = el('kpi-final');
   const kpiMin = el('kpi-min');
   const kpiMinDate = el('kpi-min-date');
   const kpiBreak = el('kpi-break');
+  const kpiRunway = el('kpi-runway');
+  const kpiRunwayMeta = el('kpi-runway-meta');
   const kpiCoverage = el('kpi-coverage');
   const kpiCoverageMeta = el('kpi-coverage-meta');
   const kpiReserve = el('kpi-reserve');
   const initialLabel = el('projection-initial');
 
+  const scenarioStatus = el('scenario-status');
+  const projectionLastRun = el('projection-last-run');
+  const scenarioState = el('scenario-state');
+
   const timelinePath = el('timeline-path');
+  const timelineArea = el('timeline-area');
+  const timelineZero = el('timeline-zero');
+  const timelineReserve = el('timeline-reserve');
   const timelineEmpty = el('timeline-empty');
   const tbody = el('timeline-body');
   const riskList = el('risk-list');
   const reductionsWrap = el('sim-reductions');
+  const overrideList = el('override-list');
+
+  const calendarGrid = el('calendar-grid');
+  const calendarRange = el('calendar-range');
+  const calendarAvg = el('calendar-avg');
+  const calendarPositive = el('calendar-positive');
+  const calendarNegative = el('calendar-negative');
+  const calendarEmpty = el('calendar-empty');
+
+  const coverageHighValue = el('coverage-high-value');
+  const coverageHighBar = el('coverage-high-bar');
+  const coverageHighMeta = el('coverage-high-meta');
+  const coverageMediumValue = el('coverage-medium-value');
+  const coverageMediumBar = el('coverage-medium-bar');
+  const coverageMediumMeta = el('coverage-medium-meta');
+  const coverageLowValue = el('coverage-low-value');
+  const coverageLowBar = el('coverage-low-bar');
+  const coverageLowMeta = el('coverage-low-meta');
+  const coverageNote = el('coverage-note');
 
   const btnAddIncome = el('sim-add-income');
   const btnReset = el('sim-reset');
@@ -49,8 +79,10 @@
     scenarioId: 0,
     scenarioName: 'Base',
     overrides: defaultOverrides(),
+    savedOverrides: defaultOverrides(),
     dirty: false,
     lastData: null,
+    lastRunAt: null,
     debounce: null,
   };
 
@@ -62,6 +94,10 @@
       splits: [],
       reserve: null,
     };
+  }
+
+  function cloneOverrides(overrides) {
+    return JSON.parse(JSON.stringify(overrides || defaultOverrides()));
   }
 
   function parseISO(iso) {
@@ -85,11 +121,12 @@
     const today = new Date();
     const start = toISO(today);
     const end = toISO(addDays(today, 60));
-    startInput.value = start;
-    endInput.value = end;
-    reserveInput.value = "0";
-    modeSelect.value = "cash";
-    recurringToggle.checked = true;
+    if (startInput) startInput.value = start;
+    if (endInput) endInput.value = end;
+    if (reserveInput) reserveInput.value = '0';
+    if (modeSelect) modeSelect.value = 'cash';
+    if (recurringToggle) recurringToggle.checked = true;
+    syncReserveOverride(false);
   }
 
   function addDays(dateObj, days) {
@@ -113,75 +150,183 @@
     return toISO(last);
   }
 
+  function updateScenarioStatus() {
+    const summary = overrideSummary();
+    if (scenarioStatus) {
+      const syncLabel = state.dirty ? 'alterações pendentes' : 'sincronizado';
+      scenarioStatus.textContent = `${state.scenarioName} • ${syncLabel}`;
+      scenarioStatus.classList.toggle('is-dirty', state.dirty);
+    }
+    if (scenarioState) {
+      scenarioState.textContent = summary.total ? `Alterações: ${summary.text}` : 'Sem alterações no cenário';
+      scenarioState.classList.toggle('is-dirty', state.dirty);
+    }
+  }
+
+  function updateLastRun() {
+    if (!projectionLastRun) return;
+    if (!state.lastRunAt) {
+      projectionLastRun.textContent = 'Atualizado: —';
+      return;
+    }
+    const stamp = state.lastRunAt.toLocaleString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+    projectionLastRun.textContent = `Atualizado: ${stamp}`;
+  }
+
+  function markDirty() {
+    state.dirty = true;
+    updateScenarioStatus();
+  }
+
+  function overrideSummary() {
+    const shifts = (state.overrides.shifts || []).length;
+    const splits = (state.overrides.splits || []).length;
+    const reductions = (state.overrides.reductions || []).filter((r) => Number(r.percent) > 0).length;
+    const extras = (state.overrides.extras || []).length;
+    const reserve = state.overrides.reserve && Number(state.overrides.reserve) > 0 ? 1 : 0;
+    const parts = [];
+    if (shifts) parts.push(`${shifts} adiamento${shifts > 1 ? 's' : ''}`);
+    if (splits) parts.push(`${splits} parcela${splits > 1 ? 's' : ''}`);
+    if (reductions) parts.push(`${reductions} redução${reductions > 1 ? 's' : ''}`);
+    if (extras) parts.push(`${extras} extra${extras > 1 ? 's' : ''}`);
+    if (reserve) parts.push('reserva ajustada');
+    return { total: shifts + splits + reductions + extras + reserve, text: parts.join(' • ') };
+  }
+  function syncReserveOverride(shouldMark) {
+    if (!reserveInput) return;
+    const raw = Number(reserveInput.value || 0);
+    if (!isFinite(raw) || raw <= 0) {
+      state.overrides.reserve = null;
+    } else {
+      state.overrides.reserve = Number(raw.toFixed(2));
+    }
+    if (shouldMark) markDirty();
+  }
+
+  function applyOverrides(overrides) {
+    state.overrides = cloneOverrides(overrides);
+    if (reserveInput) {
+      const reserveValue = state.overrides.reserve;
+      reserveInput.value = reserveValue != null ? String(reserveValue) : '0';
+    }
+    updateScenarioStatus();
+  }
+
+  function resetToBase() {
+    state.scenarioId = 0;
+    state.scenarioName = 'Base';
+    const base = defaultOverrides();
+    state.overrides = cloneOverrides(base);
+    state.savedOverrides = cloneOverrides(base);
+    state.dirty = false;
+    if (scenarioSelect) scenarioSelect.value = '0';
+    if (reserveInput) reserveInput.value = '0';
+    updateScenarioStatus();
+  }
+
+  function resetToSaved() {
+    if (state.scenarioId && state.savedOverrides) {
+      applyOverrides(state.savedOverrides);
+      state.dirty = false;
+      updateScenarioStatus();
+    } else {
+      resetToBase();
+    }
+    runDebounced();
+  }
+
   function showModal() {
+    if (!modal) return;
     modal.classList.add('show');
     modal.setAttribute('aria-hidden', 'false');
   }
   function hideModal() {
+    if (!modal) return;
     modal.classList.remove('show');
     modal.setAttribute('aria-hidden', 'true');
   }
 
-  modal.addEventListener('click', (e) => {
-    if (e.target && (e.target.matches('[data-close]') || e.target.closest('[data-close]'))) {
-      hideModal();
-    }
-  });
-
-  btnAddIncome.addEventListener('click', () => {
-    incomeDate.value = startInput.value || toISO(new Date());
-    incomeDesc.value = '';
-    incomeValue.value = '';
-    showModal();
-  });
-
-  incomeConfirm.addEventListener('click', () => {
-    const d = incomeDate.value;
-    const v = Number(incomeValue.value || 0);
-    const desc = (incomeDesc.value || 'Renda extra').trim();
-    if (!d || !isFinite(v) || v <= 0) {
-      alert('Informe uma data e um valor > 0.');
-      return;
-    }
-    state.overrides.extras.push({
-      date: d,
-      descricao: desc,
-      tipo: 'receita',
-      valor: Number(v.toFixed(2)),
-      categoria: 'ajustes',
+  if (modal) {
+    modal.addEventListener('click', (e) => {
+      if (e.target && (e.target.matches('[data-close]') || e.target.closest('[data-close]'))) {
+        hideModal();
+      }
     });
-    state.dirty = true;
-    hideModal();
-    runDebounced();
-  });
+  }
 
-  btnReset.addEventListener('click', () => {
-    state.scenarioId = 0;
-    state.scenarioName = 'Base';
-    state.overrides = defaultOverrides();
-    state.dirty = false;
-    scenarioSelect.value = "0";
-    runDebounced();
-  });
+  if (btnAddIncome) {
+    btnAddIncome.addEventListener('click', () => {
+      if (incomeDate) incomeDate.value = startInput?.value || toISO(new Date());
+      if (incomeDesc) incomeDesc.value = '';
+      if (incomeValue) incomeValue.value = '';
+      showModal();
+    });
+  }
+
+  if (incomeConfirm) {
+    incomeConfirm.addEventListener('click', () => {
+      const d = incomeDate?.value;
+      const v = Number(incomeValue?.value || 0);
+      const desc = (incomeDesc?.value || 'Renda extra').trim();
+      if (!d || !isFinite(v) || v <= 0) {
+        alert('Informe uma data e um valor > 0.');
+        return;
+      }
+      state.overrides.extras.push({
+        date: d,
+        descricao: desc,
+        tipo: 'receita',
+        valor: Number(v.toFixed(2)),
+        categoria: 'ajustes',
+      });
+      markDirty();
+      hideModal();
+      runDebounced();
+    });
+  }
+
+  if (btnReset) {
+    btnReset.addEventListener('click', () => resetToSaved());
+  }
+
+  if (btnScenarioClear) {
+    btnScenarioClear.addEventListener('click', () => resetToSaved());
+  }
 
   presets.forEach((btn) => {
     btn.addEventListener('click', () => {
       const preset = btn.getAttribute('data-preset');
-      const start = startInput.value || toISO(new Date());
+      const start = startInput?.value || toISO(new Date());
       if (preset === 'eom') {
-        endInput.value = endOfMonthISO(start) || endInput.value;
+        if (endInput) endInput.value = endOfMonthISO(start) || endInput.value;
       } else {
         const n = Number(preset);
         if (isFinite(n) && n > 0) {
-          const sd = new Date(start + "T00:00:00");
-          endInput.value = toISO(addDays(sd, n));
+          const sd = new Date(start + 'T00:00:00');
+          if (endInput) endInput.value = toISO(addDays(sd, n));
         }
       }
       runDebounced();
     });
   });
 
-  btnRun.addEventListener('click', () => runProjection());
+  if (startInput) startInput.addEventListener('change', () => runDebounced());
+  if (endInput) endInput.addEventListener('change', () => runDebounced());
+  if (modeSelect) modeSelect.addEventListener('change', () => runDebounced());
+  if (recurringToggle) recurringToggle.addEventListener('change', () => runDebounced());
+  if (reserveInput) {
+    reserveInput.addEventListener('input', () => {
+      syncReserveOverride(true);
+      runDebounced();
+    });
+  }
+
+  if (btnRun) btnRun.addEventListener('click', () => runProjection());
 
   function runDebounced() {
     clearTimeout(state.debounce);
@@ -202,11 +347,8 @@
   }
 
   async function loadScenarios(selectId) {
-<<<<<<< HEAD
     const list = await fetchJSON('/app/projection/scenarios');
-=======
-    const list = await fetch('/app/projection/scenarios');
->>>>>>> 748ac02aa6f96c785f54b96d19f576dafc3d1383
+    if (!scenarioSelect) return;
     scenarioSelect.innerHTML = '';
     const baseOpt = document.createElement('option');
     baseOpt.value = '0';
@@ -223,106 +365,106 @@
     scenarioSelect.value = String(selectId || state.scenarioId || 0);
   }
 
-  scenarioSelect.addEventListener('change', async () => {
-    const id = Number(scenarioSelect.value || 0);
-    state.scenarioId = id;
-    state.dirty = false;
-
-    if (!id) {
-      state.overrides = defaultOverrides();
-      state.scenarioName = 'Base';
-      runDebounced();
-      return;
-    }
-
-    try {
-<<<<<<< HEAD
-      const detail = await fetchJSON(`/app/projection/scenarios/${id}`);
-=======
-      const detail = await fetch(`/app/projection/scenarios/${id}`);
->>>>>>> 748ac02aa6f96c785f54b96d19f576dafc3d1383
-      state.scenarioName = detail.name || 'Cenário';
-      state.overrides = detail.overrides || defaultOverrides();
-      runDebounced();
-    } catch (e) {
-      alert(e.message);
-    }
-  });
-
-  btnSave.addEventListener('click', async () => {
-    if (!state.scenarioId) {
-      alert('Selecione um cenário (ou use "Salvar como").');
-      return;
-    }
-    try {
-<<<<<<< HEAD
-      await fetchJSON(`/app/projection/scenarios/${state.scenarioId}`, {
-=======
-      await fetch(`/app/projection/scenarios/${state.scenarioId}`, {
->>>>>>> 748ac02aa6f96c785f54b96d19f576dafc3d1383
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ overrides: state.overrides }),
-      });
+  if (scenarioSelect) {
+    scenarioSelect.addEventListener('change', async () => {
+      const id = Number(scenarioSelect.value || 0);
+      state.scenarioId = id;
       state.dirty = false;
-      await loadScenarios(state.scenarioId);
-      alert('Cenário atualizado.');
-    } catch (e) {
-      alert(e.message);
-    }
-  });
 
-  btnSaveAs.addEventListener('click', async () => {
-    const name = prompt('Nome do novo cenário:', state.scenarioName === 'Base' ? 'Meu cenário 1' : `${state.scenarioName} (cópia)`);
-    if (!name) return;
-    try {
-<<<<<<< HEAD
-      const out = await fetchJSON('/app/projection/scenarios', {
-=======
-      const out = await fetch('/app/projection/scenarios', {
->>>>>>> 748ac02aa6f96c785f54b96d19f576dafc3d1383
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, overrides: state.overrides }),
-      });
-      state.scenarioId = out.id;
-      state.scenarioName = name;
-      state.dirty = false;
-      await loadScenarios(state.scenarioId);
-      scenarioSelect.value = String(state.scenarioId);
-      alert('Cenário criado.');
-    } catch (e) {
-      alert(e.message);
-    }
-  });
+      if (!id) {
+        resetToBase();
+        runDebounced();
+        return;
+      }
 
-  btnDelete.addEventListener('click', async () => {
-    if (!state.scenarioId) return;
-    if (!confirm('Excluir este cenário?')) return;
-    try {
-<<<<<<< HEAD
-      await fetchJSON(`/app/projection/scenarios/${state.scenarioId}`, { method: 'DELETE' });
-=======
-      await fetch(`/app/projection/scenarios/${state.scenarioId}`, { method: 'DELETE' });
->>>>>>> 748ac02aa6f96c785f54b96d19f576dafc3d1383
-      state.scenarioId = 0;
-      state.scenarioName = 'Base';
-      state.overrides = defaultOverrides();
-      state.dirty = false;
-      await loadScenarios(0);
-      runDebounced();
-    } catch (e) {
-      alert(e.message);
-    }
-  });
+      try {
+        const detail = await fetchJSON(`/app/projection/scenarios/${id}`);
+        state.scenarioName = detail.name || 'Cenário';
+        state.overrides = detail.overrides || defaultOverrides();
+        state.savedOverrides = cloneOverrides(state.overrides);
+        state.dirty = false;
+        if (reserveInput) {
+          const reserveValue = state.overrides.reserve;
+          reserveInput.value = reserveValue != null ? String(reserveValue) : '0';
+        }
+        updateScenarioStatus();
+        runDebounced();
+      } catch (e) {
+        alert(e.message);
+      }
+    });
+  }
+
+  if (btnSave) {
+    btnSave.addEventListener('click', async () => {
+      if (!state.scenarioId) {
+        alert('Selecione um cenário (ou use "Salvar como").');
+        return;
+      }
+      try {
+        await fetchJSON(`/app/projection/scenarios/${state.scenarioId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ overrides: state.overrides }),
+        });
+        state.dirty = false;
+        state.savedOverrides = cloneOverrides(state.overrides);
+        await loadScenarios(state.scenarioId);
+        updateScenarioStatus();
+        alert('Cenário atualizado.');
+      } catch (e) {
+        alert(e.message);
+      }
+    });
+  }
+
+  if (btnSaveAs) {
+    btnSaveAs.addEventListener('click', async () => {
+      const name = prompt('Nome do novo cenário:', state.scenarioName === 'Base' ? 'Meu cenário 1' : `${state.scenarioName} (cópia)`);
+      if (!name) return;
+      try {
+        const out = await fetchJSON('/app/projection/scenarios', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, overrides: state.overrides }),
+        });
+        state.scenarioId = out.id;
+        state.scenarioName = name;
+        state.dirty = false;
+        state.savedOverrides = cloneOverrides(state.overrides);
+        await loadScenarios(state.scenarioId);
+        if (scenarioSelect) scenarioSelect.value = String(state.scenarioId);
+        updateScenarioStatus();
+        alert('Cenário criado.');
+      } catch (e) {
+        alert(e.message);
+      }
+    });
+  }
+
+  if (btnDelete) {
+    btnDelete.addEventListener('click', async () => {
+      if (!state.scenarioId) return;
+      if (!confirm('Excluir este cenário?')) return;
+      try {
+        await fetchJSON(`/app/projection/scenarios/${state.scenarioId}`, { method: 'DELETE' });
+        resetToBase();
+        await loadScenarios(0);
+        runDebounced();
+      } catch (e) {
+        alert(e.message);
+      }
+    });
+  }
 
   function buildPayload() {
+    syncReserveOverride(false);
     const payload = {
-      start: startInput.value,
-      end: endInput.value,
-      mode: modeSelect.value,
-      include_recurring: recurringToggle.checked,
-      reserve_min: Number(reserveInput.value || 0),
+      start: startInput?.value,
+      end: endInput?.value,
+      mode: modeSelect?.value,
+      include_recurring: recurringToggle?.checked,
+      reserve_min: Number(reserveInput?.value || 0),
       overrides: state.overrides,
     };
     if (state.scenarioId) payload.scenario_id = state.scenarioId;
@@ -331,18 +473,16 @@
 
   async function runProjection() {
     // valida datas
-    if (!startInput.value || !endInput.value) return;
+    if (!startInput?.value || !endInput?.value) return;
     try {
-<<<<<<< HEAD
       const data = await fetchJSON('/app/projection/data', {
-=======
-      const data = await fetch('/app/projection/data', {
->>>>>>> 748ac02aa6f96c785f54b96d19f576dafc3d1383
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(buildPayload()),
       });
       state.lastData = data;
+      state.lastRunAt = new Date();
+      updateLastRun();
       renderAll(data);
     } catch (e) {
       console.error(e);
@@ -350,19 +490,34 @@
     }
   }
 
+  function calcRunwayDays(startIso, breakIso) {
+    if (!breakIso) return null;
+    const start = new Date(`${startIso}T00:00:00`);
+    const end = new Date(`${breakIso}T00:00:00`);
+    const diff = Math.round((end - start) / 86400000);
+    return diff >= 0 ? diff : 0;
+  }
   function renderAll(data) {
     // KPIs
-    initialLabel.textContent = `Saldo inicial: ${fmtBRL.format(Number(data.saldo_inicial || 0))}`;
-    kpiFinal.textContent = fmtBRL.format(Number(data.saldo_final || 0));
-    kpiMin.textContent = fmtBRL.format(Number(data.min_saldo || 0));
-    kpiMinDate.textContent = fmtDate(data.min_saldo_date);
-    kpiBreak.textContent = data.break_date ? fmtDate(data.break_date) : '—';
-    kpiCoverage.textContent = `${Number((data.coverage && data.coverage.percent) || 100).toFixed(1)}%`;
-    kpiCoverageMeta.textContent = `${(data.coverage && data.coverage.covered_count) || 0}/${(data.coverage && data.coverage.total_expenses) || 0}`;
-    kpiReserve.textContent = fmtBRL.format(Number(data.recommended_reserve || 0));
+    if (initialLabel) initialLabel.textContent = `Saldo inicial: ${fmtBRL.format(Number(data.saldo_inicial || 0))}`;
+    if (kpiFinal) kpiFinal.textContent = fmtBRL.format(Number(data.saldo_final || 0));
+    if (kpiMin) kpiMin.textContent = fmtBRL.format(Number(data.min_saldo || 0));
+    if (kpiMinDate) kpiMinDate.textContent = fmtDate(data.min_saldo_date);
+    if (kpiBreak) kpiBreak.textContent = data.break_date ? fmtDate(data.break_date) : '—';
+    if (kpiCoverage) kpiCoverage.textContent = `${Number((data.coverage && data.coverage.percent) || 100).toFixed(1)}%`;
+    if (kpiCoverageMeta) kpiCoverageMeta.textContent = `${(data.coverage && data.coverage.covered_count) || 0}/${(data.coverage && data.coverage.total_expenses) || 0}`;
+    if (kpiReserve) kpiReserve.textContent = fmtBRL.format(Number(data.recommended_reserve || 0));
+
+    const rangeStart = (data.range && data.range.start) || startInput?.value;
+    const runwayDays = calcRunwayDays(rangeStart, data.break_date);
+    if (kpiRunway) kpiRunway.textContent = runwayDays === null ? 'Sem quebra' : `${runwayDays} dia${runwayDays === 1 ? '' : 's'}`;
+    if (kpiRunwayMeta) kpiRunwayMeta.textContent = data.break_date ? `Quebra em ${fmtDate(data.break_date)}` : 'Saldo não fica negativo';
 
     // Chart
-    renderChart(data.daily || []);
+    renderChart(data.daily || [], Number(data.reserve_min || 0));
+
+    // Calendar
+    renderCalendar(data.daily || [], data.range || {});
 
     // Table
     renderTable(data.events || []);
@@ -372,19 +527,33 @@
 
     // Reductions
     renderReductions(data.categories || []);
+
+    // Coverage
+    renderCoverage(data.events || []);
+
+    // Overrides
+    renderOverrides();
+
+    updateScenarioStatus();
   }
 
-  function renderChart(daily) {
+  function renderChart(daily, reserveMin) {
+    if (!timelinePath || !timelineArea || !timelineZero || !timelineReserve || !timelineEmpty) return;
     if (!Array.isArray(daily) || daily.length < 2) {
       timelinePath.setAttribute('d', '');
+      timelineArea.setAttribute('d', '');
+      timelineZero.setAttribute('d', '');
+      timelineReserve.setAttribute('d', '');
       timelineEmpty.style.display = 'flex';
       return;
     }
     timelineEmpty.style.display = 'none';
 
     const values = daily.map((p) => Number(p.saldo || 0));
-    let min = Math.min(...values);
-    let max = Math.max(...values);
+    const extra = [0];
+    if (isFinite(reserveMin)) extra.push(reserveMin);
+    let min = Math.min(...values, ...extra);
+    let max = Math.max(...values, ...extra);
     if (min === max) {
       min -= 1;
       max += 1;
@@ -397,11 +566,15 @@
     const y0 = 30, y1 = 210;
 
     const n = daily.length - 1;
+    const scaleY = (v) => {
+      const t = (v - min) / (max - min);
+      return y1 - (y1 - y0) * t;
+    };
+
     const points = daily.map((p, i) => {
       const x = x0 + (x1 - x0) * (i / n);
       const v = Number(p.saldo || 0);
-      const t = (v - min) / (max - min);
-      const y = y1 - (y1 - y0) * t;
+      const y = scaleY(v);
       return { x, y };
     });
 
@@ -410,6 +583,27 @@
       d += ` L ${points[i].x.toFixed(1)} ${points[i].y.toFixed(1)}`;
     }
     timelinePath.setAttribute('d', d);
+
+    const zeroY = scaleY(0);
+    timelineZero.setAttribute('d', `M ${x0} ${zeroY.toFixed(1)} H ${x1}`);
+
+    if (reserveMin > 0) {
+      const resY = scaleY(reserveMin);
+      timelineReserve.setAttribute('d', `M ${x0} ${resY.toFixed(1)} H ${x1}`);
+    } else {
+      timelineReserve.setAttribute('d', '');
+    }
+
+    let area = `M ${points[0].x.toFixed(1)} ${zeroY.toFixed(1)}`;
+    for (let i = 0; i < points.length; i++) {
+      area += ` L ${points[i].x.toFixed(1)} ${points[i].y.toFixed(1)}`;
+    }
+    area += ` L ${points[points.length - 1].x.toFixed(1)} ${zeroY.toFixed(1)} Z`;
+    timelineArea.setAttribute('d', area);
+
+    const hasNegative = values.some((v) => v < 0);
+    timelinePath.classList.toggle('is-negative', hasNegative);
+    timelineArea.classList.toggle('is-negative', hasNegative);
   }
 
   function badge(text, cls) {
@@ -420,6 +614,7 @@
   }
 
   function renderTable(events) {
+    if (!tbody) return;
     tbody.innerHTML = '';
     if (!Array.isArray(events) || events.length === 0) {
       const tr = document.createElement('tr');
@@ -435,6 +630,7 @@
 
     events.forEach((ev) => {
       const tr = document.createElement('tr');
+      tr.classList.toggle('is-uncovered', ev.covered === false);
 
       const tdDate = document.createElement('td');
       tdDate.textContent = fmtDate(ev.date);
@@ -509,15 +705,10 @@
       tbody.appendChild(tr);
     });
   }
-
   async function cyclePriority(entradaId, current) {
     const next = current === 'alta' ? 'media' : (current === 'media' ? 'baixa' : 'alta');
     try {
-<<<<<<< HEAD
       await fetchJSON(`/app/projection/entry/${entradaId}/priority`, {
-=======
-      await fetch(`/app/projection/entry/${entradaId}/priority`, {
->>>>>>> 748ac02aa6f96c785f54b96d19f576dafc3d1383
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ priority: next }),
@@ -547,7 +738,7 @@
   }
 
   function shiftExpense(entradaId, currentDateIso) {
-    const nd = prompt('Nova data (YYYY-MM-DD):', currentDateIso || startInput.value);
+    const nd = prompt('Nova data (YYYY-MM-DD):', currentDateIso || startInput?.value);
     if (!nd) return;
     // valida básico
     if (!/^\d{4}-\d{2}-\d{2}$/.test(nd)) {
@@ -555,7 +746,7 @@
       return;
     }
     upsertShift(entradaId, nd);
-    state.dirty = true;
+    markDirty();
     runDebounced();
   }
 
@@ -566,16 +757,17 @@
       return;
     }
     upsertSplit(entradaId, parts);
-    state.dirty = true;
+    markDirty();
     runDebounced();
   }
 
   function renderRisks(risks) {
+    if (!riskList) return;
     riskList.innerHTML = '';
     if (!Array.isArray(risks) || risks.length === 0) {
       const div = document.createElement('div');
       div.className = 'risk-item';
-      div.innerHTML = `<strong>Sem alertas</strong><div class="risk-sub">No período selecionado, não encontramos riscos relevantes.</div>`;
+      div.innerHTML = '<strong>Sem alertas</strong><div class="risk-sub">No período selecionado, não encontramos riscos relevantes.</div>';
       riskList.appendChild(div);
       return;
     }
@@ -625,6 +817,7 @@
   }
 
   function renderReductions(categories) {
+    if (!reductionsWrap) return;
     reductionsWrap.innerHTML = '';
     if (!Array.isArray(categories) || categories.length === 0) {
       const div = document.createElement('div');
@@ -667,7 +860,7 @@
       input.addEventListener('input', () => {
         const pct = clamp(Number(input.value || 0), 0, 100);
         setReduction(c.key, pct);
-        state.dirty = true;
+        markDirty();
         runDebounced();
       });
 
@@ -698,10 +891,250 @@
     else arr.push(item);
     state.overrides.reductions = arr;
   }
+  function renderCoverage(events) {
+    if (!coverageHighValue || !coverageMediumValue || !coverageLowValue) return;
+    const stats = {
+      alta: { covered: 0, total: 0 },
+      media: { covered: 0, total: 0 },
+      baixa: { covered: 0, total: 0 },
+    };
+
+    (events || []).forEach((ev) => {
+      if (ev.tipo !== 'despesa') return;
+      const pr = String(ev.priority || 'media').toLowerCase();
+      const bucket = stats[pr] || stats.media;
+      bucket.total += 1;
+      if (ev.covered === true) bucket.covered += 1;
+    });
+
+    const totalExpenses = Object.values(stats).reduce((acc, item) => acc + item.total, 0);
+    const coveredExpenses = Object.values(stats).reduce((acc, item) => acc + item.covered, 0);
+    const uncovered = totalExpenses - coveredExpenses;
+
+    setCoverageItem(stats.alta, coverageHighValue, coverageHighBar, coverageHighMeta);
+    setCoverageItem(stats.media, coverageMediumValue, coverageMediumBar, coverageMediumMeta);
+    setCoverageItem(stats.baixa, coverageLowValue, coverageLowBar, coverageLowMeta);
+
+    if (coverageNote) {
+      coverageNote.textContent = uncovered > 0
+        ? `${uncovered} despesa(s) ficam descobertas com a regra de prioridade.`
+        : 'Todas as despesas ficam cobertas pela reserva configurada.';
+    }
+  }
+
+  function setCoverageItem(stat, valueEl, barEl, metaEl) {
+    const percent = stat.total ? (stat.covered / stat.total) * 100 : 100;
+    if (valueEl) valueEl.textContent = `${percent.toFixed(1)}%`;
+    if (barEl) barEl.style.width = `${percent}%`;
+    if (metaEl) metaEl.textContent = `${stat.covered}/${stat.total} cobertas`;
+  }
+
+  function renderCalendar(daily, range) {
+    if (!calendarGrid || !calendarEmpty) return;
+    calendarGrid.innerHTML = '';
+
+    if (!Array.isArray(daily) || daily.length === 0) {
+      calendarEmpty.style.display = 'flex';
+      if (calendarRange) calendarRange.textContent = '—';
+      if (calendarAvg) calendarAvg.textContent = 'R$ 0,00';
+      if (calendarPositive) calendarPositive.textContent = '0';
+      if (calendarNegative) calendarNegative.textContent = '0';
+      return;
+    }
+
+    calendarEmpty.style.display = 'none';
+
+    const startIso = range.start || daily[0].date;
+    const endIso = range.end || daily[daily.length - 1].date;
+    if (calendarRange) calendarRange.textContent = `${fmtDate(startIso)} — ${fmtDate(endIso)}`;
+
+    const values = daily.map((d) => Number(d.saldo || 0));
+    const maxPos = Math.max(0, ...values);
+    const maxNeg = Math.min(0, ...values);
+
+    const startDate = new Date(`${startIso}T00:00:00`);
+    const offset = (startDate.getDay() + 6) % 7; // Monday first
+    for (let i = 0; i < offset; i++) {
+      const empty = document.createElement('div');
+      empty.className = 'calendar-cell is-empty';
+      calendarGrid.appendChild(empty);
+    }
+
+    let positiveDays = 0;
+    let negativeDays = 0;
+    const total = values.reduce((acc, v) => acc + v, 0);
+
+    daily.forEach((d) => {
+      const v = Number(d.saldo || 0);
+      const cell = document.createElement('div');
+      cell.className = 'calendar-cell';
+      const dateObj = new Date(`${d.date}T00:00:00`);
+      cell.textContent = String(dateObj.getDate());
+      cell.title = `${fmtDate(d.date)} • ${fmtBRL.format(v)}`;
+
+      if (v > 0) {
+        positiveDays += 1;
+        const level = calcIntensity(v, maxPos);
+        cell.classList.add(`pos-${level}`);
+      } else if (v < 0) {
+        negativeDays += 1;
+        const level = calcIntensity(v, Math.abs(maxNeg));
+        cell.classList.add(`neg-${level}`);
+      } else {
+        cell.classList.add('neutral');
+      }
+
+      calendarGrid.appendChild(cell);
+    });
+
+    const avg = total / values.length;
+    if (calendarAvg) calendarAvg.textContent = fmtBRL.format(avg);
+    if (calendarPositive) calendarPositive.textContent = String(positiveDays);
+    if (calendarNegative) calendarNegative.textContent = String(negativeDays);
+  }
+
+  function calcIntensity(value, maxAbs) {
+    if (!maxAbs || maxAbs <= 0) return 1;
+    const ratio = Math.min(1, Math.abs(value) / maxAbs);
+    if (ratio > 0.75) return 4;
+    if (ratio > 0.5) return 3;
+    if (ratio > 0.25) return 2;
+    return 1;
+  }
+
+  function renderOverrides() {
+    if (!overrideList) return;
+    overrideList.innerHTML = '';
+
+    const overrides = state.overrides || {};
+    const entryMap = buildEntryMap();
+    let count = 0;
+
+    const addItem = (title, meta, type, index) => {
+      const item = document.createElement('div');
+      item.className = 'override-item';
+
+      const content = document.createElement('div');
+      const h = document.createElement('div');
+      h.className = 'override-title';
+      h.textContent = title;
+      const m = document.createElement('div');
+      m.className = 'override-meta';
+      m.textContent = meta;
+      content.appendChild(h);
+      content.appendChild(m);
+
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'btn-mini';
+      btn.textContent = 'Remover';
+      btn.setAttribute('data-remove', 'true');
+      btn.setAttribute('data-type', type);
+      btn.setAttribute('data-index', String(index));
+
+      item.appendChild(content);
+      item.appendChild(btn);
+      overrideList.appendChild(item);
+    };
+
+    if (Array.isArray(overrides.shifts)) {
+      overrides.shifts.forEach((s, idx) => {
+        const label = entryMap.get(Number(s.entrada_id)) || `Entrada #${s.entrada_id}`;
+        addItem('Adiar despesa', `${label} • nova data ${fmtDate(s.new_date)}`, 'shift', idx);
+        count += 1;
+      });
+    }
+
+    if (Array.isArray(overrides.splits)) {
+      overrides.splits.forEach((s, idx) => {
+        const label = entryMap.get(Number(s.entrada_id)) || `Entrada #${s.entrada_id}`;
+        addItem('Parcelar despesa', `${label} • ${s.parts}x`, 'split', idx);
+        count += 1;
+      });
+    }
+
+    if (Array.isArray(overrides.reductions)) {
+      overrides.reductions.forEach((r, idx) => {
+        if (!r || !r.percent || Number(r.percent) <= 0) return;
+        const cat = String(r.categoria || 'outros');
+        addItem('Redução por categoria', `${cat} • -${Number(r.percent)}%`, 'reduction', idx);
+        count += 1;
+      });
+    }
+
+    if (Array.isArray(overrides.extras)) {
+      overrides.extras.forEach((ex, idx) => {
+        const label = ex.tipo === 'despesa' ? 'Despesa extra' : 'Renda extra';
+        const meta = `${fmtDate(ex.date)} • ${fmtBRL.format(Number(ex.valor || 0))}`;
+        addItem(label, meta, 'extra', idx);
+        count += 1;
+      });
+    }
+
+    if (overrides.reserve && Number(overrides.reserve) > 0) {
+      addItem('Reserva mínima ajustada', fmtBRL.format(Number(overrides.reserve)), 'reserve', 0);
+      count += 1;
+    }
+
+    if (!count) {
+      const empty = document.createElement('div');
+      empty.className = 'risk-item';
+      empty.innerHTML = '<strong>Sem ajustes</strong><div class="risk-sub">Nenhum simulador aplicado no cenário atual.</div>';
+      overrideList.appendChild(empty);
+    }
+  }
+
+  function buildEntryMap() {
+    const map = new Map();
+    const events = state.lastData && state.lastData.events ? state.lastData.events : [];
+    events.forEach((ev) => {
+      if (ev && ev.id && ev.descricao) {
+        map.set(Number(ev.id), ev.descricao);
+      }
+    });
+    return map;
+  }
+
+  if (overrideList) {
+    overrideList.addEventListener('click', (event) => {
+      const btn = event.target.closest('[data-remove]');
+      if (!btn) return;
+      const type = btn.getAttribute('data-type');
+      const idx = Number(btn.getAttribute('data-index'));
+      removeOverride(type, idx);
+    });
+  }
+
+  function removeOverride(type, index) {
+    switch (type) {
+      case 'shift':
+        if (Array.isArray(state.overrides.shifts)) state.overrides.shifts.splice(index, 1);
+        break;
+      case 'split':
+        if (Array.isArray(state.overrides.splits)) state.overrides.splits.splice(index, 1);
+        break;
+      case 'reduction':
+        if (Array.isArray(state.overrides.reductions)) state.overrides.reductions.splice(index, 1);
+        break;
+      case 'extra':
+        if (Array.isArray(state.overrides.extras)) state.overrides.extras.splice(index, 1);
+        break;
+      case 'reserve':
+        state.overrides.reserve = null;
+        if (reserveInput) reserveInput.value = '0';
+        break;
+      default:
+        return;
+    }
+    markDirty();
+    runDebounced();
+  }
 
   // Init
   (async function init() {
     setTodayDefaults();
+    updateScenarioStatus();
+    updateLastRun();
     try {
       await loadScenarios(0);
     } catch (e) {

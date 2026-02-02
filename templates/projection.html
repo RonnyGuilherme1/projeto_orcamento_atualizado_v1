@@ -1,4 +1,4 @@
-{% extends "base_app.html" %}
+﻿{% extends "base_app.html" %}
 {% set page_class = 'page-projection' %}
 {% set page_css = ['/static/css/app_shell.css', '/static/css/app_base.css', '/static/css/projection.css'] %}
 
@@ -9,7 +9,12 @@
   <div class="page projection-page" data-projection-page>
     <section class="panel projection-hero">
       <div class="panel-head">
-        <div>
+        <div class="hero-title">
+          <div class="hero-meta">
+            <span class="pill pro-pill">Plano PRO</span>
+            <span class="hero-status" id="scenario-status">Base • sem alterações</span>
+            <span class="hero-status" id="projection-last-run">Atualizado: —</span>
+          </div>
           <h2 class="panel-title">Projeção PRO</h2>
           <p class="panel-subtitle">Simule o fluxo de caixa, descubra até onde seu dinheiro aguenta e teste cenários sem mexer no histórico.</p>
         </div>
@@ -60,7 +65,10 @@
             <button class="btn-secondary" type="button" id="scenario-saveas">Salvar como</button>
             <button class="btn-secondary danger" type="button" id="scenario-delete">Excluir</button>
           </div>
-          <div class="scenario-note">Dica: use “Salvar como” para criar variações (Conservador / Agressivo / etc.).</div>
+          <div class="scenario-footer">
+            <span class="scenario-state" id="scenario-state">Sem alterações</span>
+            <span class="scenario-note">Dica: use “Salvar como” para criar variações (Conservador / Agressivo / etc.).</span>
+          </div>
         </div>
       </div>
     </section>
@@ -89,6 +97,11 @@
             <span class="kpi-meta">Primeiro saldo negativo</span>
           </div>
           <div class="kpi-card">
+            <span class="kpi-label">Runway</span>
+            <strong class="kpi-value" id="kpi-runway">—</strong>
+            <span class="kpi-meta" id="kpi-runway-meta">Dias até quebra</span>
+          </div>
+          <div class="kpi-card">
             <span class="kpi-label">Contas cobertas</span>
             <strong class="kpi-value" id="kpi-coverage">100%</strong>
             <span class="kpi-meta" id="kpi-coverage-meta">0/0</span>
@@ -114,10 +127,19 @@
 
         <div class="timeline-chart">
           <svg viewBox="0 0 820 240" class="timeline-svg" aria-label="Saldo diário">
-            <path class="timeline-path" id="timeline-path" d=""></path>
             <path class="timeline-axis" d="M30 210 H790"></path>
+            <path class="timeline-area" id="timeline-area" d=""></path>
+            <path class="timeline-zero" id="timeline-zero" d=""></path>
+            <path class="timeline-reserve" id="timeline-reserve" d=""></path>
+            <path class="timeline-path" id="timeline-path" d=""></path>
           </svg>
           <div class="timeline-empty" id="timeline-empty">Sem dados no período</div>
+        </div>
+
+        <div class="timeline-legend">
+          <span><span class="legend-dot dot-line"></span>Saldo diário</span>
+          <span><span class="legend-dot dot-zero"></span>Zero</span>
+          <span><span class="legend-dot dot-reserve"></span>Reserva mínima</span>
         </div>
 
         <div class="timeline-table-wrap">
@@ -140,12 +162,108 @@
         </div>
       </section>
 
+      <section class="panel projection-calendar">
+        <div class="panel-head">
+          <div>
+            <h3 class="panel-title">Calendário de caixa</h3>
+            <p class="panel-subtitle">Mapa diário para identificar picos e vales.</p>
+          </div>
+          <div class="panel-actions">
+            <span class="calendar-range" id="calendar-range">—</span>
+          </div>
+        </div>
+
+        <div class="calendar-grid-wrap">
+          <div class="calendar-weekdays">
+            <span>Seg</span>
+            <span>Ter</span>
+            <span>Qua</span>
+            <span>Qui</span>
+            <span>Sex</span>
+            <span>Sáb</span>
+            <span>Dom</span>
+          </div>
+          <div class="calendar-grid" id="calendar-grid"></div>
+          <div class="calendar-empty" id="calendar-empty">Sem dados no período</div>
+        </div>
+
+        <div class="calendar-summary">
+          <div class="summary-item">
+            <span>Saldo médio diário</span>
+            <strong id="calendar-avg">R$ 0,00</strong>
+          </div>
+          <div class="summary-item">
+            <span>Dias positivos</span>
+            <strong id="calendar-positive">0</strong>
+          </div>
+          <div class="summary-item">
+            <span>Dias negativos</span>
+            <strong id="calendar-negative">0</strong>
+          </div>
+        </div>
+
+        <div class="calendar-legend">
+          <span class="legend"><span class="legend-box pos"></span>Positivo</span>
+          <span class="legend"><span class="legend-box neg"></span>Negativo</span>
+        </div>
+      </section>
+
+      <section class="panel projection-coverage">
+        <div class="panel-head">
+          <div>
+            <h3 class="panel-title">Cobertura por prioridade</h3>
+            <p class="panel-subtitle">Ordem de pagamento respeitando a reserva mínima.</p>
+          </div>
+        </div>
+
+        <div class="coverage-grid">
+          <div class="coverage-item" data-priority="alta">
+            <div class="coverage-row">
+              <span>Alta</span>
+              <strong id="coverage-high-value">0%</strong>
+            </div>
+            <div class="coverage-bar"><span id="coverage-high-bar"></span></div>
+            <div class="coverage-meta" id="coverage-high-meta">0/0 cobertas</div>
+          </div>
+          <div class="coverage-item" data-priority="media">
+            <div class="coverage-row">
+              <span>Média</span>
+              <strong id="coverage-medium-value">0%</strong>
+            </div>
+            <div class="coverage-bar"><span id="coverage-medium-bar"></span></div>
+            <div class="coverage-meta" id="coverage-medium-meta">0/0 cobertas</div>
+          </div>
+          <div class="coverage-item" data-priority="baixa">
+            <div class="coverage-row">
+              <span>Baixa</span>
+              <strong id="coverage-low-value">0%</strong>
+            </div>
+            <div class="coverage-bar"><span id="coverage-low-bar"></span></div>
+            <div class="coverage-meta" id="coverage-low-meta">0/0 cobertas</div>
+          </div>
+        </div>
+        <div class="coverage-note" id="coverage-note"></div>
+      </section>
+
       <section class="panel projection-risk">
         <div class="panel-head">
           <h3 class="panel-title">O que está em risco</h3>
           <p class="panel-subtitle">Alertas e recomendações automáticas com base na simulação atual.</p>
         </div>
         <div class="risk-list" id="risk-list"></div>
+      </section>
+
+      <section class="panel projection-overrides">
+        <div class="panel-head">
+          <div>
+            <h3 class="panel-title">Ajustes do cenário</h3>
+            <p class="panel-subtitle">Resumo das simulações aplicadas no cenário atual.</p>
+          </div>
+          <div class="panel-actions">
+            <button class="btn-secondary" type="button" id="scenario-clear">Reverter ajustes</button>
+          </div>
+        </div>
+        <div class="override-list" id="override-list"></div>
       </section>
 
       <section class="panel projection-simulators">
@@ -170,7 +288,7 @@
           <div class="sim-card">
             <h4>Dica rápida</h4>
             <p>Na tabela, use <strong>“Adiar”</strong> ou <strong>“Parcelar”</strong> em uma despesa para testar cenários.</p>
-            <button class="btn-secondary" type="button" id="sim-reset">Voltar para Base</button>
+            <button class="btn-secondary" type="button" id="sim-reset">Limpar ajustes</button>
           </div>
         </div>
       </section>
