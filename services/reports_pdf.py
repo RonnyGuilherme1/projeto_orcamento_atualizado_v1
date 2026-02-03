@@ -1028,92 +1028,117 @@ def _render_reports_pdf_v2(payload: dict, sections: set[str], detail: str, meta:
     if "flow" in ordered_sections:
         add_section_gap(story)
         suffix = " (resumido)" if detail == "resumido" else ""
-        story.append(section_header(f"Fluxo de caixa{suffix}", "Movimentacoes cronologicas com saldo acumulado."))
+        flow_subtitle = "Resumo diario do fluxo de caixa." if is_resumido else "Movimentacoes cronologicas com saldo acumulado."
+        story.append(section_header(f"Fluxo de caixa{suffix}", flow_subtitle))
         flow_rows = payload.get("flow", {}).get("rows") or []
         final_balance = payload.get("flow", {}).get("final_balance")
         if not flow_rows:
             story.append(Paragraph(safe_text("Sem dados no periodo."), styles["RptBody"]))
         else:
-            show_status = detail == "detalhado" and any(row.get("status") for row in flow_rows)
-            show_tags = detail == "detalhado" and any(row.get("tags") for row in flow_rows)
-            small_flow = detail == "detalhado" and (show_status or show_tags)
+            if is_resumido:
+                headers = ["Data", "Entradas", "Saidas", "Saldo"]
+                rows = [[cell(label, right=label != "Data") for label in headers]]
+                extra_styles = []
+                balance_idx = 3
+                for row in flow_rows:
+                    balance = row.get("balance")
+                    rows.append(
+                        [
+                            cell(_fmt_date(row.get("date"))),
+                            cell(_fmt_brl(row.get("income")) if row.get("income") else "-", right=True),
+                            cell(_fmt_brl(row.get("expense")) if row.get("expense") else "-", right=True),
+                            cell(_fmt_brl(balance), right=True),
+                        ]
+                    )
+                    row_idx = len(rows) - 1
+                    if balance is not None and balance < 0:
+                        extra_styles.append(("TEXTCOLOR", (balance_idx, row_idx), (balance_idx, row_idx), RED))
 
-            headers = ["Data", "Descricao", "Categoria", "Metodo"]
-            if show_status:
-                headers.append("Status")
-            if show_tags:
-                headers.append("Tags")
-            headers.extend(["Entrada", "Saida", "Saldo"])
+                if final_balance is not None:
+                    rows.append(
+                        [
+                            cell("Saldo final"),
+                            cell(""),
+                            cell(""),
+                            cell(_fmt_brl(final_balance), right=True),
+                        ]
+                    )
+                    total_idx = len(rows) - 1
+                    extra_styles.extend(
+                        [
+                            ("BACKGROUND", (0, total_idx), (-1, total_idx), LIGHT_GRAY),
+                            ("FONTNAME", (0, total_idx), (-1, total_idx), "Helvetica-Bold"),
+                            ("LINEABOVE", (0, total_idx), (-1, total_idx), 0.8, LINE_COLOR),
+                        ]
+                    )
+                    if final_balance < 0:
+                        extra_styles.append(("TEXTCOLOR", (balance_idx, total_idx), (balance_idx, total_idx), RED))
 
-            def flow_col_widths() -> list[float]:
-                if show_status and show_tags:
-                    weights = [0.1, 0.23, 0.13, 0.09, 0.09, 0.11, 0.08, 0.08, 0.09]
-                elif show_status:
-                    weights = [0.11, 0.26, 0.14, 0.1, 0.09, 0.1, 0.1, 0.1]
-                elif show_tags:
-                    weights = [0.11, 0.26, 0.14, 0.1, 0.12, 0.09, 0.09, 0.09]
-                else:
-                    weights = [0.11, 0.29, 0.15, 0.11, 0.11, 0.11, 0.12]
-                return [doc.width * weight for weight in weights]
-
-            rows = [
-                [cell(label, right=label in {"Entrada", "Saida", "Saldo"}, small=small_flow) for label in headers]
-            ]
-            extra_styles = []
-            balance_idx = len(headers) - 1
-            for row in flow_rows:
-                balance = row.get("balance")
-                desc = _truncate(str(row.get("description") or "-"), desc_limit)
-                tags = str(row.get("tags") or "-")
-                if detail == "detalhado":
-                    tags = _truncate(tags, 60)
-                row_cells = [
-                    cell(_fmt_date(row.get("date")), small=small_flow),
-                    cell(desc, wrap=not is_resumido, small=small_flow),
-                    cell(str(row.get("category") or "-"), small=small_flow),
-                    cell(str(row.get("method") or "-"), small=small_flow),
+                table = make_table(
+                    rows,
+                    [doc.width * 0.22, doc.width * 0.26, doc.width * 0.26, doc.width * 0.26],
+                    right_cols={1, 2, 3},
+                )
+            else:
+                headers = ["Data", "Descricao", "Categoria", "Metodo", "Status", "Entrada", "Saida", "Saldo"]
+                small_flow = True
+                rows = [
+                    [cell(label, right=label in {"Entrada", "Saida", "Saldo"}, small=small_flow) for label in headers]
                 ]
-                if show_status:
-                    row_cells.append(cell(str(row.get("status") or "-"), small=small_flow))
-                if show_tags:
-                    row_cells.append(cell(tags, wrap=True, small=small_flow))
-                row_cells.extend(
-                    [
-                        cell(_fmt_brl(row.get("income")) if row.get("income") else "-", right=True, small=small_flow),
-                        cell(_fmt_brl(row.get("expense")) if row.get("expense") else "-", right=True, small=small_flow),
-                        cell(_fmt_brl(balance), right=True, small=small_flow),
-                    ]
-                )
-                rows.append(
-                    row_cells
-                )
-                row_idx = len(rows) - 1
-                if balance is not None and balance < 0:
-                    extra_styles.append(("TEXTCOLOR", (balance_idx, row_idx), (balance_idx, row_idx), RED))
+                extra_styles = []
+                balance_idx = len(headers) - 1
+                for row in flow_rows:
+                    balance = row.get("balance")
+                    desc = _truncate(str(row.get("description") or "-"), desc_limit)
+                    rows.append(
+                        [
+                            cell(_fmt_date(row.get("date")), small=small_flow),
+                            cell(desc, wrap=True, small=small_flow),
+                            cell(str(row.get("category") or "-"), small=small_flow),
+                            cell(str(row.get("method") or "-"), small=small_flow),
+                            cell(str(row.get("status") or "-"), small=small_flow),
+                            cell(_fmt_brl(row.get("income")) if row.get("income") else "-", right=True, small=small_flow),
+                            cell(_fmt_brl(row.get("expense")) if row.get("expense") else "-", right=True, small=small_flow),
+                            cell(_fmt_brl(balance), right=True, small=small_flow),
+                        ]
+                    )
+                    row_idx = len(rows) - 1
+                    if balance is not None and balance < 0:
+                        extra_styles.append(("TEXTCOLOR", (balance_idx, row_idx), (balance_idx, row_idx), RED))
 
-            if final_balance is not None:
-                total_cols = len(headers)
-                rows.append(
-                    [cell("Saldo final", small=small_flow)]
-                    + [cell("", small=small_flow) for _ in range(total_cols - 2)]
-                    + [cell(_fmt_brl(final_balance), right=True, small=small_flow)]
-                )
-                total_idx = len(rows) - 1
-                extra_styles.extend(
-                    [
-                        ("BACKGROUND", (0, total_idx), (-1, total_idx), LIGHT_GRAY),
-                        ("FONTNAME", (0, total_idx), (-1, total_idx), "Helvetica-Bold"),
-                        ("LINEABOVE", (0, total_idx), (-1, total_idx), 0.8, LINE_COLOR),
-                    ]
-                )
-                if final_balance < 0:
-                    extra_styles.append(("TEXTCOLOR", (balance_idx, total_idx), (balance_idx, total_idx), RED))
+                if final_balance is not None:
+                    total_cols = len(headers)
+                    rows.append(
+                        [cell("Saldo final", small=small_flow)]
+                        + [cell("", small=small_flow) for _ in range(total_cols - 2)]
+                        + [cell(_fmt_brl(final_balance), right=True, small=small_flow)]
+                    )
+                    total_idx = len(rows) - 1
+                    extra_styles.extend(
+                        [
+                            ("BACKGROUND", (0, total_idx), (-1, total_idx), LIGHT_GRAY),
+                            ("FONTNAME", (0, total_idx), (-1, total_idx), "Helvetica-Bold"),
+                            ("LINEABOVE", (0, total_idx), (-1, total_idx), 0.8, LINE_COLOR),
+                        ]
+                    )
+                    if final_balance < 0:
+                        extra_styles.append(("TEXTCOLOR", (balance_idx, total_idx), (balance_idx, total_idx), RED))
 
-            table = make_table(
-                rows,
-                flow_col_widths(),
-                right_cols=set(range(len(headers) - 3, len(headers))),
-            )
+                table = make_table(
+                    rows,
+                    [
+                        doc.width * 0.1,
+                        doc.width * 0.27,
+                        doc.width * 0.13,
+                        doc.width * 0.1,
+                        doc.width * 0.1,
+                        doc.width * 0.1,
+                        doc.width * 0.1,
+                        doc.width * 0.1,
+                    ],
+                    right_cols={5, 6, 7},
+                )
+
             if extra_styles:
                 table.setStyle(TableStyle(extra_styles))
             story.append(table)
@@ -1156,35 +1181,47 @@ def _render_reports_pdf_v2(payload: dict, sections: set[str], detail: str, meta:
     if "recurring" in ordered_sections:
         add_section_gap(story)
         story.append(section_header("Recorrencias", "Receitas recorrentes detectadas."))
-        recurring_items = payload.get("recurring", {}).get("items") or []
-        if not recurring_items:
-            story.append(Paragraph(safe_text("Sem recorrencias no periodo."), styles["RptBody"]))
+        recurring = payload.get("recurring", {})
+        recurring_items = recurring.get("items") or []
+        recurring_summary = recurring.get("summary") or {}
+        if is_resumido:
+            count = recurring_summary.get("count", len(recurring_items))
+            monthly_estimate = recurring_summary.get("monthly_estimate")
+            if not count:
+                story.append(Paragraph(safe_text("Sem recorrencias no periodo."), styles["RptBody"]))
+            else:
+                estimate_text = _fmt_brl(monthly_estimate) if monthly_estimate is not None else "R$ -"
+                summary_text = f"Recorrencias detectadas: {count} | Estimativa mensal: {estimate_text}"
+                story.append(Paragraph(safe_text(summary_text), styles["RptBody"]))
         else:
-            rows = [
-                [
-                    cell("Nome"),
-                    cell("Frequencia"),
-                    cell("Valor medio", right=True),
-                    cell("Confiabilidade", right=True),
-                ]
-            ]
-            for item in recurring_items:
-                reliability = item.get("reliability")
-                reliability_text = f"{reliability}%" if reliability is not None else "-"
-                rows.append(
+            if not recurring_items:
+                story.append(Paragraph(safe_text("Sem recorrencias no periodo."), styles["RptBody"]))
+            else:
+                rows = [
                     [
-                        cell(str(item.get("name") or "-")),
-                        cell(str(item.get("frequency") or "-")),
-                        cell(_fmt_brl(item.get("value")), right=True),
-                        cell(reliability_text, right=True),
+                        cell("Nome"),
+                        cell("Frequencia"),
+                        cell("Valor medio", right=True),
+                        cell("Confiabilidade", right=True),
                     ]
+                ]
+                for item in recurring_items:
+                    reliability = item.get("reliability")
+                    reliability_text = f"{reliability}%" if reliability is not None else "-"
+                    rows.append(
+                        [
+                            cell(str(item.get("name") or "-")),
+                            cell(str(item.get("frequency") or "-")),
+                            cell(_fmt_brl(item.get("value")), right=True),
+                            cell(reliability_text, right=True),
+                        ]
+                    )
+                table = make_table(
+                    rows,
+                    [doc.width * 0.46, doc.width * 0.2, doc.width * 0.17, doc.width * 0.17],
+                    right_cols={2, 3},
                 )
-            table = make_table(
-                rows,
-                [doc.width * 0.46, doc.width * 0.2, doc.width * 0.17, doc.width * 0.17],
-                right_cols={2, 3},
-            )
-            story.append(table)
+                story.append(table)
 
     if "pending" in ordered_sections:
         add_section_gap(story)
@@ -1193,31 +1230,56 @@ def _render_reports_pdf_v2(payload: dict, sections: set[str], detail: str, meta:
         if not pending_items:
             story.append(Paragraph(safe_text("Sem pendencias no periodo."), styles["RptBody"]))
         else:
-            rows = [
-                [
-                    cell("Vencimento"),
-                    cell("Descricao"),
-                    cell("Categoria"),
-                    cell("Valor", right=True),
-                    cell("Dias atraso", right=True),
-                ]
-            ]
-            for item in pending_items:
-                rows.append(
+            if is_resumido:
+                rows = [
                     [
-                        cell(_fmt_date(item.get("date"))),
-                        cell(str(item.get("description") or "-"), wrap=True),
-                        cell(str(item.get("category") or "-")),
-                        cell(_fmt_brl(item.get("value")), right=True),
-                        cell(str(item.get("days_overdue") or 0), right=True),
+                        cell("Vencimento"),
+                        cell("Descricao"),
+                        cell("Valor", right=True),
+                        cell("Dias atraso", right=True),
                     ]
+                ]
+                for item in pending_items:
+                    rows.append(
+                        [
+                            cell(_fmt_date(item.get("date"))),
+                            cell(str(item.get("description") or "-"), wrap=True),
+                            cell(_fmt_brl(item.get("value")), right=True),
+                            cell(str(item.get("days_overdue") or 0), right=True),
+                        ]
+                    )
+                table = make_table(
+                    rows,
+                    [doc.width * 0.22, doc.width * 0.43, doc.width * 0.18, doc.width * 0.17],
+                    right_cols={2, 3},
                 )
-            table = make_table(
-                rows,
-                [doc.width * 0.18, doc.width * 0.32, doc.width * 0.2, doc.width * 0.15, doc.width * 0.15],
-                right_cols={3, 4},
-            )
-            story.append(table)
+                story.append(table)
+            else:
+                rows = [
+                    [
+                        cell("Vencimento"),
+                        cell("Descricao"),
+                        cell("Categoria"),
+                        cell("Valor", right=True),
+                        cell("Dias atraso", right=True),
+                    ]
+                ]
+                for item in pending_items:
+                    rows.append(
+                        [
+                            cell(_fmt_date(item.get("date"))),
+                            cell(str(item.get("description") or "-"), wrap=True),
+                            cell(str(item.get("category") or "-")),
+                            cell(_fmt_brl(item.get("value")), right=True),
+                            cell(str(item.get("days_overdue") or 0), right=True),
+                        ]
+                    )
+                table = make_table(
+                    rows,
+                    [doc.width * 0.18, doc.width * 0.32, doc.width * 0.2, doc.width * 0.15, doc.width * 0.15],
+                    right_cols={3, 4},
+                )
+                story.append(table)
 
     doc.build(story, canvasmaker=lambda *args, **kwargs: NumberedCanvas(*args, report_doc=doc, **kwargs))
     buffer.seek(0)

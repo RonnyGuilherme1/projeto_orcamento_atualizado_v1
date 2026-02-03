@@ -53,7 +53,7 @@ MODE_LABELS = {
 }
 
 DEFAULT_REPORT_SECTIONS = {"summary", "dre", "flow", "categories", "recurring", "pending"}
-FLOW_LIMIT_RESUMIDO = 30
+FLOW_LIMIT_RESUMIDO = 45
 FLOW_LIMIT_DETALHADO = None
 
 MESES = [
@@ -1016,6 +1016,7 @@ def _build_reports_payload(
     detail = (detail or "detalhado").strip().lower()
     if detail not in {"resumido", "detalhado"}:
         detail = "detalhado"
+    is_resumido = detail == "resumido"
 
     entries = (
         Entrada.query
@@ -1147,6 +1148,8 @@ def _build_reports_payload(
         )
 
     category_rows.sort(key=lambda item: item["total"], reverse=True)
+    if is_resumido:
+        category_rows = category_rows[:8]
 
     # DRE
     dre_map: dict[str, dict] = {}
@@ -1183,26 +1186,67 @@ def _build_reports_payload(
     flow_items = sorted(period_items, key=lambda item: (item[1], item[0].id or 0))
     flow_rows = []
     running = balance_start
-    for entry, event_date in flow_items:
-        delta = _entry_amount(entry)
-        running += delta
-        row = {
-            "date": event_date.isoformat(),
-            "description": entry.descricao,
-            "category": CATEGORIAS.get(_normalize_categoria(entry.categoria), "Outros"),
-            "method": _method_label(entry.metodo),
-            "income": round(float(entry.valor), 2) if entry.tipo == "receita" else 0.0,
-            "expense": round(float(entry.valor), 2) if entry.tipo == "despesa" else 0.0,
-            "balance": round(running, 2),
-        }
-        if detail == "detalhado":
-            row["status"] = _status_label(entry.status)
-            row["tags"] = (entry.tags or "").strip()
-        flow_rows.append(row)
+    if is_resumido:
+        current_day = None
+        day_income = 0.0
+        day_expense = 0.0
+        for entry, event_date in flow_items:
+            if current_day is None:
+                current_day = event_date
+            if event_date != current_day:
+                flow_rows.append(
+                    {
+                        "date": current_day.isoformat(),
+                        "income": round(day_income, 2),
+                        "expense": round(day_expense, 2),
+                        "balance": round(running, 2),
+                    }
+                )
+                current_day = event_date
+                day_income = 0.0
+                day_expense = 0.0
 
-    if flow_limit:
-        if len(flow_rows) > flow_limit:
-            flow_rows = flow_rows[-flow_limit:]
+            delta = _entry_amount(entry)
+            running += delta
+            if entry.tipo == "receita":
+                day_income += float(entry.valor)
+            elif entry.tipo == "despesa":
+                day_expense += float(entry.valor)
+
+        if current_day is not None:
+            flow_rows.append(
+                {
+                    "date": current_day.isoformat(),
+                    "income": round(day_income, 2),
+                    "expense": round(day_expense, 2),
+                    "balance": round(running, 2),
+                }
+            )
+
+        max_rows = 31 if length_days <= 31 else 45
+        if flow_limit:
+            max_rows = min(max_rows, flow_limit)
+        if len(flow_rows) > max_rows:
+            flow_rows = flow_rows[-max_rows:]
+    else:
+        for entry, event_date in flow_items:
+            delta = _entry_amount(entry)
+            running += delta
+            row = {
+                "date": event_date.isoformat(),
+                "description": entry.descricao,
+                "category": CATEGORIAS.get(_normalize_categoria(entry.categoria), "Outros"),
+                "method": _method_label(entry.metodo),
+                "status": _status_label(entry.status),
+                "income": round(float(entry.valor), 2) if entry.tipo == "receita" else 0.0,
+                "expense": round(float(entry.valor), 2) if entry.tipo == "despesa" else 0.0,
+                "balance": round(running, 2),
+            }
+            flow_rows.append(row)
+
+        if flow_limit:
+            if len(flow_rows) > flow_limit:
+                flow_rows = flow_rows[-flow_limit:]
 
     # Pendencias
     pending_items = []
@@ -1250,6 +1294,9 @@ def _build_reports_payload(
                 "days_overdue": days_overdue,
             }
         )
+    pending_rows.sort(key=lambda item: (item.get("value") or 0.0, item.get("days_overdue") or 0), reverse=True)
+    if is_resumido:
+        pending_rows = pending_rows[:10]
 
     # Recorrencias (receitas)
     recurrences = (
@@ -1258,6 +1305,7 @@ def _build_reports_payload(
         .all()
     )
     recurring_items = []
+    monthly_estimate = 0.0
     for rec in recurrences:
         exec_count = (
             RecurrenceExecution.query
@@ -1274,11 +1322,21 @@ def _build_reports_payload(
             frequency_label = "Anual"
         else:
             frequency_label = frequency.title()
+        frequency_key = (frequency or "").strip().lower()
+        if frequency_key in {"weekly", "semanal"}:
+            factor = 4.33
+        elif frequency_key in {"yearly", "anual"}:
+            factor = 1 / 12
+        elif frequency_key in {"daily", "diario"}:
+            factor = 30
+        else:
+            factor = 1
+        monthly_estimate += float(rec.valor or 0.0) * factor
         recurring_items.append(
             {
                 "name": rec.name,
                 "frequency": frequency_label,
-                "value": round(float(rec.valor), 2),
+                "value": round(float(rec.valor or 0.0), 2),
                 "reliability": reliability,
             }
         )
@@ -1351,7 +1409,7 @@ def _build_reports_payload(
         "health": {
             "ratio": ratio,
             "status": health_status,
-            "alerts": alerts[: (6 if detail == "detalhado" else 3)],
+            "alerts": alerts[: (8 if detail == "detalhado" else 4)],
         },
         "pending": {
             "count": len(pending_items),
@@ -1378,6 +1436,10 @@ def _build_reports_payload(
         },
         "recurring": {
             "items": recurring_items,
+            "summary": {
+                "count": len(recurring_items),
+                "monthly_estimate": round(monthly_estimate, 2),
+            },
         },
         "updated_at": date.today().isoformat(),
     }
