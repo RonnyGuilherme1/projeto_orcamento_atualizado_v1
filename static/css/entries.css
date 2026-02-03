@@ -856,6 +856,128 @@ body.app-body .entries-page .entry-panel .form-actions .btn-wide{
   width: 100%;
 }
 
+body.app-body .entries-page .entry-form.is-compact .form-grid{
+  grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
+  gap: 10px 12px;
+}
+
+body.app-body .entries-page .entry-form.is-compact .field-compact{
+  grid-column: span 1;
+}
+
+body.app-body .entries-page .entry-form.is-compact .field-expanded{
+  display: none;
+}
+
+body.app-body .entries-page .entry-form.is-compact .form-actions-compact{
+  grid-column: span 1;
+  display: flex;
+  justify-content: flex-end;
+}
+
+body.app-body .entries-page .entry-form.is-compact .field-date{ order: 1; }
+body.app-body .entries-page .entry-form.is-compact .field-tipo{ order: 2; }
+body.app-body .entries-page .entry-form.is-compact .field-valor{ order: 3; }
+body.app-body .entries-page .entry-form.is-compact .field-categoria{ order: 4; }
+body.app-body .entries-page .entry-form.is-compact .form-actions-compact{ order: 5; }
+
+body.app-body .entries-page .entry-form.is-compact .form-actions-expanded{
+  display: none;
+}
+
+body.app-body .entries-page .entry-form.is-expanded .form-actions-compact{
+  display: none;
+}
+
+body.app-body .entries-page .btn-compact{
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  font-size: 20px;
+  line-height: 1;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+body.app-body .entries-page .history-summary{
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.68);
+  margin: 6px 0 10px;
+}
+
+body.app-body .mes-header{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+body.app-body .mes-header .mes-title{
+  font-size: 12px;
+  font-weight: 950;
+  letter-spacing: 0.02em;
+  text-transform: capitalize;
+}
+
+body.app-body .mes-header .mes-totais{
+  font-size: 11px;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+body.app-body .status-badge{
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 850;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+body.app-body .status-badge.status-paid{
+  background: rgba(76, 175, 80, 0.16);
+  border-color: rgba(76, 175, 80, 0.32);
+  color: rgba(226, 255, 230, 0.96);
+}
+
+body.app-body .status-badge.status-unpaid{
+  background: rgba(255, 77, 79, 0.16);
+  border-color: rgba(255, 77, 79, 0.32);
+  color: rgba(255, 225, 225, 0.96);
+}
+
+body.app-body .status-badge.status-neutral{
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.16);
+  color: rgba(255, 255, 255, 0.85);
+}
+
+body.app-body .cell-status{
+  display: flex;
+  align-items: center;
+}
+
+@media (max-width: 720px){
+  body.app-body .entries-page .entry-form.is-compact .form-grid{
+    grid-template-columns: 1fr 1fr;
+  }
+
+  body.app-body .entries-page .entry-form.is-compact .form-actions-compact{
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+  }
+
+  body.app-body .mes-header{
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
 body.app-body .history-filters{
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -1220,19 +1342,23 @@ body.app-body .categoria-chip[data-category="outros"]{
 
 body.app-body .linha .acoes{
   justify-content: flex-end;
-  gap: 6px;
+  gap: 8px;
   display: inline-flex;
   justify-self: end;
 }
 
 body.app-body .btn-icon{
-  height: 34px;
+  height: 38px;
   border-radius: 10px;
   border: 1px solid rgba(255, 255, 255, 0.12);
   background: rgba(255, 255, 255, 0.04);
   color: rgba(255, 255, 255, 0.90);
   cursor: pointer;
-  width: 34px;
+  width: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
 }
 
 body.app-body .btn-icon:hover{
@@ -1884,6 +2010,27 @@ body.app-body.theme-light .select-option:hover,
 body.app-body.theme-light .select-option.is-selected{
   background: rgba(15, 23, 32, 0.08);
   color: #0f1720;
+}
+
+body.app-body.theme-light .history-summary,
+body.app-body.theme-light .mes-header .mes-totais{
+  color: rgba(15, 23, 32, 0.6);
+}
+
+body.app-body.theme-light .status-badge{
+  color: #0f1720;
+  border-color: rgba(15, 23, 32, 0.15);
+  background: rgba(15, 23, 32, 0.06);
+}
+
+body.app-body.theme-light .status-badge.status-paid{
+  background: rgba(76, 175, 80, 0.18);
+  border-color: rgba(76, 175, 80, 0.35);
+}
+
+body.app-body.theme-light .status-badge.status-unpaid{
+  background: rgba(255, 77, 79, 0.16);
+  border-color: rgba(255, 77, 79, 0.35);
 }
 
 body.app-body.theme-light .btn-secondary{

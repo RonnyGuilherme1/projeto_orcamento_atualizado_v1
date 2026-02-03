@@ -8,6 +8,10 @@
   const inputStatus = document.getElementById("status");
   const inputMetodo = document.getElementById("metodo");
 
+  const formExpandBtn = document.getElementById("entry-expand");
+  const receitaSummary = document.getElementById("receita-summary");
+  const despesaSummary = document.getElementById("despesa-summary");
+
   const receitasDiv = document.getElementById("receitas");
   const despesasDiv = document.getElementById("despesas");
 
@@ -387,6 +391,29 @@
     return String(status);
   }
 
+  function statusBadge(status) {
+    const label = statusLabel(status);
+    if (!label) return "";
+    const normalized = String(status || "");
+    let cls = "status-neutral";
+    if (normalized === "pago") cls = "status-paid";
+    if (normalized === "nao_pago") cls = "status-unpaid";
+    return `<span class="status-badge ${cls}">${label}</span>`;
+  }
+
+  function setFormExpanded(expanded) {
+    if (!form) return;
+    form.classList.toggle("is-expanded", !!expanded);
+    form.classList.toggle("is-compact", !expanded);
+    if (inputDescricao) inputDescricao.required = !!expanded;
+    if (formExpandBtn) formExpandBtn.setAttribute("aria-expanded", expanded ? "true" : "false");
+    if (expanded) {
+      inputDescricao?.focus();
+    } else {
+      inputData?.focus();
+    }
+  }
+
   function atualizarStatusFormPrincipal() {
     if (!inputTipo || !inputStatus) return;
     const isDespesa = inputTipo.value === "despesa";
@@ -410,13 +437,13 @@
   }
 
   function linhaHTML(e, isDespesa) {
-    const status = isDespesa ? (statusLabel(e.status) || "") : "";
+    const status = isDespesa ? statusBadge(e.status) : "";
     const categoria = String(e.categoria || "outros");
     const categoriaNome = categoriaLabel(categoria);
     const actions = `
       <span class="acoes">
-        <button class="btn-icon editar" type="button" data-action="edit" title="Editar">✏️</button>
-        <button class="btn-icon excluir" type="button" data-action="delete" title="Excluir">🗑️</button>
+        <button class="btn-icon editar" type="button" data-action="edit" title="?? Editar" aria-label="Editar">✏️</button>
+        <button class="btn-icon excluir" type="button" data-action="delete" title="??? Excluir" aria-label="Excluir">🗑️</button>
       </span>
     `;
     if (!isDespesa) {
@@ -442,7 +469,7 @@
     `;
   }
 
-  function renderListaHistorico(container, lista, isDespesa) {
+  function renderListaHistorico(container, lista, isDespesa, monthTotals) {
     if (!container) return;
 
     if (!lista || lista.length === 0) {
@@ -453,10 +480,39 @@
     const grupos = agruparPorMes(lista);
     const partes = [];
     grupos.forEach((itens, chave) => {
-      partes.push(`<div class="mes-header">${formatarMesAno(chave)}</div>`);
+      const totals = monthTotals && monthTotals.has(chave) ? monthTotals.get(chave) : { receitas: 0, despesas: 0 };
+      partes.push(`
+        <div class="mes-header">
+          <div class="mes-title">${formatarMesAno(chave)}</div>
+          <div class="mes-totais">Receitas: ${fmtBRL(totals.receitas)} | Despesas: ${fmtBRL(totals.despesas)}</div>
+        </div>
+      `);
       partes.push(itens.map(e => linhaHTML(e, isDespesa)).join(""));
     });
     container.innerHTML = partes.join("");
+  }
+
+  function buildMonthTotals(receitas, despesas) {
+    const map = new Map();
+
+    function addTotal(list, keyName) {
+      (list || []).forEach(item => {
+        const chave = item?.data ? String(item.data).slice(0, 7) : "sem-data";
+        const entry = map.get(chave) || { receitas: 0, despesas: 0 };
+        const value = Number(item?.valor) || 0;
+        entry[keyName] += value;
+        map.set(chave, entry);
+      });
+    }
+
+    addTotal(receitas, "receitas");
+    addTotal(despesas, "despesas");
+    return map;
+  }
+
+  function updateHistorySummary(targetEl, total) {
+    if (!targetEl) return;
+    targetEl.textContent = `Total no per?odo selecionado: ${fmtBRL(total)}`;
   }
 
   function renderHistoricos() {
@@ -472,8 +528,12 @@
       filtroTrimestreDespesas?.value || "todos"
     );
 
-    renderListaHistorico(receitasDiv, receitasFiltradas, false);
-    renderListaHistorico(despesasDiv, despesasFiltradas, true);
+    updateHistorySummary(receitaSummary, receitasFiltradas.reduce((acc, item) => acc + (Number(item.valor) || 0), 0));
+    updateHistorySummary(despesaSummary, despesasFiltradas.reduce((acc, item) => acc + (Number(item.valor) || 0), 0));
+
+    const monthTotals = buildMonthTotals(receitasFiltradas, despesasFiltradas);
+    renderListaHistorico(receitasDiv, receitasFiltradas, false, monthTotals);
+    renderListaHistorico(despesasDiv, despesasFiltradas, true, monthTotals);
   }
 
   function abrirModal() {
@@ -545,6 +605,7 @@
   // Eventos
   inputTipo?.addEventListener("change", atualizarStatusFormPrincipal);
   editTipo?.addEventListener("change", atualizarStatusModal);
+  formExpandBtn?.addEventListener("click", () => setFormExpanded(true));
 
   filtroTrimestreReceitas?.addEventListener("change", renderHistoricos);
   filtroTrimestreDespesas?.addEventListener("change", renderHistoricos);
@@ -607,6 +668,11 @@
 
   form?.addEventListener("submit", async (e) => {
     e.preventDefault();
+    if (form?.classList.contains("is-compact")) {
+      setFormExpanded(true);
+      return;
+    }
+
 
     const payload = {
       data: inputData?.value,
@@ -633,6 +699,7 @@
     atualizarStatusFormPrincipal();
     syncCustomSelect(inputTipo);
     syncCustomSelect(inputCategoria);
+    setFormExpanded(false);
     await carregarDados();
   });
 
@@ -662,6 +729,7 @@
     await carregarDados();
   });
 
+  setFormExpanded(false);
   atualizarStatusFormPrincipal();
   bindAcoesListas();
   [
