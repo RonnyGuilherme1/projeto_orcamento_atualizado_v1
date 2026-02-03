@@ -9,7 +9,7 @@ from datetime import date, datetime, timedelta
 
 from sqlalchemy import func
 
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, make_response, current_app
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, make_response, current_app, send_file
 from flask_login import login_required, current_user
 
 from models.extensions import db
@@ -1445,17 +1445,19 @@ def reports_export_pdf():
 
     try:
         pdf_bytes = render_reports_pdf(payload, sections, detail, meta)
-    except Exception:
-        current_app.logger.exception("Falha ao gerar PDF de relatorios.")
-        return "Nao foi possivel gerar o PDF agora.", 500
+    except Exception as e:
+        current_app.logger.exception("Falha ao gerar PDF de relatorios")
+        return jsonify({"error": str(e)}), 500
 
     download = str(request.args.get("download") or "").lower() in {"1", "true", "yes"}
-    disposition = "attachment" if download else "inline"
-    response = make_response(pdf_bytes)
-    response.headers["Content-Type"] = "application/pdf"
-    response.headers["Content-Disposition"] = f"{disposition}; filename=relatorio_financeiro.pdf"
-    response.headers["Content-Length"] = str(len(pdf_bytes))
-    return response
+    buffer = io.BytesIO(pdf_bytes)
+    buffer.seek(0)
+    return send_file(
+        buffer,
+        mimetype="application/pdf",
+        as_attachment=download,
+        download_name="relatorio_financeiro.pdf",
+    )
 
 
 @analytics_bp.get("/app/reports/export/excel")

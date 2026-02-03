@@ -15,8 +15,6 @@ from reportlab.platypus import (
     BaseDocTemplate,
     Frame,
     KeepTogether,
-    ListFlowable,
-    ListItem,
     PageTemplate,
     Paragraph,
     Spacer,
@@ -50,6 +48,14 @@ def _fmt_brl(value: float | int | None) -> str:
     return f"R$ {num:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
 
+def _fmt_percent(value: float | int | None, decimals: int = 1) -> str:
+    try:
+        num = float(value)
+    except (TypeError, ValueError):
+        return "-"
+    return f"{num:.{decimals}f}%"
+
+
 def _fmt_date(value: str | None) -> str:
     if not value:
         return "-"
@@ -67,9 +73,9 @@ def _truncate(text: str, limit: int) -> str:
     return f"{text[: max(0, limit - 3)]}..."
 
 
-def _safe_text(value) -> str:
+def safe_text(value) -> str:
     if value is None:
-        return "-"
+        return ""
     return xml_escape(str(value))
 
 
@@ -198,6 +204,12 @@ class ReportDoc(BaseDocTemplate):
 
 def _build_styles() -> dict:
     styles = getSampleStyleSheet()
+    normal_style = styles["Normal"]
+    normal_style.fontName = "Helvetica"
+    normal_style.fontSize = 10.5
+    normal_style.leading = 14
+    normal_style.textColor = TEXT_COLOR
+    normal_style.wordWrap = "CJK"
     styles.add(
         ParagraphStyle(
             name="RptTitle",
@@ -224,6 +236,7 @@ def _build_styles() -> dict:
             fontSize=10.5,
             leading=14,
             textColor=TEXT_COLOR,
+            wordWrap="CJK",
         )
     )
     styles.add(
@@ -269,6 +282,7 @@ def _build_styles() -> dict:
             fontSize=9.5,
             leading=12,
             textColor=TEXT_COLOR,
+            wordWrap="CJK",
         )
     )
     styles.add(
@@ -279,6 +293,7 @@ def _build_styles() -> dict:
             leading=12,
             textColor=TEXT_COLOR,
             alignment=2,
+            wordWrap="CJK",
         )
     )
     styles.add(
@@ -305,12 +320,14 @@ def _kpi_card(
     card_width = (doc.width / 2) - 8
     value_style = ParagraphStyle(None, parent=styles["KpiValue"], textColor=value_color or TEXT_COLOR)
     content = [
-        Paragraph(_safe_text(label), styles["KpiLabel"]),
-        Paragraph(_safe_text(value), value_style),
+        Paragraph(safe_text(label), styles["KpiLabel"]),
+        Paragraph(safe_text(value), value_style),
     ]
     card = Table(
         [["", content]],
         colWidths=[4, card_width - 4],
+        repeatRows=1,
+        splitByRow=1,
         hAlign="LEFT",
     )
     card.setStyle(
@@ -434,6 +451,7 @@ def render_reports_pdf(payload: dict, sections: set[str], detail: str, meta: dic
             leading=10,
             textColor=colors.HexColor("#111827"),
             alignment=TA_LEFT,
+            wordWrap="CJK",
         )
     )
     styles.add(
@@ -444,16 +462,17 @@ def render_reports_pdf(payload: dict, sections: set[str], detail: str, meta: dic
             leading=10,
             textColor=colors.HexColor("#111827"),
             alignment=TA_RIGHT,
+            wordWrap="CJK",
         )
     )
 
     def cell(text: str, right: bool = False) -> Paragraph:
         style = styles["TableCellRight"] if right else styles["TableCell"]
-        return Paragraph(_safe_text(text), style)
+        return Paragraph(safe_text(text), style)
 
     def make_table(rows: list[list], col_widths: list[float], right_cols: set[int] | None = None) -> Table:
         right_cols = right_cols or set()
-        table = Table(rows, colWidths=col_widths, repeatRows=1, hAlign="LEFT")
+        table = Table(rows, colWidths=col_widths, repeatRows=1, splitByRow=1, hAlign="LEFT")
         base_style = [
             ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#E5E7EB")),
             ("TEXTCOLOR", (0, 0), (-1, 0), colors.HexColor("#111827")),
@@ -486,8 +505,8 @@ def render_reports_pdf(payload: dict, sections: set[str], detail: str, meta: dic
         story.append(
             KeepTogether(
                 [
-                    Paragraph(title, styles["SectionTitle"]),
-                    Paragraph(subtitle, styles["SectionSubtitle"]),
+                    Paragraph(safe_text(title), styles["SectionTitle"]),
+                    Paragraph(safe_text(subtitle), styles["SectionSubtitle"]),
                 ]
             )
         )
@@ -504,15 +523,21 @@ def render_reports_pdf(payload: dict, sections: set[str], detail: str, meta: dic
 
         kpi_data = [
             [
-                Paragraph(f"<b>Total receitas</b><br/>{_fmt_brl(summary.get('income'))}", styles["BodySmall"]),
-                Paragraph(f"<b>Total despesas</b><br/>{_fmt_brl(summary.get('expense'))}", styles["BodySmall"]),
+                Paragraph(safe_text(f"Total receitas: {_fmt_brl(summary.get('income'))}"), styles["BodySmall"]),
+                Paragraph(safe_text(f"Total despesas: {_fmt_brl(summary.get('expense'))}"), styles["BodySmall"]),
             ],
             [
-                Paragraph(f"<b>Resultado liquido</b><br/>{_fmt_brl(net_value)}", styles["BodySmall"]),
-                Paragraph(f"<b>{economy_label}</b><br/>{economy_value:.1f}%", styles["BodySmall"]),
+                Paragraph(safe_text(f"Resultado liquido: {_fmt_brl(net_value)}"), styles["BodySmall"]),
+                Paragraph(safe_text(f"{economy_label}: {_fmt_percent(economy_value)}"), styles["BodySmall"]),
             ],
         ]
-        kpi_table = Table(kpi_data, colWidths=[doc.width * 0.5, doc.width * 0.5])
+        kpi_table = Table(
+            kpi_data,
+            colWidths=[doc.width * 0.5, doc.width * 0.5],
+            repeatRows=1,
+            splitByRow=1,
+            hAlign="LEFT",
+        )
         kpi_table.setStyle(
             TableStyle(
                 [
@@ -548,15 +573,9 @@ def render_reports_pdf(payload: dict, sections: set[str], detail: str, meta: dic
         if not notes:
             notes.append("Sem observacoes relevantes no periodo.")
 
-        story.append(Paragraph("Observacoes do periodo", styles["BodySmall"]))
-        story.append(
-            ListFlowable(
-                [ListItem(Paragraph(_safe_text(item), styles["BodySmall"])) for item in notes],
-                bulletType="bullet",
-                start="circle",
-                leftIndent=12,
-            )
-        )
+        story.append(Paragraph(safe_text("Observacoes do periodo"), styles["BodySmall"]))
+        for item in notes:
+            story.append(Paragraph(f"\u2022 {safe_text(item)}", styles["Normal"]))
 
     if "dre" in ordered_sections:
         add_section_gap()
@@ -564,7 +583,7 @@ def render_reports_pdf(payload: dict, sections: set[str], detail: str, meta: dic
         dre_rows = payload.get("dre", {}).get("rows") or []
         dre_total = payload.get("dre", {}).get("total") or {}
         if not dre_rows:
-            story.append(Paragraph("Sem dados no periodo.", styles["BodySmall"]))
+            story.append(Paragraph(safe_text("Sem dados no periodo."), styles["BodySmall"]))
         else:
             rows = [
                 [
@@ -577,7 +596,7 @@ def render_reports_pdf(payload: dict, sections: set[str], detail: str, meta: dic
             for row in dre_rows:
                 rows.append(
                     [
-                        cell(str(row.get("label"))),
+                        cell(str(row.get("label") or "-")),
                         cell(_fmt_brl(row.get("income")), right=True),
                         cell(_fmt_brl(row.get("expense")), right=True),
                         cell(_fmt_brl(row.get("net")), right=True),
@@ -601,7 +620,7 @@ def render_reports_pdf(payload: dict, sections: set[str], detail: str, meta: dic
         flow_rows = payload.get("flow", {}).get("rows") or []
         final_balance = payload.get("flow", {}).get("final_balance")
         if not flow_rows:
-            story.append(Paragraph("Sem dados no periodo.", styles["BodySmall"]))
+            story.append(Paragraph(safe_text("Sem dados no periodo."), styles["BodySmall"]))
         else:
             rows = [
                 [
@@ -653,7 +672,7 @@ def render_reports_pdf(payload: dict, sections: set[str], detail: str, meta: dic
         add_section_header("Categorias", "Distribuicao percentual das despesas.")
         category_rows = payload.get("categories", {}).get("rows") or []
         if not category_rows:
-            story.append(Paragraph("Sem dados no periodo.", styles["BodySmall"]))
+            story.append(Paragraph(safe_text("Sem dados no periodo."), styles["BodySmall"]))
         else:
             rows = [
                 [
@@ -683,7 +702,7 @@ def render_reports_pdf(payload: dict, sections: set[str], detail: str, meta: dic
         add_section_header("Recorrencias", "Receitas recorrentes detectadas.")
         recurring_items = payload.get("recurring", {}).get("items") or []
         if not recurring_items:
-            story.append(Paragraph("Sem recorrencias no periodo.", styles["BodySmall"]))
+            story.append(Paragraph(safe_text("Sem recorrencias no periodo."), styles["BodySmall"]))
         else:
             rows = [
                 [
@@ -711,7 +730,7 @@ def render_reports_pdf(payload: dict, sections: set[str], detail: str, meta: dic
         add_section_header("Pendencias", "Despesas nao pagas no periodo.")
         pending_items = payload.get("pending", {}).get("items") or []
         if not pending_items:
-            story.append(Paragraph("Sem pendencias no periodo.", styles["BodySmall"]))
+            story.append(Paragraph(safe_text("Sem pendencias no periodo."), styles["BodySmall"]))
         else:
             rows = [
                 [
@@ -797,8 +816,8 @@ def _render_reports_pdf_v2(payload: dict, sections: set[str], detail: str, meta:
     def section_header(title: str, subtitle: str) -> KeepTogether:
         return KeepTogether(
             [
-                Paragraph(_safe_text(title), styles["RptH2"]),
-                Paragraph(_safe_text(subtitle), styles["RptMeta"]),
+                Paragraph(safe_text(title), styles["RptH2"]),
+                Paragraph(safe_text(subtitle), styles["RptMeta"]),
             ]
         )
 
@@ -821,7 +840,12 @@ def _render_reports_pdf_v2(payload: dict, sections: set[str], detail: str, meta:
         badge_color = GREEN if net_value >= 0 else RED
         badge_bg = colors.HexColor("#EAF6EF") if net_value >= 0 else colors.HexColor("#FDECEA")
         badge_style = ParagraphStyle(None, parent=styles["Badge"], textColor=badge_color)
-        badge = Table([[Paragraph(_safe_text(badge_text), badge_style)]], hAlign="LEFT")
+        badge = Table(
+            [[Paragraph(safe_text(badge_text), badge_style)]],
+            repeatRows=1,
+            splitByRow=1,
+            hAlign="LEFT",
+        )
         badge.setStyle(
             TableStyle(
                 [
@@ -843,11 +867,13 @@ def _render_reports_pdf_v2(payload: dict, sections: set[str], detail: str, meta:
         net_color = GREEN if net_value >= 0 else RED if net_value < 0 else TEXT_COLOR
         card_net = _kpi_card(doc, styles, "Resultado liquido", _fmt_brl(net_value), net_color, net_color)
         economy_color = GREEN if net_value >= 0 else RED
-        card_economy = _kpi_card(doc, styles, economy_label, f"{economy_value:.1f}%", economy_color, economy_color)
+        card_economy = _kpi_card(doc, styles, economy_label, _fmt_percent(economy_value), economy_color, economy_color)
 
         kpi_grid = Table(
             [[card_income, card_expense], [card_net, card_economy]],
             colWidths=[doc.width / 2, doc.width / 2],
+            repeatRows=1,
+            splitByRow=1,
             hAlign="LEFT",
         )
         kpi_grid.setStyle(
@@ -865,24 +891,18 @@ def _render_reports_pdf_v2(payload: dict, sections: set[str], detail: str, meta:
         story.append(Spacer(1, 10))
 
         observations = _build_observations(payload, max_items=6)
-        story.append(Paragraph("Observacoes do periodo", styles["RptBody"]))
-        bullet_style = ParagraphStyle(
-            None,
-            parent=styles["RptBody"],
-            leftIndent=10,
-            spaceAfter=2,
-        )
+        story.append(Paragraph(safe_text("Observacoes do periodo"), styles["RptBody"]))
         for item in observations:
-            story.append(Paragraph(f"- {_safe_text(item)}", bullet_style))
+            story.append(Paragraph(f"\u2022 {safe_text(item)}", styles["Normal"]))
 
     def cell(text: str, right: bool = False, wrap: bool = False) -> Paragraph:
         if wrap:
-            return Paragraph(_safe_text(text), styles["TableCellWrap"])
+            return Paragraph(safe_text(text), styles["TableCellWrap"])
         style = styles["TableCellRight"] if right else styles["TableCell"]
-        return Paragraph(_safe_text(text), style)
+        return Paragraph(safe_text(text), style)
 
     def make_table(rows: list[list], col_widths: list[float], right_cols: set[int] | None = None) -> Table:
-        table = Table(rows, colWidths=col_widths, repeatRows=1, hAlign="LEFT")
+        table = Table(rows, colWidths=col_widths, repeatRows=1, splitByRow=1, hAlign="LEFT")
         style_cmds = [
             ("BACKGROUND", (0, 0), (-1, 0), LIGHT_GRAY),
             ("TEXTCOLOR", (0, 0), (-1, 0), TEXT_COLOR),
@@ -908,7 +928,7 @@ def _render_reports_pdf_v2(payload: dict, sections: set[str], detail: str, meta:
         dre_rows = payload.get("dre", {}).get("rows") or []
         dre_total = payload.get("dre", {}).get("total") or {}
         if not dre_rows:
-            story.append(Paragraph("Sem dados no periodo.", styles["RptBody"]))
+            story.append(Paragraph(safe_text("Sem dados no periodo."), styles["RptBody"]))
         else:
             rows = [
                 [
@@ -923,7 +943,7 @@ def _render_reports_pdf_v2(payload: dict, sections: set[str], detail: str, meta:
                 net = row.get("net")
                 rows.append(
                     [
-                        cell(str(row.get("label"))),
+                        cell(str(row.get("label") or "-")),
                         cell(_fmt_brl(row.get("income")), right=True),
                         cell(_fmt_brl(row.get("expense")), right=True),
                         cell(_fmt_brl(net), right=True),
@@ -972,7 +992,7 @@ def _render_reports_pdf_v2(payload: dict, sections: set[str], detail: str, meta:
         flow_rows = payload.get("flow", {}).get("rows") or []
         final_balance = payload.get("flow", {}).get("final_balance")
         if not flow_rows:
-            story.append(Paragraph("Sem dados no periodo.", styles["RptBody"]))
+            story.append(Paragraph(safe_text("Sem dados no periodo."), styles["RptBody"]))
         else:
             rows = [
                 [
@@ -1048,7 +1068,7 @@ def _render_reports_pdf_v2(payload: dict, sections: set[str], detail: str, meta:
         story.append(section_header("Categorias", "Distribuicao percentual das despesas."))
         category_rows = payload.get("categories", {}).get("rows") or []
         if not category_rows:
-            story.append(Paragraph("Sem dados no periodo.", styles["RptBody"]))
+            story.append(Paragraph(safe_text("Sem dados no periodo."), styles["RptBody"]))
         else:
             rows = [
                 [
@@ -1083,7 +1103,7 @@ def _render_reports_pdf_v2(payload: dict, sections: set[str], detail: str, meta:
         story.append(section_header("Recorrencias", "Receitas recorrentes detectadas."))
         recurring_items = payload.get("recurring", {}).get("items") or []
         if not recurring_items:
-            story.append(Paragraph("Sem recorrencias no periodo.", styles["RptBody"]))
+            story.append(Paragraph(safe_text("Sem recorrencias no periodo."), styles["RptBody"]))
         else:
             rows = [
                 [
@@ -1116,7 +1136,7 @@ def _render_reports_pdf_v2(payload: dict, sections: set[str], detail: str, meta:
         story.append(section_header("Pendencias", "Despesas nao pagas no periodo."))
         pending_items = payload.get("pending", {}).get("items") or []
         if not pending_items:
-            story.append(Paragraph("Sem pendencias no periodo.", styles["RptBody"]))
+            story.append(Paragraph(safe_text("Sem pendencias no periodo."), styles["RptBody"]))
         else:
             rows = [
                 [
