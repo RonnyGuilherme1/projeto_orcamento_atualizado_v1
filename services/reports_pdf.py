@@ -39,6 +39,11 @@ GREEN = colors.HexColor("#1F8A4C")
 RED = colors.HexColor("#C0392B")
 NEUTRAL = colors.HexColor("#94A3B8")
 
+FLOW_DESC_LIMIT_RESUMIDO = 50
+FLOW_DESC_LIMIT_DETALHADO = 120
+OBS_MAX_RESUMIDO = 4
+OBS_MAX_DETALHADO = 8
+
 
 def _fmt_brl(value: float | int | None) -> str:
     try:
@@ -154,6 +159,9 @@ def _draw_header_footer(canvas_obj: canvas.Canvas, doc: BaseDocTemplate, meta: d
 
     meta_line_1 = f"Usuario: {user_name} | Periodo: {period_label} | Regime: {mode_label}"
     meta_line_2 = f"Tipo: {type_label} | Status: {status_label} | Gerado em: {generated_at}"
+    detail_label = meta.get("detail_label")
+    if detail_label:
+        meta_line_2 = f"{meta_line_2} | Detalhamento: {detail_label}"
 
     canvas_obj.setFont("Helvetica", 8.5)
     canvas_obj.setFillColor(TEXT_MUTED)
@@ -302,6 +310,30 @@ def _build_styles() -> dict:
             leading=12,
             textColor=TEXT_COLOR,
             wordWrap="CJK",
+        )
+    )
+    styles.add(
+        ParagraphStyle(
+            name="TableCellSmall",
+            parent=styles["TableCell"],
+            fontSize=8.6,
+            leading=10.5,
+        )
+    )
+    styles.add(
+        ParagraphStyle(
+            name="TableCellRightSmall",
+            parent=styles["TableCellRight"],
+            fontSize=8.6,
+            leading=10.5,
+        )
+    )
+    styles.add(
+        ParagraphStyle(
+            name="TableCellWrapSmall",
+            parent=styles["TableCellWrap"],
+            fontSize=8.6,
+            leading=10.5,
         )
     )
     return styles
@@ -806,6 +838,12 @@ def _render_reports_pdf_v2(payload: dict, sections: set[str], detail: str, meta:
 
     doc = ReportDoc(buffer, meta)
     styles = _build_styles()
+    detail = (detail or "resumido").strip().lower()
+    if detail not in {"resumido", "detalhado"}:
+        detail = "resumido"
+    is_resumido = detail == "resumido"
+    desc_limit = FLOW_DESC_LIMIT_RESUMIDO if is_resumido else FLOW_DESC_LIMIT_DETALHADO
+    obs_limit = OBS_MAX_RESUMIDO if is_resumido else OBS_MAX_DETALHADO
 
     def add_section_gap(story: list):
         if story:
@@ -888,16 +926,20 @@ def _render_reports_pdf_v2(payload: dict, sections: set[str], detail: str, meta:
         story.append(kpi_grid)
         story.append(Spacer(1, 10))
 
-        observations = _build_observations(payload, max_items=6)
+        observations = _build_observations(payload, max_items=obs_limit)
         story.append(Paragraph(safe_text("Observacoes do periodo"), styles["RptBody"]))
         for item in observations:
             story.append(Paragraph(f"\u2022 {safe_text(item)}", styles["Normal"]))
 
-    def cell(text: str, right: bool = False, wrap: bool = False) -> Paragraph:
+    def cell(text: str, right: bool = False, wrap: bool = False, small: bool = False) -> Paragraph:
         if wrap:
-            return Paragraph(safe_text(text), styles["TableCellWrap"])
-        style = styles["TableCellRight"] if right else styles["TableCell"]
-        return Paragraph(safe_text(text), style)
+            style_name = "TableCellWrapSmall" if small else "TableCellWrap"
+            return Paragraph(safe_text(text), styles[style_name])
+        if right:
+            style_name = "TableCellRightSmall" if small else "TableCellRight"
+        else:
+            style_name = "TableCellSmall" if small else "TableCell"
+        return Paragraph(safe_text(text), styles[style_name])
 
     def make_table(rows: list[list], col_widths: list[float], right_cols: set[int] | None = None) -> Table:
         table = Table(rows, colWidths=col_widths, repeatRows=1, splitByRow=1, hAlign="LEFT")
@@ -992,46 +1034,69 @@ def _render_reports_pdf_v2(payload: dict, sections: set[str], detail: str, meta:
         if not flow_rows:
             story.append(Paragraph(safe_text("Sem dados no periodo."), styles["RptBody"]))
         else:
+            show_status = detail == "detalhado" and any(row.get("status") for row in flow_rows)
+            show_tags = detail == "detalhado" and any(row.get("tags") for row in flow_rows)
+            small_flow = detail == "detalhado" and (show_status or show_tags)
+
+            headers = ["Data", "Descricao", "Categoria", "Metodo"]
+            if show_status:
+                headers.append("Status")
+            if show_tags:
+                headers.append("Tags")
+            headers.extend(["Entrada", "Saida", "Saldo"])
+
+            def flow_col_widths() -> list[float]:
+                if show_status and show_tags:
+                    weights = [0.1, 0.23, 0.13, 0.09, 0.09, 0.11, 0.08, 0.08, 0.09]
+                elif show_status:
+                    weights = [0.11, 0.26, 0.14, 0.1, 0.09, 0.1, 0.1, 0.1]
+                elif show_tags:
+                    weights = [0.11, 0.26, 0.14, 0.1, 0.12, 0.09, 0.09, 0.09]
+                else:
+                    weights = [0.11, 0.29, 0.15, 0.11, 0.11, 0.11, 0.12]
+                return [doc.width * weight for weight in weights]
+
             rows = [
-                [
-                    cell("Data"),
-                    cell("Descricao"),
-                    cell("Categoria"),
-                    cell("Metodo"),
-                    cell("Entrada", right=True),
-                    cell("Saida", right=True),
-                    cell("Saldo", right=True),
-                ]
+                [cell(label, right=label in {"Entrada", "Saida", "Saldo"}, small=small_flow) for label in headers]
             ]
             extra_styles = []
+            balance_idx = len(headers) - 1
             for row in flow_rows:
                 balance = row.get("balance")
-                rows.append(
+                desc = _truncate(str(row.get("description") or "-"), desc_limit)
+                tags = str(row.get("tags") or "-")
+                if detail == "detalhado":
+                    tags = _truncate(tags, 60)
+                row_cells = [
+                    cell(_fmt_date(row.get("date")), small=small_flow),
+                    cell(desc, wrap=not is_resumido, small=small_flow),
+                    cell(str(row.get("category") or "-"), small=small_flow),
+                    cell(str(row.get("method") or "-"), small=small_flow),
+                ]
+                if show_status:
+                    row_cells.append(cell(str(row.get("status") or "-"), small=small_flow))
+                if show_tags:
+                    row_cells.append(cell(tags, wrap=True, small=small_flow))
+                row_cells.extend(
                     [
-                        cell(_fmt_date(row.get("date"))),
-                        cell(str(row.get("description") or "-"), wrap=True),
-                        cell(str(row.get("category") or "-")),
-                        cell(str(row.get("method") or "-")),
-                        cell(_fmt_brl(row.get("income")) if row.get("income") else "-", right=True),
-                        cell(_fmt_brl(row.get("expense")) if row.get("expense") else "-", right=True),
-                        cell(_fmt_brl(balance), right=True),
+                        cell(_fmt_brl(row.get("income")) if row.get("income") else "-", right=True, small=small_flow),
+                        cell(_fmt_brl(row.get("expense")) if row.get("expense") else "-", right=True, small=small_flow),
+                        cell(_fmt_brl(balance), right=True, small=small_flow),
                     ]
+                )
+                rows.append(
+                    row_cells
                 )
                 row_idx = len(rows) - 1
                 if balance is not None and balance < 0:
-                    extra_styles.append(("TEXTCOLOR", (6, row_idx), (6, row_idx), RED))
+                    extra_styles.append(("TEXTCOLOR", (balance_idx, row_idx), (balance_idx, row_idx), RED))
 
             if final_balance is not None:
+                total_cols = len(headers)
                 rows.append(
-                    [
-                        cell("Saldo final"),
-                        cell(""),
-                        cell(""),
-                        cell(""),
-                        cell(""),
-                        cell(""),
-                        cell(_fmt_brl(final_balance), right=True),
-                    ]
+                    [cell("Saldo final", small=small_flow)]
+                    + [cell("", small=small_flow) for _ in range(total_cols - 2)]
+                    + [cell(_fmt_brl(final_balance), right=True, small=small_flow)]
                 )
                 total_idx = len(rows) - 1
                 extra_styles.extend(
@@ -1042,20 +1107,12 @@ def _render_reports_pdf_v2(payload: dict, sections: set[str], detail: str, meta:
                     ]
                 )
                 if final_balance < 0:
-                    extra_styles.append(("TEXTCOLOR", (6, total_idx), (6, total_idx), RED))
+                    extra_styles.append(("TEXTCOLOR", (balance_idx, total_idx), (balance_idx, total_idx), RED))
 
             table = make_table(
                 rows,
-                [
-                    doc.width * 0.11,
-                    doc.width * 0.29,
-                    doc.width * 0.15,
-                    doc.width * 0.11,
-                    doc.width * 0.11,
-                    doc.width * 0.11,
-                    doc.width * 0.12,
-                ],
-                right_cols={4, 5, 6},
+                flow_col_widths(),
+                right_cols=set(range(len(headers) - 3, len(headers))),
             )
             if extra_styles:
                 table.setStyle(TableStyle(extra_styles))

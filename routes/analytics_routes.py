@@ -53,6 +53,8 @@ MODE_LABELS = {
 }
 
 DEFAULT_REPORT_SECTIONS = {"summary", "dre", "flow", "categories", "recurring", "pending"}
+FLOW_LIMIT_RESUMIDO = 30
+FLOW_LIMIT_DETALHADO = None
 
 MESES = [
     "Janeiro",
@@ -216,6 +218,13 @@ METHOD_LABELS = {
     "cartao": "Cartão",
 }
 
+STATUS_LABELS = {
+    "pago": "Pago",
+    "recebido": "Recebido",
+    "em_andamento": "Em andamento",
+    "nao_pago": "Nao pago",
+}
+
 
 def _method_label(value: str | None) -> str:
     if not value:
@@ -223,6 +232,15 @@ def _method_label(value: str | None) -> str:
     norm = _normalize_method(value)
     if norm in METHOD_LABELS:
         return METHOD_LABELS[norm]
+    return value.strip().title()
+
+
+def _status_label(value: str | None) -> str:
+    if not value:
+        return ""
+    norm = value.strip().lower()
+    if norm in STATUS_LABELS:
+        return STATUS_LABELS[norm]
     return value.strip().title()
 
 
@@ -991,9 +1009,13 @@ def _build_reports_payload(
     start_str: str | None,
     end_str: str | None,
     flow_limit: int | None = 500,
+    detail: str = "detalhado",
 ) -> dict:
     start, end = _resolve_report_period(period, start_str, end_str)
     length_days = (end - start).days + 1
+    detail = (detail or "detalhado").strip().lower()
+    if detail not in {"resumido", "detalhado"}:
+        detail = "detalhado"
 
     entries = (
         Entrada.query
@@ -1161,21 +1183,26 @@ def _build_reports_payload(
     flow_items = sorted(period_items, key=lambda item: (item[1], item[0].id or 0))
     flow_rows = []
     running = balance_start
-    limit = flow_limit if flow_limit else len(flow_items)
-    for entry, event_date in flow_items[:limit]:
+    for entry, event_date in flow_items:
         delta = _entry_amount(entry)
         running += delta
-        flow_rows.append(
-            {
-                "date": event_date.isoformat(),
-                "description": entry.descricao,
-                "category": CATEGORIAS.get(_normalize_categoria(entry.categoria), "Outros"),
-                "method": _method_label(entry.metodo),
-                "income": round(float(entry.valor), 2) if entry.tipo == "receita" else 0.0,
-                "expense": round(float(entry.valor), 2) if entry.tipo == "despesa" else 0.0,
-                "balance": round(running, 2),
-            }
-        )
+        row = {
+            "date": event_date.isoformat(),
+            "description": entry.descricao,
+            "category": CATEGORIAS.get(_normalize_categoria(entry.categoria), "Outros"),
+            "method": _method_label(entry.metodo),
+            "income": round(float(entry.valor), 2) if entry.tipo == "receita" else 0.0,
+            "expense": round(float(entry.valor), 2) if entry.tipo == "despesa" else 0.0,
+            "balance": round(running, 2),
+        }
+        if detail == "detalhado":
+            row["status"] = _status_label(entry.status)
+            row["tags"] = (entry.tags or "").strip()
+        flow_rows.append(row)
+
+    if flow_limit:
+        if len(flow_rows) > flow_limit:
+            flow_rows = flow_rows[-flow_limit:]
 
     # Pendencias
     pending_items = []
@@ -1324,7 +1351,7 @@ def _build_reports_payload(
         "health": {
             "ratio": ratio,
             "status": health_status,
-            "alerts": alerts[:3],
+            "alerts": alerts[: (6 if detail == "detalhado" else 3)],
         },
         "pending": {
             "count": len(pending_items),
@@ -1382,6 +1409,7 @@ def reports_data():
         start_str=request.args.get("start"),
         end_str=request.args.get("end"),
         flow_limit=500,
+        detail="detalhado",
     )
     return jsonify(payload)
 
@@ -1408,7 +1436,7 @@ def reports_export_pdf():
     if not sections:
         sections = set(DEFAULT_REPORT_SECTIONS)
 
-    flow_limit = 120 if detail == "resumido" else 500
+    flow_limit = FLOW_LIMIT_RESUMIDO if detail == "resumido" else FLOW_LIMIT_DETALHADO
     payload = _build_reports_payload(
         period=period,
         mode=mode,
@@ -1419,6 +1447,7 @@ def reports_export_pdf():
         start_str=request.args.get("start"),
         end_str=request.args.get("end"),
         flow_limit=flow_limit,
+        detail=detail,
     )
 
     period_label = _format_period_label(
@@ -1439,6 +1468,7 @@ def reports_export_pdf():
         "mode_label": mode_label,
         "type_label": type_label,
         "status_label": status_label,
+        "detail_label": "Resumido" if detail == "resumido" else "Detalhado",
         "generated_at": generated_at,
         "logo_path": logo_path,
     }
@@ -1482,7 +1512,7 @@ def reports_export_excel():
     if not sections:
         sections = set(DEFAULT_REPORT_SECTIONS)
 
-    flow_limit = 500 if detail == "resumido" else None
+    flow_limit = FLOW_LIMIT_RESUMIDO if detail == "resumido" else FLOW_LIMIT_DETALHADO
     payload = _build_reports_payload(
         period=period,
         mode=mode,
@@ -1493,6 +1523,7 @@ def reports_export_excel():
         start_str=request.args.get("start"),
         end_str=request.args.get("end"),
         flow_limit=flow_limit,
+        detail=detail,
     )
 
     def fmt_brl(valor: float) -> str:

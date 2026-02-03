@@ -325,13 +325,25 @@
             <label class="check-row"><input type="checkbox" data-export-section="pending" /> Pendências</label>
           </div>
           <div class="export-details">
-            <label class="field">
+            <div class="detail-control" data-detail-control>
               <span class="field-label">Detalhamento</span>
-              <select class="control" id="report-export-detail">
-                <option value="resumido">Resumido</option>
-                <option value="detalhado">Detalhado</option>
-              </select>
-            </label>
+              <div class="detail-segmented" role="tablist" aria-label="Detalhamento do relatório">
+                <button class="detail-segment is-active" type="button" data-detail="resumido" aria-pressed="true">
+                  Resumido
+                </button>
+                <button class="detail-segment" type="button" data-detail="detalhado" aria-pressed="false">
+                  Detalhado
+                </button>
+              </div>
+              <div class="detail-microcopy">
+                <p class="detail-copy is-active" data-detail-copy="resumido">
+                  Ideal para visão rápida (menos páginas)
+                </p>
+                <p class="detail-copy" data-detail-copy="detalhado">
+                  Inclui todas as linhas e mais contexto
+                </p>
+              </div>
+            </div>
             <div class="export-actions">
               <button class="btn-primary" type="button" data-export="pdf">Gerar PDF agora</button>
               <button class="btn-secondary" type="button" data-export="excel">Exportar Excel</button>

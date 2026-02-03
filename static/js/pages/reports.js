@@ -18,6 +18,9 @@
   const pdfModal = document.getElementById("reports-pdf-modal");
   const pdfFrame = pdfModal?.querySelector("[data-pdf-frame]");
   const pdfCloseEls = pdfModal?.querySelectorAll("[data-pdf-close]") || [];
+  const detailControl = page.querySelector("[data-detail-control]");
+  const detailButtons = detailControl?.querySelectorAll("[data-detail]") || [];
+  const detailCopies = detailControl?.querySelectorAll("[data-detail-copy]") || [];
 
   const summaryEls = {
     income: document.getElementById("report-total-income"),
@@ -46,6 +49,7 @@
 
   let lastData = null;
   let loadTimer = null;
+  let exportDetail = "resumido";
 
   function escapeHtml(value) {
     return String(value || "")
@@ -102,6 +106,40 @@
     if (!statusEl) return;
     statusEl.textContent = text;
     statusEl.classList.toggle("is-loading", !!loading);
+  }
+
+  function normalizeDetail(value) {
+    return value === "detalhado" ? "detalhado" : "resumido";
+  }
+
+  function getDetailValue() {
+    return exportDetail;
+  }
+
+  function setDetail(value, options = {}) {
+    const detail = normalizeDetail(value);
+    exportDetail = detail;
+    if (detailControl) {
+      detailControl.dataset.detail = detail;
+    }
+
+    detailButtons.forEach(btn => {
+      const active = btn.dataset.detail === detail;
+      btn.classList.toggle("is-active", active);
+      btn.setAttribute("aria-pressed", active ? "true" : "false");
+    });
+
+    detailCopies.forEach(copy => {
+      copy.classList.toggle("is-active", copy.dataset.detailCopy === detail);
+    });
+
+    page.querySelectorAll("[data-export]").forEach(btn => {
+      btn.dataset.exportDetail = detail;
+    });
+
+    if (!options.silent) {
+      setStatus("Atualizado agora", false);
+    }
   }
 
   function getSelectedValues(select) {
@@ -583,7 +621,7 @@
     page.querySelectorAll("[data-export-section]").forEach(input => {
       if (input.checked) sections.push(input.dataset.exportSection);
     });
-    const detail = document.getElementById("report-export-detail")?.value || "resumido";
+    const detail = getDetailValue();
     return { sections, detail };
   }
 
@@ -594,7 +632,7 @@
     if (options.sections.length) {
       params.set("sections", options.sections.join(","));
     }
-    if (options.detail) params.set("detail", options.detail);
+    params.set("detail", options.detail || "resumido");
 
     if (action === "excel") {
       const url = `/app/reports/export/excel?${params.toString()}`;
@@ -625,6 +663,10 @@
     btn.addEventListener("click", () => handleExport(btn.dataset.export));
   });
 
+  detailButtons.forEach(btn => {
+    btn.addEventListener("click", () => setDetail(btn.dataset.detail));
+  });
+
   pdfCloseEls.forEach(el => {
     el.addEventListener("click", closePdfModal);
   });
@@ -638,6 +680,7 @@
   const initialTab = page.querySelector(".tab-btn.is-active")?.dataset.tab || tabButtons[0]?.dataset.tab;
   if (initialTab) activateTab(initialTab);
 
+  setDetail(detailControl?.dataset.detail || "resumido", { silent: true });
   initAllSelects(page);
   setRangeVisibility();
   if (!locked) {

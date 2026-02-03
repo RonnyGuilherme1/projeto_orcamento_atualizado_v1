@@ -465,6 +465,58 @@
   gap: 12px;
 }
 
+.detail-control{
+  display: grid;
+  gap: 8px;
+}
+
+.detail-segmented{
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.14);
+  flex-wrap: wrap;
+}
+
+.detail-segment{
+  flex: 1 1 120px;
+  border: 0;
+  background: transparent;
+  color: rgba(255,255,255,0.78);
+  font-size: 12px;
+  font-weight: 900;
+  padding: 8px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.2s ease, color 0.2s ease;
+}
+
+.detail-segment.is-active{
+  background: #f8fafc;
+  color: #0f1720;
+  box-shadow: 0 8px 16px rgba(15,23,32,0.25);
+}
+
+.detail-microcopy{
+  display: grid;
+  gap: 4px;
+}
+
+.detail-copy{
+  margin: 0;
+  font-size: 12px;
+  font-weight: 800;
+  color: rgba(255,255,255,0.68);
+  display: none;
+}
+
+.detail-copy.is-active{
+  display: block;
+}
+
 .export-actions{
   display: flex;
   gap: 10px;
@@ -839,6 +891,24 @@ body.app-body.theme-light .report-table thead{
 body.app-body.theme-light .report-table th,
 body.app-body.theme-light .report-table td{
   color: #0f1720;
+}
+
+body.app-body.theme-light .detail-segmented{
+  background: rgba(15,23,32,0.08);
+  border-color: rgba(15,23,32,0.2);
+}
+
+body.app-body.theme-light .detail-segment{
+  color: rgba(15,23,32,0.72);
+}
+
+body.app-body.theme-light .detail-segment.is-active{
+  background: #0f1720;
+  color: #f8fafc;
+}
+
+body.app-body.theme-light .detail-copy{
+  color: rgba(15,23,32,0.65);
 }
 
 body.app-body.theme-light .reports-status,
