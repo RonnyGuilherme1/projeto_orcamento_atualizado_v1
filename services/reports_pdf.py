@@ -866,15 +866,14 @@ def _render_reports_pdf_v2(payload: dict, sections: set[str], detail: str, meta:
 
         observations = _build_observations(payload, max_items=6)
         story.append(Paragraph("Observacoes do periodo", styles["RptBody"]))
-        story.append(
-            ListFlowable(
-                [ListItem(Paragraph(_safe_text(item), styles["RptBody"])) for item in observations],
-                bulletType="bullet",
-                start="bullet",
-                leftIndent=12,
-                bulletFontSize=6,
-            )
+        bullet_style = ParagraphStyle(
+            None,
+            parent=styles["RptBody"],
+            leftIndent=10,
+            spaceAfter=2,
         )
+        for item in observations:
+            story.append(Paragraph(f"- {_safe_text(item)}", bullet_style))
 
     def cell(text: str, right: bool = False, wrap: bool = False) -> Paragraph:
         if wrap:
