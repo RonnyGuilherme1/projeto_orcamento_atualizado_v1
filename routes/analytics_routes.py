@@ -518,6 +518,257 @@ def charts_page():
     return render_template("charts.html")
 
 
+def _safe_int(value, default):
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
+
+
+def _format_month_label(year: int, month: int) -> str:
+    if 1 <= month <= 12:
+        return f"{MESES[month - 1]} {year}"
+    return f"{year}"
+
+
+def _format_quarter_label(year: int, quarter: int) -> str:
+    return f"{quarter}º Trimestre {year}"
+
+
+def _resolve_charts_period(args) -> dict:
+    today = date.today()
+    period = (args.get("period") or "month").strip().lower()
+    year = _safe_int(args.get("year"), today.year)
+    month = _safe_int(args.get("month"), today.month)
+    if month < 1 or month > 12:
+        month = today.month
+
+    default_quarter = ((month - 1) // 3) + 1
+    quarter = _safe_int(args.get("quarter"), default_quarter)
+    if quarter < 1 or quarter > 4:
+        quarter = default_quarter
+
+    if period == "custom":
+        start = _parse_iso_date(args.get("start")) or date(year, month, 1)
+        end = _parse_iso_date(args.get("end")) or last_day_of_month(start)
+        label = _format_period_label(start, end)
+    elif period == "quarter":
+        start_month = (quarter - 1) * 3 + 1
+        start = date(year, start_month, 1)
+        end = last_day_of_month(date(year, start_month + 2, 1))
+        label = _format_quarter_label(year, quarter)
+    else:
+        period = "month"
+        start = date(year, month, 1)
+        end = last_day_of_month(start)
+        label = _format_month_label(year, month)
+
+    if end < start:
+        start, end = end, start
+        label = _format_period_label(start, end)
+
+    return {
+        "type": period,
+        "year": year,
+        "month": month,
+        "quarter": quarter,
+        "start": start,
+        "end": end,
+        "label": label,
+    }
+
+
+def _choose_granularity(period_type: str, start: date, end: date) -> tuple[str, str]:
+    if period_type == "quarter":
+        return "month", "month"
+    if period_type == "custom":
+        days = (end - start).days + 1
+        if days <= 35:
+            return "day", "short"
+        return "week", "week"
+    return "day", "day"
+
+
+def _build_buckets(start: date, end: date, granularity: str, label_mode: str) -> list[dict]:
+    buckets = []
+    if granularity == "month":
+        current = date(start.year, start.month, 1)
+        while current <= end:
+            month_end = last_day_of_month(current)
+            bucket_end = month_end if month_end <= end else end
+            label = MESES[current.month - 1][:3]
+            buckets.append({"start": current, "end": bucket_end, "label": label})
+            if current.month == 12:
+                current = date(current.year + 1, 1, 1)
+            else:
+                current = date(current.year, current.month + 1, 1)
+        return buckets
+
+    if granularity == "week":
+        current = start
+        idx = 1
+        while current <= end:
+            bucket_end = min(current + timedelta(days=6), end)
+            buckets.append({"start": current, "end": bucket_end, "label": f"Sem {idx}"})
+            idx += 1
+            current = bucket_end + timedelta(days=1)
+        return buckets
+
+    days = (end - start).days + 1
+    for idx in range(days):
+        current = start + timedelta(days=idx)
+        if label_mode == "short":
+            label = current.strftime("%d/%m")
+        else:
+            label = current.strftime("%d")
+        buckets.append({"start": current, "end": current, "label": label})
+    return buckets
+
+
+def _bucket_index_for_date(day: date, start: date, granularity: str) -> int:
+    if granularity == "week":
+        return (day - start).days // 7
+    if granularity == "month":
+        return (day.year - start.year) * 12 + (day.month - start.month)
+    return (day - start).days
+
+
+def _summarize_entries(entries: list[Entrada]) -> dict:
+    receitas_total = sum(float(e.valor) for e in entries if e.tipo == "receita")
+    despesas_total = sum(float(e.valor) for e in entries if e.tipo == "despesa")
+    receitas_count = sum(1 for e in entries if e.tipo == "receita")
+    despesas_count = sum(1 for e in entries if e.tipo == "despesa")
+    saldo_projetado = receitas_total - despesas_total
+    economy_pct = round((saldo_projetado / receitas_total) * 100, 1) if receitas_total else 0.0
+
+    return {
+        "receitas": round(receitas_total, 2),
+        "despesas": round(despesas_total, 2),
+        "saldo_projetado": round(saldo_projetado, 2),
+        "economy_pct": economy_pct,
+        "entradas": len(entries),
+        "receitas_count": receitas_count,
+        "despesas_count": despesas_count,
+    }
+
+
+def _build_category_breakdown(entries: list[Entrada], entry_type: str) -> list[dict]:
+    totals = {}
+    total_value = 0.0
+    for e in entries:
+        if e.tipo != entry_type:
+            continue
+        cat = _normalize_categoria(getattr(e, "categoria", None))
+        totals[cat] = totals.get(cat, 0.0) + float(e.valor)
+        total_value += float(e.valor)
+
+    items = []
+    for key, total in totals.items():
+        if total <= 0:
+            continue
+        percent = (total / total_value * 100) if total_value else 0.0
+        items.append(
+            {
+                "key": key,
+                "label": CATEGORIAS.get(key, "Outros"),
+                "total": round(total, 2),
+                "percent": round(percent, 1),
+            }
+        )
+    items.sort(key=lambda item: item["total"], reverse=True)
+    return items
+
+
+def _previous_period_meta(period_meta: dict) -> dict:
+    period_type = period_meta["type"]
+    if period_type == "quarter":
+        quarter = period_meta["quarter"]
+        year = period_meta["year"]
+        if quarter <= 1:
+            quarter = 4
+            year -= 1
+        else:
+            quarter -= 1
+        start_month = (quarter - 1) * 3 + 1
+        start = date(year, start_month, 1)
+        end = last_day_of_month(date(year, start_month + 2, 1))
+        label = _format_quarter_label(year, quarter)
+        return {"start": start, "end": end, "label": label}
+
+    if period_type == "custom":
+        start = period_meta["start"]
+        end = period_meta["end"]
+        days = (end - start).days + 1
+        prev_end = start - timedelta(days=1)
+        prev_start = prev_end - timedelta(days=days - 1)
+        return {"start": prev_start, "end": prev_end, "label": _format_period_label(prev_start, prev_end)}
+
+    year = period_meta["year"]
+    month = period_meta["month"]
+    if month <= 1:
+        year -= 1
+        month = 12
+    else:
+        month -= 1
+    start = date(year, month, 1)
+    end = last_day_of_month(start)
+    return {"start": start, "end": end, "label": _format_month_label(year, month)}
+
+
+def _delta_payload(current: float, previous: float) -> dict:
+    diff = current - previous
+    pct = (diff / previous * 100) if previous else None
+    return {
+        "value": round(diff, 2),
+        "pct": round(pct, 1) if pct is not None else None,
+    }
+
+
+def _build_charts_insights(summary: dict, categories: dict, highlights: dict, alerts: list[str], statuses: dict) -> dict:
+    opportunities = []
+    patterns = []
+
+    receitas = float(summary.get("receitas") or 0)
+    despesas = float(summary.get("despesas") or 0)
+    saldo = float(summary.get("saldo_projetado") or 0)
+    economy_pct = summary.get("economy_pct") or 0
+
+    if receitas > 0:
+        if economy_pct >= 20:
+            opportunities.append(f"Economia acima de {economy_pct:.1f}% das receitas.")
+        elif economy_pct <= 5:
+            opportunities.append("Economia abaixo de 5%. Ajuste despesas variáveis.")
+
+        if despesas / receitas >= 0.85:
+            opportunities.append("Despesas muito próximas das receitas. Reavalie custos fixos.")
+
+    top_expense_category = (categories.get("expense") or [])[:1]
+    if top_expense_category:
+        top_item = top_expense_category[0]
+        if top_item["percent"] >= 35:
+            alerts.append(f"Categoria {top_item['label']} concentra {top_item['percent']}% das despesas.")
+        patterns.append(f"Maior categoria: {top_item['label']} ({top_item['percent']}% das despesas).")
+
+    pending_total = float(statuses.get("em_andamento") or 0) + float(statuses.get("nao_pago") or 0)
+    if pending_total > 0:
+        opportunities.append("Existem despesas pendentes. Planeje os próximos pagamentos.")
+
+    best_label = highlights.get("best_bucket_label")
+    best_value = highlights.get("best_bucket_total")
+    if best_label:
+        patterns.append(f"{best_label} foi o melhor período (saldo {best_value:.2f}).")
+
+    if saldo < 0:
+        alerts.append("Saldo projetado negativo. Ajuste despesas variáveis.")
+    elif receitas and saldo < (receitas * 0.1):
+        alerts.append("Saldo projetado abaixo de 10% das receitas.")
+
+    return {
+        "alerts": alerts[:6],
+        "opportunities": opportunities[:6],
+        "patterns": patterns[:6],
+    }
+
 @analytics_bp.get("/app/charts/data")
 @login_required
 @require_feature("charts")
@@ -526,21 +777,9 @@ def charts_data():
     if blocked:
         return blocked
 
-    today = date.today()
-
-    def _safe_int(value, default):
-        try:
-            return int(value)
-        except (TypeError, ValueError):
-            return default
-
-    year = _safe_int(request.args.get("year"), today.year)
-    month = _safe_int(request.args.get("month"), today.month)
-    if month < 1 or month > 12:
-        month = today.month
-
-    start = date(year, month, 1)
-    end = last_day_of_month(start)
+    period_meta = _resolve_charts_period(request.args)
+    start = period_meta["start"]
+    end = period_meta["end"]
 
     entries = (
         Entrada.query
@@ -552,10 +791,7 @@ def charts_data():
         .all()
     )
 
-    receitas_total = sum(float(e.valor) for e in entries if e.tipo == "receita")
-    despesas_total = sum(float(e.valor) for e in entries if e.tipo == "despesa")
-    receitas_count = sum(1 for e in entries if e.tipo == "receita")
-    despesas_count = sum(1 for e in entries if e.tipo == "despesa")
+    summary = _summarize_entries(entries)
 
     receitas_antes = (
         db.session.query(func.coalesce(func.sum(Entrada.valor), 0.0))
@@ -577,54 +813,37 @@ def charts_data():
         )
         .scalar()
     )
-
     saldo_anterior = float(receitas_antes) - float(despesas_pagas_antes)
-    saldo_projetado = receitas_total - despesas_total
+    summary["saldo_anterior"] = round(saldo_anterior, 2)
 
-    # Serie diaria
-    days = (end - start).days + 1
-    daily_receitas = [0.0] * days
-    daily_despesas = [0.0] * days
+    granularity, label_mode = _choose_granularity(period_meta["type"], start, end)
+    buckets = _build_buckets(start, end, granularity, label_mode)
+    bucket_count = len(buckets)
+
+    bucket_receitas = [0.0] * bucket_count
+    bucket_despesas = [0.0] * bucket_count
+
     for e in entries:
-        idx = (e.data - start).days
-        if idx < 0 or idx >= days:
+        if not e.data:
+            continue
+        idx = _bucket_index_for_date(e.data, start, granularity)
+        if idx < 0 or idx >= bucket_count:
             continue
         if e.tipo == "receita":
-            daily_receitas[idx] += float(e.valor)
+            bucket_receitas[idx] += float(e.valor)
         elif e.tipo == "despesa":
-            daily_despesas[idx] += float(e.valor)
+            bucket_despesas[idx] += float(e.valor)
 
-    daily_saldo = [r - d for r, d in zip(daily_receitas, daily_despesas)]
+    saldo_series = [round(r - d, 2) for r, d in zip(bucket_receitas, bucket_despesas)]
     saldo_acumulado = []
     running = saldo_anterior
-    for val in daily_saldo:
+    for val in saldo_series:
         running += val
         saldo_acumulado.append(round(running, 2))
 
-    # Categorias
-    categoria_totais = {key: 0.0 for key in CATEGORIAS}
-    for e in entries:
-        if e.tipo != "despesa":
-            continue
-        cat = _normalize_categoria(getattr(e, "categoria", None))
-        categoria_totais[cat] += float(e.valor)
+    expense_categories = _build_category_breakdown(entries, "despesa")
+    income_categories = _build_category_breakdown(entries, "receita")
 
-    categorias = []
-    for key, total in categoria_totais.items():
-        if total <= 0:
-            continue
-        percent = (total / despesas_total * 100) if despesas_total else 0.0
-        categorias.append(
-            {
-                "key": key,
-                "label": CATEGORIAS.get(key, "Outros"),
-                "total": round(total, 2),
-                "percent": round(percent, 1),
-            }
-        )
-    categorias.sort(key=lambda item: item["total"], reverse=True)
-
-    # Status das despesas
     status_totais = {"pago": 0.0, "em_andamento": 0.0, "nao_pago": 0.0}
     for e in entries:
         if e.tipo != "despesa":
@@ -634,18 +853,12 @@ def charts_data():
             status = "em_andamento"
         status_totais[status] += float(e.valor)
 
-    # Destaques
-    week_net = {}
-    for idx, val in enumerate(daily_saldo):
-        week = (idx // 7) + 1
-        week_net[week] = week_net.get(week, 0.0) + float(val)
-    if week_net:
-        best_week = max(week_net.items(), key=lambda item: item[1])
-        best_week_total = round(best_week[1], 2)
-        best_week_label = f"Semana {best_week[0]}"
+    if saldo_series:
+        best_idx, best_total = max(enumerate(saldo_series), key=lambda item: item[1])
+        best_label = buckets[best_idx]["label"]
     else:
-        best_week_total = 0.0
-        best_week_label = "-"
+        best_total = 0.0
+        best_label = "-"
 
     top_expense = None
     for e in entries:
@@ -662,17 +875,15 @@ def charts_data():
         top_expense_total = 0.0
         top_expense_label = "-"
 
-    equilibrio = round((despesas_total / receitas_total) * 100, 1) if receitas_total else 0.0
+    equilibrio = round((summary["despesas"] / summary["receitas"]) * 100, 1) if summary["receitas"] else 0.0
 
     alerts = []
-    if receitas_total <= 0 and despesas_total <= 0:
+    if summary["entradas"] <= 0:
         alerts.append("Sem lançamentos no período.")
     else:
         hoje = date.today()
-        ref_date = hoje if (year == hoje.year and month == hoje.month) else start
-        limite = ref_date + timedelta(days=7)
-        if limite > end:
-            limite = end
+        ref_date = hoje if (start <= hoje <= end) else start
+        limite = min(ref_date + timedelta(days=7), end)
         proximas = (
             Entrada.query
             .filter(
@@ -689,57 +900,195 @@ def charts_data():
         else:
             alerts.append("Nenhuma despesa vencendo nos próximos 7 dias.")
 
-        if categorias:
-            top_cat = categorias[0]
-            if top_cat["percent"] >= 35:
-                alerts.append(
-                    f"Categoria {top_cat['label']} concentra {top_cat['percent']}% das despesas."
-                )
+    comparison = {"enabled": False}
+    if str(request.args.get("compare") or "").lower() in {"1", "true", "yes", "on"}:
+        prev_meta = _previous_period_meta(period_meta)
+        prev_entries = (
+            Entrada.query
+            .filter(
+                Entrada.user_id == current_user.id,
+                Entrada.data >= prev_meta["start"],
+                Entrada.data <= prev_meta["end"],
+            )
+            .all()
+        )
+        prev_summary = _summarize_entries(prev_entries)
+        comparison = {
+            "enabled": True,
+            "period": {
+                "start": prev_meta["start"].isoformat(),
+                "end": prev_meta["end"].isoformat(),
+                "label": prev_meta["label"],
+            },
+            "summary": prev_summary,
+            "delta": {
+                "receitas": _delta_payload(summary["receitas"], prev_summary["receitas"]),
+                "despesas": _delta_payload(summary["despesas"], prev_summary["despesas"]),
+                "saldo_projetado": _delta_payload(summary["saldo_projetado"], prev_summary["saldo_projetado"]),
+                "entradas": _delta_payload(summary["entradas"], prev_summary["entradas"]),
+            },
+        }
 
-        if saldo_projetado < 0:
-            alerts.append("Saldo projetado negativo. Ajuste despesas variáveis.")
-        elif receitas_total and saldo_projetado < (receitas_total * 0.1):
-            alerts.append("Saldo projetado abaixo de 10% das receitas.")
+    highlights = {
+        "best_bucket_total": round(best_total, 2),
+        "best_bucket_label": best_label,
+        "top_expense_total": top_expense_total,
+        "top_expense_label": top_expense_label,
+        "equilibrio": equilibrio,
+    }
+
+    insights = _build_charts_insights(
+        summary,
+        {"expense": expense_categories, "income": income_categories},
+        highlights,
+        alerts,
+        {
+            "pago": round(status_totais["pago"], 2),
+            "em_andamento": round(status_totais["em_andamento"], 2),
+            "nao_pago": round(status_totais["nao_pago"], 2),
+        },
+    )
 
     return jsonify(
         {
             "period": {
-                "year": year,
-                "month": month,
+                "type": period_meta["type"],
+                "year": period_meta["year"],
+                "month": period_meta["month"],
+                "quarter": period_meta["quarter"],
                 "start": start.isoformat(),
                 "end": end.isoformat(),
+                "label": period_meta["label"],
             },
-            "summary": {
-                "receitas": round(receitas_total, 2),
-                "despesas": round(despesas_total, 2),
-                "saldo_projetado": round(saldo_projetado, 2),
-                "saldo_anterior": round(saldo_anterior, 2),
-                "entradas": len(entries),
-                "receitas_count": receitas_count,
-                "despesas_count": despesas_count,
-            },
+            "summary": summary,
+            "comparison": comparison,
             "line": {
-                "labels": [str(i + 1).zfill(2) for i in range(days)],
-                "receitas": [round(v, 2) for v in daily_receitas],
-                "despesas": [round(v, 2) for v in daily_despesas],
-                "saldo": [round(v, 2) for v in daily_saldo],
+                "labels": [bucket["label"] for bucket in buckets],
+                "buckets": [
+                    {
+                        "label": bucket["label"],
+                        "start": bucket["start"].isoformat(),
+                        "end": bucket["end"].isoformat(),
+                    }
+                    for bucket in buckets
+                ],
+                "granularity": granularity,
+                "receitas": [round(v, 2) for v in bucket_receitas],
+                "despesas": [round(v, 2) for v in bucket_despesas],
+                "saldo": saldo_series,
                 "saldo_acumulado": saldo_acumulado,
             },
-            "categories": categorias,
+            "categories": {
+                "expense": expense_categories,
+                "income": income_categories,
+            },
             "statuses": {
                 "pago": round(status_totais["pago"], 2),
                 "em_andamento": round(status_totais["em_andamento"], 2),
                 "nao_pago": round(status_totais["nao_pago"], 2),
             },
-            "highlights": {
-                "best_week_total": best_week_total,
-                "best_week_label": best_week_label,
-                "top_expense_total": top_expense_total,
-                "top_expense_label": top_expense_label,
-                "equilibrio": equilibrio,
-            },
-            "alerts": alerts[:3],
+            "highlights": highlights,
+            "insights": insights,
             "updated_at": date.today().isoformat(),
+        }
+    )
+
+
+@analytics_bp.get("/app/charts/drilldown")
+@login_required
+@require_feature("charts")
+def charts_drilldown():
+    blocked = _require_verified_json()
+    if blocked:
+        return blocked
+
+    start = _parse_iso_date(request.args.get("start"))
+    end = _parse_iso_date(request.args.get("end"))
+    if not start or not end:
+        return jsonify({"error": "invalid_dates"}), 400
+    if end < start:
+        start, end = end, start
+
+    type_filter = (request.args.get("type") or "all").strip().lower()
+    if type_filter not in {"all", "income", "expense"}:
+        type_filter = "all"
+
+    category = (request.args.get("category") or "").strip().lower() or None
+    limit = _safe_int(request.args.get("limit"), 8)
+    if limit < 1:
+        limit = 8
+    if limit > 30:
+        limit = 30
+
+    query = (
+        Entrada.query
+        .filter(
+            Entrada.user_id == current_user.id,
+            Entrada.data >= start,
+            Entrada.data <= end,
+        )
+    )
+
+    if type_filter == "income":
+        query = query.filter(Entrada.tipo == "receita")
+    elif type_filter == "expense":
+        query = query.filter(Entrada.tipo == "despesa")
+
+    if category:
+        query = query.filter(func.lower(Entrada.categoria) == category)
+
+    entries = (
+        query
+        .order_by(Entrada.valor.desc(), Entrada.data.desc())
+        .limit(limit)
+        .all()
+    )
+
+    income_total = (
+        db.session.query(func.coalesce(func.sum(Entrada.valor), 0.0))
+        .filter(
+            Entrada.user_id == current_user.id,
+            Entrada.tipo == "receita",
+            Entrada.data >= start,
+            Entrada.data <= end,
+        )
+        .scalar()
+    )
+    expense_total = (
+        db.session.query(func.coalesce(func.sum(Entrada.valor), 0.0))
+        .filter(
+            Entrada.user_id == current_user.id,
+            Entrada.tipo == "despesa",
+            Entrada.data >= start,
+            Entrada.data <= end,
+        )
+        .scalar()
+    )
+
+    def _entry_payload(entry: Entrada) -> dict:
+        cat = _normalize_categoria(getattr(entry, "categoria", None))
+        return {
+            "id": entry.id,
+            "date": entry.data.isoformat() if entry.data else None,
+            "type": "income" if entry.tipo == "receita" else "expense",
+            "description": entry.descricao,
+            "category": cat,
+            "category_label": CATEGORIAS.get(cat, "Outros"),
+            "method": _method_label(getattr(entry, "metodo", None)),
+            "value": round(float(entry.valor), 2),
+            "status": entry.status,
+        }
+
+    return jsonify(
+        {
+            "period": {"start": start.isoformat(), "end": end.isoformat()},
+            "filters": {"type": type_filter, "category": category},
+            "summary": {
+                "income": round(float(income_total or 0.0), 2),
+                "expense": round(float(expense_total or 0.0), 2),
+                "net": round(float(income_total or 0.0) - float(expense_total or 0.0), 2),
+            },
+            "items": [_entry_payload(item) for item in entries],
         }
     )
 

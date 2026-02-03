@@ -2,99 +2,185 @@
 {% set page_class = 'page-charts' %}
 {% set page_css = ['/static/css/app_shell.css', '/static/css/app_base.css', '/static/css/charts.css'] %}
 
-{% block title %}Gráficos | Controle Financeiro{% endblock %}
-{% block page_title %}Gráficos{% endblock %}
+{% block title %}Gr&aacute;ficos | Controle Financeiro{% endblock %}
+{% block page_title %}Gr&aacute;ficos{% endblock %}
 
 {% block content %}
-  <div class="page charts-page">
-    <section class="panel charts-hero">
-      <div class="panel-head">
-        <div>
-          <h2 class="panel-title">Gráficos</h2>
-          <p class="panel-subtitle">Acompanhe o comportamento financeiro do período e descubra onde ajustar seu orçamento.</p>
+  <div class="page charts-page" data-page="charts">
+    <section class="panel charts-topbar">
+      <div class="topbar-grid">
+        <div class="topbar-text">
+          <span class="plus-pill">Plano PLUS</span>
+          <h2 class="panel-title">Gr&aacute;ficos PLUS</h2>
+          <p class="panel-subtitle">Mais controles, compara&ccedil;&otilde;es e insights para decis&otilde;es r&aacute;pidas.</p>
         </div>
-        <div class="panel-actions">
-          <label class="field field-inline">
-            <span class="field-label">Ano</span>
-            <select id="chart-year" class="control">
-              <option value="2026">2026</option>
-              <option value="2025">2025</option>
-              <option value="2024">2024</option>
-            </select>
-          </label>
-          <label class="field field-inline">
-            <span class="field-label">Mês</span>
-            <select id="chart-month" class="control">
-              <option value="1">Janeiro</option>
-              <option value="2">Fevereiro</option>
-              <option value="3">Março</option>
-              <option value="4">Abril</option>
-              <option value="5">Maio</option>
-              <option value="6">Junho</option>
-              <option value="7">Julho</option>
-              <option value="8">Agosto</option>
-              <option value="9">Setembro</option>
-              <option value="10">Outubro</option>
-              <option value="11">Novembro</option>
-              <option value="12">Dezembro</option>
-            </select>
-          </label>
-          <button class="btn btn-ghost" type="button">Exportar</button>
-        </div>
-      </div>
+        <div class="topbar-actions">
+          <div class="period-block">
+            <span class="field-label">Per&iacute;odo</span>
+            <div class="segmented" id="period-tabs" role="tablist">
+              <button class="segmented-btn is-active" type="button" data-period="month" role="tab" aria-selected="true">M&ecirc;s</button>
+              <button class="segmented-btn" type="button" data-period="quarter" role="tab" aria-selected="false">Trimestre</button>
+              <button class="segmented-btn" type="button" data-period="custom" role="tab" aria-selected="false">Personalizado</button>
+            </div>
+            <div class="period-panels">
+              <div class="period-panel is-active" data-period-panel="month" role="tabpanel">
+                <label class="field field-inline">
+                  <span class="field-label">Ano</span>
+                  <select id="chart-year" class="control">
+                    <option value="2026">2026</option>
+                    <option value="2025">2025</option>
+                    <option value="2024">2024</option>
+                  </select>
+                </label>
+                <label class="field field-inline">
+                  <span class="field-label">M&ecirc;s</span>
+                  <select id="chart-month" class="control">
+                    <option value="1">Janeiro</option>
+                    <option value="2">Fevereiro</option>
+                    <option value="3">Mar&ccedil;o</option>
+                    <option value="4">Abril</option>
+                    <option value="5">Maio</option>
+                    <option value="6">Junho</option>
+                    <option value="7">Julho</option>
+                    <option value="8">Agosto</option>
+                    <option value="9">Setembro</option>
+                    <option value="10">Outubro</option>
+                    <option value="11">Novembro</option>
+                    <option value="12">Dezembro</option>
+                  </select>
+                </label>
+              </div>
+              <div class="period-panel" data-period-panel="quarter" role="tabpanel" aria-hidden="true">
+                <label class="field field-inline">
+                  <span class="field-label">Ano</span>
+                  <select id="chart-year-quarter" class="control">
+                    <option value="2026">2026</option>
+                    <option value="2025">2025</option>
+                    <option value="2024">2024</option>
+                  </select>
+                </label>
+                <label class="field field-inline">
+                  <span class="field-label">Trimestre</span>
+                  <select id="chart-quarter" class="control">
+                    <option value="1">1&ordm; Trimestre</option>
+                    <option value="2">2&ordm; Trimestre</option>
+                    <option value="3">3&ordm; Trimestre</option>
+                    <option value="4">4&ordm; Trimestre</option>
+                  </select>
+                </label>
+              </div>
+              <div class="period-panel" data-period-panel="custom" role="tabpanel" aria-hidden="true">
+                <label class="field field-inline">
+                  <span class="field-label">De</span>
+                  <input id="chart-start" type="date" class="control" />
+                </label>
+                <label class="field field-inline">
+                  <span class="field-label">At&eacute;</span>
+                  <input id="chart-end" type="date" class="control" />
+                </label>
+              </div>
+            </div>
+          </div>
 
-      <div class="hero-grid">
-        <div class="hero-stat">
-          <span class="stat-label">Receitas no período</span>
-          <strong id="summary-receitas">R$ 0,00</strong>
-          <span class="stat-meta" id="summary-receitas-meta">Total do período</span>
-        </div>
-        <div class="hero-stat">
-          <span class="stat-label">Despesas no período</span>
-          <strong id="summary-despesas">R$ 0,00</strong>
-          <span class="stat-meta" id="summary-despesas-meta">Total do período</span>
-        </div>
-        <div class="hero-stat">
-          <span class="stat-label">Saldo do período</span>
-          <strong id="summary-saldo">R$ 0,00</strong>
-          <span class="stat-meta" id="summary-saldo-meta">Receitas - despesas</span>
-        </div>
-        <div class="hero-stat">
-          <span class="stat-label">Entradas registradas</span>
-          <strong id="summary-count">0 lançamentos</strong>
-          <span class="stat-meta" id="summary-count-meta">0 receitas · 0 despesas</span>
-        </div>
-      </div>
+          <div class="compare-block">
+            <span class="field-label">Compara&ccedil;&atilde;o</span>
+            <label class="switch">
+              <input id="compare-toggle" type="checkbox" checked />
+              <span class="switch-track"></span>
+              <span class="switch-text">M&ecirc;s anterior</span>
+            </label>
+            <span class="compare-meta" id="compare-label">Comparando com m&ecirc;s anterior</span>
+          </div>
 
-      <div class="hero-notes">
-        <span class="note-pill" id="chart-note-updated">Atualizado agora</span>
-        <span class="note-pill" id="chart-note-balance">Saldo anterior: R$ 0,00</span>
+          <div class="export-block">
+            <span class="field-label">Exportar</span>
+            <div class="export-dropdown">
+              <button class="btn btn-ghost" type="button" id="export-trigger">Exportar</button>
+              <div class="export-menu" id="export-menu" role="menu">
+                <button type="button" data-export="csv" role="menuitem">CSV do per&iacute;odo</button>
+                <button type="button" data-export="json" role="menuitem">JSON completo</button>
+                <button type="button" data-export="svg" role="menuitem">SVG do gr&aacute;fico</button>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
 
+    <section class="kpi-grid">
+      <article class="panel kpi-card" data-kpi="income">
+        <div class="kpi-head">
+          <span class="kpi-label">Receitas</span>
+          <span class="kpi-chip" id="kpi-income-chip">Neutro</span>
+        </div>
+        <strong id="kpi-income-value">R$ 0,00</strong>
+        <div class="kpi-delta" id="kpi-income-delta">+R$ 0,00 (+0%)</div>
+      </article>
+
+      <article class="panel kpi-card" data-kpi="expense">
+        <div class="kpi-head">
+          <span class="kpi-label">Despesas</span>
+          <span class="kpi-chip" id="kpi-expense-chip">Neutro</span>
+        </div>
+        <strong id="kpi-expense-value">R$ 0,00</strong>
+        <div class="kpi-delta" id="kpi-expense-delta">+R$ 0,00 (+0%)</div>
+      </article>
+
+      <article class="panel kpi-card" data-kpi="balance">
+        <div class="kpi-head">
+          <span class="kpi-label">Saldo do per&iacute;odo</span>
+          <span class="kpi-chip" id="kpi-balance-chip">Neutro</span>
+        </div>
+        <strong id="kpi-balance-value">R$ 0,00</strong>
+        <div class="kpi-delta" id="kpi-balance-delta">+R$ 0,00 (+0%)</div>
+      </article>
+
+      <article class="panel kpi-card" data-kpi="entries">
+        <div class="kpi-head">
+          <span class="kpi-label">Entradas</span>
+          <span class="kpi-chip" id="kpi-entries-chip">Neutro</span>
+        </div>
+        <strong id="kpi-entries-value">0 lan&ccedil;amentos</strong>
+        <div class="kpi-delta" id="kpi-entries-delta">+0 (+0%)</div>
+      </article>
+    </section>
+
     <section class="charts-grid">
-      <article class="panel chart-card span-2">
+      <article class="panel chart-card span-2 main-chart">
         <div class="chart-head">
           <div>
-            <h3>Fluxo do mês</h3>
-            <p>Receitas x despesas com saldo acumulado</p>
+            <h3>Fluxo do per&iacute;odo</h3>
+            <p id="chart-period-label">Carregando...</p>
           </div>
-          <div class="chart-legend">
-            <span class="legend-item legend-income"><span class="legend-dot"></span>Receitas</span>
-            <span class="legend-item legend-expense"><span class="legend-dot"></span>Despesas</span>
-            <span class="legend-item legend-balance"><span class="legend-dot"></span>Saldo</span>
+          <div class="chart-head-actions">
+            <div class="chip-group" id="series-toggle">
+              <button class="chip is-active" type="button" data-series="income">Receitas</button>
+              <button class="chip is-active" type="button" data-series="expense">Despesas</button>
+              <button class="chip is-active" type="button" data-series="balance">Saldo</button>
+            </div>
+            <div class="meta-controls">
+              <label class="field field-inline field-meta">
+                <span class="field-label">Meta de saldo</span>
+                <input id="goal-line-input" class="control" type="text" inputmode="decimal" placeholder="R$ 0,00" />
+              </label>
+              <label class="switch small">
+                <input id="goal-line-toggle" type="checkbox" />
+                <span class="switch-track"></span>
+                <span class="switch-text">Meta</span>
+              </label>
+            </div>
           </div>
         </div>
 
-        <div class="chart-canvas chart-line">
-          <svg class="chart-svg" viewBox="0 0 640 220" preserveAspectRatio="none" aria-hidden="true">
+        <div class="chart-canvas chart-line" id="line-canvas">
+          <svg class="chart-svg" id="line-svg" viewBox="0 0 640 220" preserveAspectRatio="none" aria-hidden="true">
             <defs>
               <linearGradient id="incomeFill" x1="0" x2="0" y1="0" y2="1">
-                <stop offset="0%" stop-color="rgba(76, 175, 80, 0.38)" />
+                <stop offset="0%" stop-color="rgba(76, 175, 80, 0.42)" />
                 <stop offset="100%" stop-color="rgba(76, 175, 80, 0.02)" />
               </linearGradient>
               <linearGradient id="expenseFill" x1="0" x2="0" y1="0" y2="1">
-                <stop offset="0%" stop-color="rgba(245, 166, 35, 0.32)" />
+                <stop offset="0%" stop-color="rgba(245, 166, 35, 0.36)" />
                 <stop offset="100%" stop-color="rgba(245, 166, 35, 0.02)" />
               </linearGradient>
             </defs>
@@ -103,6 +189,8 @@
             <path class="line-income" data-line="income" d="M0 180 L640 180" />
             <path class="line-expense" data-line="expense" d="M0 190 L640 190" />
             <path class="line-balance" data-line="balance" d="M0 170 L640 170" />
+            <line class="line-ref line-zero" data-ref="zero" x1="0" y1="110" x2="640" y2="110" />
+            <line class="line-ref line-goal" data-ref="goal" x1="0" y1="110" x2="640" y2="110" />
             <circle class="line-point" data-point="income" cx="0" cy="180" r="4" />
             <circle class="line-point" data-point="expense" cx="0" cy="190" r="4" />
             <circle class="line-point alt" data-point="balance" cx="0" cy="170" r="4" />
@@ -113,132 +201,151 @@
             <strong class="tooltip-value" id="line-tooltip-value">R$ 0,00</strong>
             <span class="tooltip-date" id="line-tooltip-date">00/00/0000</span>
           </div>
-          <div class="chart-empty">Sem dados no período</div>
+          <div class="chart-empty">Sem dados no per&iacute;odo</div>
+          <div class="chart-skeleton" data-skeleton>
+            <div class="skeleton-line w-50"></div>
+            <div class="skeleton-line w-70"></div>
+            <div class="skeleton-line w-40"></div>
+          </div>
         </div>
 
         <div class="chart-footer">
           <div class="chart-kpi">
-            <span class="kpi-label">Melhor semana</span>
-            <strong id="kpi-best-week">R$ 0,00</strong>
-            <span class="kpi-meta" id="kpi-best-week-label">-</span>
+            <span class="kpi-label">Melhor per&iacute;odo</span>
+            <strong id="kpi-best-period">R$ 0,00</strong>
+            <span class="kpi-meta" id="kpi-best-period-label">-</span>
           </div>
           <div class="chart-kpi">
-            <span class="kpi-label">Maior saída</span>
+            <span class="kpi-label">Maior sa&iacute;da</span>
             <strong id="kpi-top-expense">R$ 0,00</strong>
             <span class="kpi-meta" id="kpi-top-expense-label">-</span>
           </div>
           <div class="chart-kpi">
-            <span class="kpi-label">Equilíbrio</span>
-            <strong id="kpi-balance">0%</strong>
-            <span class="kpi-meta" id="kpi-balance-label">Receitas x despesas</span>
+            <span class="kpi-label">Equil&iacute;brio</span>
+            <strong id="kpi-equilibrio">0%</strong>
+            <span class="kpi-meta" id="kpi-equilibrio-label">Despesas / receitas</span>
           </div>
         </div>
       </article>
 
-      <article class="panel chart-card">
+      <article class="panel chart-card donut-card">
         <div class="chart-head">
           <div>
-            <h3>Despesas por categoria</h3>
-            <p>Top 5 do período</p>
+            <h3>Categorias em foco</h3>
+            <p id="donut-subtitle">Top 5 do per&iacute;odo</p>
+          </div>
+          <div class="donut-controls">
+            <div class="chip-group" id="donut-type-toggle">
+              <button class="chip is-active" type="button" data-donut-type="expense">Despesas</button>
+              <button class="chip" type="button" data-donut-type="income">Receitas</button>
+            </div>
+            <div class="chip-group" id="donut-top-toggle">
+              <button class="chip is-active" type="button" data-donut-top="5">Top 5</button>
+              <button class="chip" type="button" data-donut-top="10">Top 10</button>
+              <button class="chip" type="button" data-donut-top="all">Todas</button>
+            </div>
           </div>
         </div>
-        <div class="chart-canvas donut-wrap">
-          <div class="donut" id="chart-donut" role="img" aria-label="Distribuição de despesas por categoria">
+
+        <div class="chart-canvas donut-wrap" id="donut-canvas">
+          <div class="donut" id="chart-donut" role="img" aria-label="Distribui&ccedil;&atilde;o de categorias">
             <div class="donut-center">
               <span class="donut-value" id="donut-total">R$ 0,00</span>
-              <span class="donut-label" id="donut-label">Total de despesas</span>
+              <span class="donut-label" id="donut-label">Total do per&iacute;odo</span>
             </div>
           </div>
           <ul class="donut-legend" id="donut-legend"></ul>
-          <div class="chart-empty">Sem despesas no período</div>
-        </div>
-      </article>
-
-      <article class="panel chart-card">
-        <div class="chart-head">
-          <div>
-            <h3>Status das despesas</h3>
-            <p>Pagas, em andamento e não pagas</p>
+          <div class="donut-hint">Clique em uma categoria para ver detalhes.</div>
+          <div class="chart-empty">Sem dados no per&iacute;odo</div>
+          <div class="chart-skeleton" data-skeleton>
+            <div class="skeleton-circle"></div>
+            <div class="skeleton-line w-60"></div>
+            <div class="skeleton-line w-40"></div>
           </div>
-        </div>
-        <div class="chart-canvas bars" id="status-bars">
-          <div class="bar-row" data-status="pago">
-            <span class="bar-label">Pagas</span>
-            <div class="bar-track">
-              <div class="bar-fill bar-paid" data-bar="pago" style="width: 0%"></div>
-            </div>
-            <span class="bar-value" data-bar-value="pago">R$ 0,00</span>
-          </div>
-          <div class="bar-row" data-status="em_andamento">
-            <span class="bar-label">Em andamento</span>
-            <div class="bar-track">
-              <div class="bar-fill bar-open" data-bar="em_andamento" style="width: 0%"></div>
-            </div>
-            <span class="bar-value" data-bar-value="em_andamento">R$ 0,00</span>
-          </div>
-          <div class="bar-row" data-status="nao_pago">
-            <span class="bar-label">Não pagas</span>
-            <div class="bar-track">
-              <div class="bar-fill bar-late" data-bar="nao_pago" style="width: 0%"></div>
-            </div>
-            <span class="bar-value" data-bar-value="nao_pago">R$ 0,00</span>
-          </div>
-          <div class="chart-empty">Sem despesas no período</div>
-        </div>
-      </article>
-
-      <article class="panel chart-card">
-        <div class="chart-head">
-          <div>
-            <h3>Categorias</h3>
-            <p>Distribuição por tipo</p>
-          </div>
-        </div>
-        <div class="chart-canvas bars" id="categories-bars">
-          <div class="chart-empty">Sem despesas no período</div>
-        </div>
-      </article>
-
-      <article class="panel chart-card goals-card">
-        <div class="chart-head">
-          <div>
-            <h3>Metas</h3>
-            <p>Defina sua meta de economia</p>
-          </div>
-        </div>
-        <div class="goal-controls">
-          <label class="field field-inline">
-            <span class="field-label">Período</span>
-            <select id="goal-period" class="control">
-              <option value="monthly">Mensal</option>
-              <option value="biweekly">Quinzenal</option>
-              <option value="weekly">Semanal</option>
-            </select>
-          </label>
-          <label class="field field-inline">
-            <span class="field-label">Meta personalizada</span>
-            <input id="goal-custom" class="control" type="text" inputmode="decimal" placeholder="R$ 0,00" />
-          </label>
-        </div>
-        <div class="progress">
-          <div class="progress-head">
-            <span>Meta de economia</span>
-            <span id="goal-savings-label">R$ 0,00 / R$ 0,00</span>
-          </div>
-          <div class="progress-track">
-            <div class="progress-fill" id="goal-savings-bar" style="width: 0%"></div>
-          </div>
-          <p class="insight-muted" id="goal-savings-meta">Sem dados para estimar a meta.</p>
         </div>
       </article>
     </section>
 
-    <section class="insights-grid">
-      <article class="panel alert-card span-3">
-        <h3>Alertas do mês</h3>
-        <ul class="insight-list" id="chart-alerts"></ul>
-      </article>
+    <section class="insights-panel">
+      <div class="panel insights-header">
+        <div>
+          <h3>Insights do per&iacute;odo</h3>
+          <p>Alertas, oportunidades e padr&otilde;es para melhorar seu fluxo.</p>
+        </div>
+        <div class="insights-actions">
+          <button class="btn btn-ghost" type="button" id="refresh-insights">Atualizar insights</button>
+        </div>
+      </div>
+
+      <div class="insights-grid">
+        <article class="panel insight-card">
+          <div class="insight-head">
+            <h4>Alertas</h4>
+            <span class="insight-pill">Aten&ccedil;&atilde;o</span>
+          </div>
+          <ul class="insight-list" id="insights-alerts"></ul>
+        </article>
+
+        <article class="panel insight-card">
+          <div class="insight-head">
+            <h4>Oportunidades</h4>
+            <span class="insight-pill positive">Potencial</span>
+          </div>
+          <ul class="insight-list" id="insights-opportunities"></ul>
+          <div class="insight-cta">
+            <button class="btn btn-primary" type="button" data-locked="true" title="Dispon&iacute;vel apenas no PRO">
+              <span class="lock-icon" aria-hidden="true">LOCK</span>
+              Criar regra
+            </button>
+          </div>
+        </article>
+
+        <article class="panel insight-card">
+          <div class="insight-head">
+            <h4>Padr&otilde;es</h4>
+            <span class="insight-pill">Tend&ecirc;ncias</span>
+          </div>
+          <ul class="insight-list" id="insights-patterns"></ul>
+          <div class="insight-cta">
+            <button class="btn btn-ghost" type="button" id="export-insights">Exportar insights</button>
+          </div>
+        </article>
+      </div>
     </section>
+
+    <div class="modal-overlay" id="drilldown-overlay" aria-hidden="true">
+      <div class="modal drilldown-modal" role="dialog" aria-modal="true" aria-labelledby="drilldown-title">
+        <div class="modal-header">
+          <h3 id="drilldown-title">Detalhes do per&iacute;odo</h3>
+          <button class="modal-close" type="button" id="drilldown-close" aria-label="Fechar">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="drilldown-summary">
+            <div>
+              <span>Per&iacute;odo</span>
+              <strong id="drilldown-period">-</strong>
+            </div>
+            <div>
+              <span>Total</span>
+              <strong id="drilldown-total">R$ 0,00</strong>
+            </div>
+          </div>
+          <ul class="drilldown-list" id="drilldown-list"></ul>
+          <div class="drilldown-empty" id="drilldown-empty">Sem lan&ccedil;amentos para este recorte.</div>
+          <div class="drilldown-skeleton" data-skeleton>
+            <div class="skeleton-line w-80"></div>
+            <div class="skeleton-line w-70"></div>
+            <div class="skeleton-line w-60"></div>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <a class="btn btn-secondary" id="drilldown-cta" href="/app/entradas">Ver em Entradas</a>
+          <button class="btn btn-ghost" type="button" id="drilldown-close-btn">Fechar</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="toast-stack" id="toast-stack" aria-live="polite" aria-atomic="true"></div>
   </div>
 {% endblock %}
 
