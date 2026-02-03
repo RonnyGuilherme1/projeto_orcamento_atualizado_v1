@@ -18,7 +18,7 @@ body.app-body .charts-page{
   gap: 18px;
 }
 
-body.app-body .charts-topbar{
+body.app-body .charts-page .charts-topbar{
   position: relative;
   overflow: hidden;
   border-radius: 18px;
@@ -26,7 +26,7 @@ body.app-body .charts-topbar{
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-body.app-body .charts-topbar::after{
+body.app-body .charts-page .charts-topbar::after{
   content: "";
   position: absolute;
   inset: -50% 0 auto 0;
@@ -37,7 +37,7 @@ body.app-body .charts-topbar::after{
   pointer-events: none;
 }
 
-body.app-body .topbar-grid{
+body.app-body .charts-page .topbar-grid{
   position: relative;
   z-index: 2;
   display: grid;
@@ -46,11 +46,11 @@ body.app-body .topbar-grid{
   align-items: start;
 }
 
-body.app-body .topbar-text .panel-title{
+body.app-body .charts-page .topbar-text .panel-title{
   margin: 6px 0 4px;
 }
 
-body.app-body .plus-pill{
+body.app-body .charts-page .plus-pill{
   display: inline-flex;
   align-items: center;
   padding: 6px 12px;
@@ -64,7 +64,7 @@ body.app-body .plus-pill{
   border: 1px solid rgba(76, 175, 80, 0.35);
 }
 
-body.app-body .topbar-actions{
+body.app-body .charts-page .topbar-actions{
   display: grid;
   grid-template-columns: minmax(0, 1.4fr) minmax(0, 0.9fr);
   grid-auto-rows: minmax(0, auto);
@@ -74,28 +74,28 @@ body.app-body .topbar-actions{
   justify-items: start;
 }
 
-body.app-body .period-block,
-body.app-body .compare-block,
-body.app-body .export-block{
+body.app-body .charts-page .period-block,
+body.app-body .charts-page .compare-block,
+body.app-body .charts-page .export-block{
   display: grid;
   gap: 8px;
   min-width: 0;
 }
 
-body.app-body .period-block{
+body.app-body .charts-page .period-block{
   grid-column: 1;
   grid-row: 1 / span 2;
 }
 
-body.app-body .compare-block{
+body.app-body .charts-page .compare-block{
   grid-column: 2;
 }
 
-body.app-body .export-block{
+body.app-body .charts-page .export-block{
   grid-column: 2;
 }
 
-body.app-body .segmented{
+body.app-body .charts-page .segmented{
   display: inline-flex;
   flex-wrap: wrap;
   padding: 4px;
@@ -105,7 +105,7 @@ body.app-body .segmented{
   gap: 8px;
 }
 
-body.app-body .segmented-btn{
+body.app-body .charts-page .segmented-btn{
   border: 0;
   padding: 6px 12px;
   border-radius: 999px;
@@ -117,33 +117,33 @@ body.app-body .segmented-btn{
   white-space: nowrap;
 }
 
-body.app-body .segmented-btn.is-active{
+body.app-body .charts-page .segmented-btn.is-active{
   background: rgba(76, 175, 80, 0.22);
   color: #ffffff;
 }
 
-body.app-body .period-panels{
+body.app-body .charts-page .period-panels{
   margin-top: 6px;
   display: grid;
   gap: 8px;
 }
 
-body.app-body .period-panel{
+body.app-body .charts-page .period-panel{
   display: none;
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: 10px;
   min-width: 0;
 }
 
-body.app-body .period-panel .control{
+body.app-body .charts-page .period-panel .control{
   width: 100%;
 }
 
-body.app-body .period-panel.is-active{
+body.app-body .charts-page .period-panel.is-active{
   display: grid;
 }
 
-body.app-body .compare-meta{
+body.app-body .charts-page .compare-meta{
   font-size: 11px;
   font-weight: 700;
   color: rgba(255, 255, 255, 0.6);
@@ -153,7 +153,7 @@ body.app-body .compare-meta{
   white-space: nowrap;
 }
 
-body.app-body .switch{
+body.app-body .charts-page .switch{
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -164,11 +164,11 @@ body.app-body .switch{
   flex-wrap: wrap;
 }
 
-body.app-body .switch input{
+body.app-body .charts-page .switch input{
   display: none;
 }
 
-body.app-body .switch-track{
+body.app-body .charts-page .switch-track{
   width: 36px;
   height: 20px;
   border-radius: 999px;
@@ -177,7 +177,7 @@ body.app-body .switch-track{
   transition: background 0.2s ease;
 }
 
-body.app-body .switch-track::after{
+body.app-body .charts-page .switch-track::after{
   content: "";
   position: absolute;
   width: 14px;
@@ -189,37 +189,37 @@ body.app-body .switch-track::after{
   transition: transform 0.2s ease;
 }
 
-body.app-body .switch input:checked + .switch-track{
+body.app-body .charts-page .switch input:checked + .switch-track{
   background: rgba(76, 175, 80, 0.7);
 }
 
-body.app-body .switch input:checked + .switch-track::after{
+body.app-body .charts-page .switch input:checked + .switch-track::after{
   transform: translateX(16px);
 }
 
-body.app-body .switch.small .switch-track{
+body.app-body .charts-page .switch.small .switch-track{
   width: 30px;
   height: 16px;
 }
 
-body.app-body .switch.small .switch-track::after{
+body.app-body .charts-page .switch.small .switch-track::after{
   width: 10px;
   height: 10px;
   top: 3px;
   left: 3px;
 }
 
-body.app-body .switch.small input:checked + .switch-track::after{
+body.app-body .charts-page .switch.small input:checked + .switch-track::after{
   transform: translateX(14px);
 }
 
-body.app-body .export-dropdown{
+body.app-body .charts-page .export-dropdown{
   position: relative;
   display: inline-flex;
   align-items: center;
 }
 
-body.app-body .export-menu{
+body.app-body .charts-page .export-menu{
   position: absolute;
   top: calc(100% + 8px);
   right: 0;
@@ -238,13 +238,13 @@ body.app-body .export-menu{
   z-index: 6;
 }
 
-body.app-body .export-dropdown.is-open .export-menu{
+body.app-body .charts-page .export-dropdown.is-open .export-menu{
   opacity: 1;
   transform: translateY(0);
   pointer-events: auto;
 }
 
-body.app-body .export-menu button{
+body.app-body .charts-page .export-menu button{
   border: 0;
   padding: 8px 10px;
   border-radius: 10px;
@@ -256,7 +256,7 @@ body.app-body .export-menu button{
   cursor: pointer;
 }
 
-body.app-body .export-menu button:hover{
+body.app-body .charts-page .export-menu button:hover{
   background: rgba(255, 255, 255, 0.08);
 }
 
@@ -1039,17 +1039,17 @@ body.app-body .charts-page.is-loading [data-skeleton]{
 }
 
 @media (max-width: 1100px){
-  body.app-body .topbar-grid{
+  body.app-body .charts-page .topbar-grid{
     grid-template-columns: 1fr;
   }
 
-  body.app-body .topbar-actions{
+  body.app-body .charts-page .topbar-actions{
     grid-template-columns: 1fr;
   }
 
-  body.app-body .period-block,
-  body.app-body .compare-block,
-  body.app-body .export-block{
+  body.app-body .charts-page .period-block,
+  body.app-body .charts-page .compare-block,
+  body.app-body .charts-page .export-block{
     grid-column: auto;
     grid-row: auto;
   }
@@ -1087,11 +1087,11 @@ body.app-body .charts-page.is-loading [data-skeleton]{
 }
 
 @media (max-width: 720px){
-  body.app-body .period-panel{
+  body.app-body .charts-page .period-panel{
     grid-template-columns: 1fr;
   }
 
-  body.app-body .compare-meta{
+  body.app-body .charts-page .compare-meta{
     white-space: normal;
   }
 
