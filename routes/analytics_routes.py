@@ -19,7 +19,7 @@ from models.recurrence_model import Recurrence, RecurrenceExecution
 from services.projection_engine import compute_projection
 from services.plans import PLANS, is_valid_plan
 from services.feature_gate import require_feature
-from services.permissions import require_api_access, json_error
+from services.permissions import require_api_access, json_error, require_verified_email
 from services.checkout_store import (
     create_order,
     set_order_billing_id,
@@ -364,6 +364,7 @@ def upgrade():
 
 @analytics_bp.get("/app/upgrade/checkout")
 @login_required
+@require_verified_email("Confirme seu email para liberar o pagamento.")
 def upgrade_checkout_page():
     plan = (request.args.get("plan") or "basic").strip().lower()
     if not is_valid_plan(plan):
@@ -376,6 +377,7 @@ def upgrade_checkout_page():
 
 @analytics_bp.post("/app/upgrade/checkout")
 @login_required
+@require_verified_email("Confirme seu email para liberar o pagamento.")
 def upgrade_checkout_start():
     plan = (request.form.get("plan") or "basic").strip().lower()
     if not is_valid_plan(plan):
@@ -434,12 +436,16 @@ def upgrade_checkout_start():
 
 @analytics_bp.get("/app/upgrade/return")
 @login_required
+@require_verified_email("Confirme seu email para liberar o pagamento.")
 def upgrade_return():
     """Página de retorno pós-pagamento (cliente redirecionado pelo provedor)."""
     token = (request.args.get("token") or "").strip()
     order = get_order_by_token(token)
     if not order:
-        flash("Não encontramos esse checkout.", "error")
+        flash("Nao encontramos esse checkout.", "error")
+        return redirect(url_for("analytics.upgrade"))
+    if not order.user_id or int(order.user_id) != int(current_user.id):
+        flash("Checkout nao encontrado para esta conta.", "error")
         return redirect(url_for("analytics.upgrade"))
 
     # Se o webhook já marcou como pago, aplica o plano aqui.
@@ -456,13 +462,13 @@ def upgrade_return():
 
 
 @analytics_bp.get("/app/upgrade/status")
-@require_api_access(require_verified=False)
+@require_api_access(require_verified=True)
 def upgrade_status():
     token = (request.args.get("token") or "").strip()
     order = get_order_by_token(token)
     if not order:
         return jsonify({"ok": False, "error": "not_found"}), 404
-    if order.user_id and int(order.user_id) != int(current_user.id):
+    if not order.user_id or int(order.user_id) != int(current_user.id):
         return jsonify({"ok": False, "error": "forbidden"}), 403
 
     redirect_to = (request.args.get("redirect") or "").strip()

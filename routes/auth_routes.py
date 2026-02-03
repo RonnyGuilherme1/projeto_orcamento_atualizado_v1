@@ -1,14 +1,16 @@
 import re
 
-from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app
+from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, jsonify
 from flask_login import login_user, logout_user, login_required, current_user
+from sqlalchemy.exc import IntegrityError
 
 from models.extensions import db
 from models.user_model import User
-from services.abacatepay import AbacatePayError, create_plan_billing
-from services.checkout_store import create_order, set_order_billing_id, try_apply_paid_order_to_user
+from services.checkout_store import try_apply_paid_order_to_user
 from services.email_service import send_verification_email
 from services.plans import is_valid_plan
+from services.password_policy import validate_password, PasswordValidationError
+from services.permissions import is_json_request, json_error
 
 auth_bp = Blueprint("auth", __name__)
 
@@ -64,35 +66,50 @@ def register_page():
 
 @auth_bp.post("/register")
 def register():
-    username = (request.form.get("username") or "").strip()
-    email = (request.form.get("email") or "").strip().lower()
-    password = request.form.get("password") or ""
-    confirm = request.form.get("confirm_password") or ""
-    plan = (request.form.get("plan") or "basic").strip().lower()
-    full_name = (request.form.get("full_name") or "").strip()
-    tax_id_raw = (request.form.get("tax_id") or "").strip()
-    cellphone_raw = (request.form.get("cellphone") or "").strip()
-    checkout_token = (request.form.get("checkout_token") or "").strip()
+    wants_json = is_json_request()
+    payload = request.get_json(silent=True) or {}
+
+    def _get(name: str) -> str:
+        if request.is_json:
+            value = payload.get(name)
+        else:
+            value = request.form.get(name)
+        return "" if value is None else str(value)
+
+    username = _get("username").strip()
+    email = _get("email").strip().lower()
+    password = _get("password")
+    confirm = _get("confirm_password")
+    plan = _get("plan").strip().lower() or "basic"
+    full_name = _get("full_name").strip()
+    tax_id_raw = _get("tax_id").strip()
+    cellphone_raw = _get("cellphone").strip()
+
+    def _reject(message: str, status: int = 422):
+        if wants_json:
+            return json_error(message, status)
+        flash(message, "error")
+        return redirect(url_for("auth.register_page", plan=plan))
 
     if not username or not email or not password or not confirm:
-        flash("Preencha usuário, e-mail e senha.", "error")
-        return redirect(url_for("auth.register_page"))
+        return _reject("Preencha usuario, e-mail e senha.")
 
     if password != confirm:
-        flash("As senhas não conferem.", "error")
-        return redirect(url_for("auth.register_page"))
+        return _reject("As senhas nao conferem.")
+
+    try:
+        validate_password(password)
+    except PasswordValidationError as exc:
+        return _reject(str(exc))
 
     if User.query.filter_by(username=username).first():
-        flash("Esse usuário já existe.", "error")
-        return redirect(url_for("auth.register_page"))
+        return _reject("Esse usuario ja existe.")
 
     if User.query.filter_by(email=email).first():
-        flash("Esse e-mail já está em uso.", "error")
-        return redirect(url_for("auth.register_page"))
+        return _reject("Esse e-mail ja esta em uso.")
 
     if not is_valid_plan(plan):
-        flash("Plano inválido. Escolha outro plano.", "error")
-        return redirect(url_for("auth.register_page"))
+        return _reject("Plano invalido. Escolha outro plano.")
 
     tax_id = re.sub(r"\D+", "", tax_id_raw)
     cellphone = re.sub(r"\D+", "", cellphone_raw)
@@ -100,10 +117,12 @@ def register():
     if len(full_name) < 3:
         errors.append("Informe seu nome completo.")
     if len(tax_id) not in {11, 14}:
-        errors.append("Informe um CPF/CNPJ válido.")
+        errors.append("Informe um CPF/CNPJ valido.")
     if len(cellphone) < 10:
-        errors.append("Informe um telefone válido.")
+        errors.append("Informe um telefone valido.")
     if errors:
+        if wants_json:
+            return json_error("; ".join(errors), 422)
         for e in errors:
             flash(e, "error")
         return redirect(url_for("auth.register_page", plan=plan))
@@ -118,38 +137,24 @@ def register():
     user.cellphone = cellphone
 
     db.session.add(user)
-    db.session.commit()
-
-    # Se o usuario pagou antes (checkout), aplica o plano do pedido pago
-    if checkout_token:
-        if try_apply_paid_order_to_user(checkout_token, user):
-            login_user(user)
-            send_verification_email(user)
-            flash("Conta criada. Verifique seu e-mail para confirmar.", "success")
-            return redirect(url_for("auth.verify_pending"))
-
-    order = create_order(plan=plan, user_id=user.id)
-
     try:
-        billing = create_plan_billing(
-            plan=plan,
-            external_id=order.token,
-            return_url=url_for("auth.register_page", _external=True, plan=plan),
-            completion_url=url_for("checkout_completion", _external=True, token=order.token),
-            customer={
-                "name": full_name,
-                "email": email,
-                "cellphone": cellphone,
-                "taxId": tax_id,
-            },
-        )
-    except AbacatePayError as exc:
-        flash(str(exc), "error")
-        return redirect(url_for("auth.register_page", plan=plan))
+        db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
+        if User.query.filter_by(username=username).first():
+            return _reject("Esse usuario ja existe.")
+        if User.query.filter_by(email=email).first():
+            return _reject("Esse e-mail ja esta em uso.")
+        return _reject("Nao foi possivel criar sua conta agora.")
 
-    set_order_billing_id(order.token, billing["billing_id"])
     login_user(user)
-    return redirect(billing["url"], code=302)
+    send_verification_email(user)
+
+    if wants_json:
+        return jsonify({"ok": True, "status": "verification_pending"}), 201
+
+    flash("Conta criada. Verifique seu e-mail para confirmar.", "success")
+    return redirect(url_for("auth.verify_pending"))
 
 
 @auth_bp.get("/verify-pending")

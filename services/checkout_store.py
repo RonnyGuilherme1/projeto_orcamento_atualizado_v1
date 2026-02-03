@@ -56,6 +56,8 @@ def set_order_billing_id(token: str, billing_id: str) -> bool:
     m = CheckoutOrderModel.query.filter_by(token=token).first()
     if not m:
         return False
+    if m.billing_id and m.billing_id != billing_id:
+        return False
     m.billing_id = billing_id
     db.session.commit()
     return True
@@ -112,6 +114,8 @@ def try_apply_paid_order_to_user(token: str, user: User) -> bool:
     faz login para associar o plano.
     """
     if not token or not user:
+        return False
+    if not getattr(user, "is_verified", False):
         return False
 
     m = CheckoutOrderModel.query.filter_by(token=token).first()

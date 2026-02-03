@@ -145,6 +145,28 @@ def _migrate_sqlite_schema(conn) -> None:
     if not _column_exists(conn, "users", "abacatepay_customer_id"):
         conn.execute(text("ALTER TABLE users ADD COLUMN abacatepay_customer_id VARCHAR(64)"))
 
+    # ---------------- users (unicidade de username) ----------------
+    duplicates = conn.execute(
+        text(
+            """
+            SELECT username, COUNT(*) as qty
+              FROM users
+             GROUP BY username
+            HAVING COUNT(*) > 1
+            """
+        )
+    ).fetchall()
+    if duplicates:
+        sample = ", ".join(str(row[0]) for row in duplicates[:5])
+        raise RuntimeError(
+            "Nao foi possivel aplicar unicidade de username. Existem duplicados: "
+            f"{sample}"
+        )
+
+    conn.execute(
+        text("CREATE UNIQUE INDEX IF NOT EXISTS users_username_unique ON users (username)")
+    )
+
 
 def init_db(app):
     db.init_app(app)
@@ -318,4 +340,27 @@ def _migrate_postgres_schema(conn) -> None:
             )
         )
 
+    # ---------------- users (unicidade de username) ----------------
+    duplicates = conn.execute(
+        text(
+            """
+            SELECT username, COUNT(*) as qty
+              FROM public.users
+             GROUP BY username
+            HAVING COUNT(*) > 1
+            """
+        )
+    ).fetchall()
+    if duplicates:
+        sample = ", ".join(str(row[0]) for row in duplicates[:5])
+        raise RuntimeError(
+            "Nao foi possivel aplicar unicidade de username. Existem duplicados: "
+            f"{sample}"
+        )
+
+    conn.execute(
+        text(
+            "CREATE UNIQUE INDEX IF NOT EXISTS users_username_unique ON public.users (username)"
+        )
+    )
     

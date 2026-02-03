@@ -154,6 +154,34 @@ def require_api_access(
     return decorator
 
 
+def require_verified_email(message: str | None = None):
+    """Decorator para rotas que exigem e-mail verificado."""
+
+    def decorator(fn):
+        @wraps(fn)
+        def wrapper(*args, **kwargs):
+            decision = evaluate_access(current_user, require_verified=True, require_active=False)
+            if decision.ok:
+                return fn(*args, **kwargs)
+
+            if is_json_request():
+                return json_error(decision.error or "forbidden", decision.status)
+
+            from flask import flash, redirect, url_for
+
+            if decision.status == 401:
+                return redirect(url_for("auth.login_page"))
+            if decision.error == "email_not_verified":
+                if message:
+                    flash(message, "warning")
+                return redirect(url_for("auth.verify_pending"))
+            return redirect(url_for("index"))
+
+        return wrapper
+
+    return decorator
+
+
 def require_feature(feature: str):
     """Decorator para paginas HTML."""
 

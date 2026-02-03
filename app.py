@@ -30,6 +30,7 @@ from services.permissions import (
     get_csrf_token,
     is_json_request,
     json_error,
+    require_verified_email,
     validate_csrf,
 )
 
@@ -50,7 +51,7 @@ from services.checkout_store import (
     list_orders_by_user,
 )
 from services.subscription import apply_paid_order, is_subscription_active, subscription_context
-from services.email_service import send_verification_email
+from services.password_policy import validate_password, PasswordValidationError
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -355,6 +356,7 @@ def pricing():
 
 @app.get("/buy")
 @login_required
+@require_verified_email("Confirme seu email para liberar o pagamento.")
 def buy():
     """Checkout (Opção A): somente usuário logado.
 
@@ -364,9 +366,6 @@ def buy():
     - cria pedido vinculado ao user_id
     - cria cobrança no AbacatePay e redireciona
     """
-    if not current_user.is_verified:
-        return redirect(url_for("auth.verify_pending"))
-
     plan = (request.args.get("plan") or "plus").strip().lower()
     if not is_valid_plan(plan):
         plan = "plus"
@@ -417,6 +416,7 @@ def buy():
 
 
 @app.get("/checkout/completion")
+@require_verified_email("Confirme seu email para liberar o pagamento.")
 def checkout_completion():
     token = (request.args.get("token") or "").strip()
     order = get_order_by_token(token)
@@ -424,29 +424,22 @@ def checkout_completion():
         return render_template(
             "message.html",
             title="Checkout",
-            message="Não foi possível localizar seu checkout. Volte para a página de planos e tente novamente.",
+            message="Nao foi possivel localizar seu checkout. Volte para a pagina de planos e tente novamente.",
         ), 404
 
-    # Se estiver pago e o usuário estiver logado, aplica o plano imediatamente.
-    if current_user.is_authenticated and order.status == "PAID":
-        if (order.user_id is None) or (int(order.user_id) == int(current_user.id)):
-            if apply_paid_order(current_user, order):
-                db.session.commit()
-            if not current_user.is_verified:
-                send_verification_email(current_user)
-                flash("Pagamento confirmado. Verifique seu e-mail para ativar sua conta.", "success")
-                return redirect(url_for("auth.verify_pending"))
-            flash(f"Pagamento confirmado. Seu plano foi atualizado para {PLANS[order.plan]['name']}.", "success")
-            return redirect(url_for("index"))
-
-    # Se não estiver logado, instruir login (Opção A)
-    if not current_user.is_authenticated:
+    if not order.user_id or int(order.user_id) != int(current_user.id):
         return render_template(
             "message.html",
             title="Checkout",
-            subtitle="Finalize com login",
-            message="Para concluir a atualização do plano, faça login na sua conta.",
-        ), 200
+            message="Checkout nao encontrado para esta conta.",
+        ), 403
+
+    # Se estiver pago, aplica o plano imediatamente.
+    if order.status == "PAID":
+        if apply_paid_order(current_user, order):
+            db.session.commit()
+        flash(f"Pagamento confirmado. Seu plano foi atualizado para {PLANS[order.plan]['name']}.", "success")
+        return redirect(url_for("index"))
 
     return render_template(
         "checkout_completion.html",
@@ -456,11 +449,14 @@ def checkout_completion():
 
 
 @app.get("/checkout/status")
+@require_verified_email("Confirme seu email para liberar o pagamento.")
 def checkout_status():
     token = (request.args.get("token") or "").strip()
     order = get_order_by_token(token)
     if not order:
         return jsonify({"ok": False, "error": "not_found"}), 404
+    if not order.user_id or int(order.user_id) != int(current_user.id):
+        return jsonify({"ok": False, "error": "forbidden"}), 403
     status = order.status
     if order.status != "PAID":
         try:
@@ -625,11 +621,14 @@ def account_access_save():
     if new_password or confirm_password:
         if new_password != confirm_password:
             errors.append("As senhas nao conferem.")
-        elif len(new_password) < 6:
-            errors.append("A nova senha precisa ter ao menos 6 caracteres.")
         else:
-            current_user.set_password(new_password)
-            changes.append("password")
+            try:
+                validate_password(new_password)
+            except PasswordValidationError as exc:
+                errors.append(str(exc))
+            else:
+                current_user.set_password(new_password)
+                changes.append("password")
 
     if errors:
         for e in errors:
@@ -661,10 +660,8 @@ def account_notifications_save():
 
 @app.post("/app/billing/renew")
 @login_required
+@require_verified_email("Confirme seu email para liberar o pagamento.")
 def billing_renew():
-    if not current_user.is_verified:
-        return redirect(url_for("auth.verify_pending"))
-
     plan = (current_user.plan or "basic").strip().lower()
     if not is_valid_plan(plan):
         plan = "basic"
@@ -713,13 +710,14 @@ def billing_renew():
 
 @app.get("/app/billing/return")
 @login_required
+@require_verified_email("Confirme seu email para liberar o pagamento.")
 def billing_return():
     token = (request.args.get("token") or "").strip()
     order = get_order_by_token(token)
     if not order:
         flash("Nao encontramos esse checkout.", "error")
         return redirect(url_for("account_page", section="billing"))
-    if order.user_id and int(order.user_id) != int(current_user.id):
+    if not order.user_id or int(order.user_id) != int(current_user.id):
         flash("Checkout nao encontrado para esta conta.", "error")
         return redirect(url_for("account_page", section="billing"))
 

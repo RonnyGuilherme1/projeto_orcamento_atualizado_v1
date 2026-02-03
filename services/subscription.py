@@ -43,6 +43,8 @@ def apply_plan_payment(user, plan: str) -> None:
 def apply_paid_order(user, order) -> bool:
     if not user or not order:
         return False
+    if not getattr(user, "is_verified", False):
+        return False
     paid_at = getattr(order, "paid_at", None)
     last_paid = getattr(user, "plan_last_paid_at", None)
     if paid_at and last_paid and last_paid >= paid_at:
