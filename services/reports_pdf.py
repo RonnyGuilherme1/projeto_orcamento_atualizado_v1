@@ -81,7 +81,7 @@ def safe_text(value) -> str:
 
 class NumberedCanvas(canvas.Canvas):
     def __init__(self, *args, **kwargs):
-        self._doc = kwargs.pop("doc", None)
+        self._report_doc = kwargs.pop("report_doc", None)
         super().__init__(*args, **kwargs)
         self._saved_page_states: list[dict] = []
 
@@ -98,11 +98,9 @@ class NumberedCanvas(canvas.Canvas):
         canvas.Canvas.save(self)
 
     def _draw_page_number(self, total_pages: int):
-        if not self._doc:
-            return
-        page_width, _ = self._doc.pagesize
-        right = self._doc.rightMargin
-        bottom = self._doc.bottomMargin
+        page_width, _ = self._pagesize
+        right = getattr(self._report_doc, "rightMargin", LEFT_RIGHT_MARGIN)
+        bottom = getattr(self._report_doc, "bottomMargin", BOTTOM_MARGIN)
         y = max(6 * mm, bottom - 4 * mm)
         self.setFont("Helvetica", 8)
         self.setFillColor(TEXT_MUTED)
@@ -1164,6 +1162,6 @@ def _render_reports_pdf_v2(payload: dict, sections: set[str], detail: str, meta:
             )
             story.append(table)
 
-    doc.build(story, canvasmaker=lambda *args, **kwargs: NumberedCanvas(*args, doc=doc, **kwargs))
+    doc.build(story, canvasmaker=lambda *args, **kwargs: NumberedCanvas(*args, report_doc=doc, **kwargs))
     buffer.seek(0)
     return buffer.getvalue()
