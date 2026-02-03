@@ -1,33 +1,49 @@
 import logging
 
 import requests
-from flask import current_app
+from flask import current_app, session, has_request_context
 
 from models.user_model import User
 
 logger = logging.getLogger(__name__)
 
 
+def _store_dev_verify_link(user: User, verify_link: str) -> None:
+    if not current_app.config.get("EMAIL_VERIFICATION_DEV_MODE"):
+        return
+    if not has_request_context():
+        return
+    try:
+        session["last_verify_link"] = verify_link
+        if user and user.id is not None:
+            session["last_verify_user_id"] = int(user.id)
+    except Exception:
+        logger.warning("Nao foi possivel salvar o link de verificação na sessão.", exc_info=True)
+
+
 def send_verification_email(user: User) -> bool:
     """Envia e-mail de verificação via Resend.
 
-    - Em DEV/sem RESEND_API_KEY, não falha: apenas loga o link.
-    - Retorna True se uma requisição de envio foi executada com sucesso.
+    - Em DEV, guarda o último link na sessão para exibição.
+    - Sem RESEND_API_KEY ou com envio desabilitado, não falha: apenas loga o link.
+    - Retorna True quando o fluxo pode continuar (envio feito ou link gerado).
     """
 
     app_base_url = (current_app.config.get("APP_BASE_URL") or "").rstrip("/")
     token = user.generate_verify_token()
     verify_link = f"{app_base_url}/verify/{token}"
+    _store_dev_verify_link(user, verify_link)
 
     api_key = (current_app.config.get("RESEND_API_KEY") or "").strip()
     email_from = (current_app.config.get("EMAIL_FROM") or "").strip()
+    send_enabled = bool(current_app.config.get("EMAIL_SEND_ENABLED", True))
 
-    if not api_key or not email_from:
+    if not send_enabled or not api_key or not email_from:
         logger.warning(
-            "RESEND_API_KEY/EMAIL_FROM não configurado. Link de verificação: %s",
+            "Envio de e-mail desabilitado ou não configurado. Link de verificação: %s",
             verify_link,
         )
-        return False
+        return True
 
     payload = {
         "from": email_from,
@@ -55,11 +71,11 @@ def send_verification_email(user: User) -> bool:
         if r.status_code >= 400:
             logger.warning("Falha ao enviar e-mail (Resend): %s %s", r.status_code, r.text)
             logger.warning("Link de verificação: %s", verify_link)
-            return False
+            return bool(current_app.config.get("EMAIL_VERIFICATION_DEV_MODE"))
 
         return True
 
     except requests.RequestException as exc:
         logger.warning("Falha ao enviar e-mail (Resend): %s", exc, exc_info=True)
         logger.warning("Link de verificação: %s", verify_link)
-        return False
+        return bool(current_app.config.get("EMAIL_VERIFICATION_DEV_MODE"))

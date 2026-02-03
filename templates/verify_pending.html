@@ -37,10 +37,65 @@
       <button class="btn-primary" type="submit">Reenviar e-mail de verificação</button>
       <span class="verify-hint">Se tiver acabado de solicitar, aguarde alguns minutos.</span>
     </form>
+
+    {% if dev_verify_link %}
+      <div class="verify-dev" role="note">
+        <div class="verify-dev-head">
+          <span class="verify-dev-title">Link de verificação (DEV)</span>
+          <span class="verify-dev-note">Apenas para testes</span>
+        </div>
+        <div class="verify-dev-actions">
+          <a class="verify-dev-link" href="{{ dev_verify_link }}" target="_blank" rel="noopener">
+            {{ dev_verify_link }}
+          </a>
+          <button class="btn-secondary btn-copy" type="button" data-copy="{{ dev_verify_link }}">
+            Copiar link
+          </button>
+        </div>
+      </div>
+    {% endif %}
   </div>
 
   <div class="public-actions verify-footer-actions">
     <a class="btn-secondary" href="/logout">Sair</a>
     <a class="btn-link" href="/login">Voltar ao login</a>
   </div>
+{% endblock %}
+
+{% block scripts %}
+  {{ super() }}
+  {% if dev_verify_link %}
+    <script>
+      (() => {
+        const btn = document.querySelector(".btn-copy[data-copy]");
+        if (!btn) return;
+        const originalText = btn.textContent;
+        btn.addEventListener("click", async () => {
+          const link = btn.getAttribute("data-copy") || "";
+          if (!link) return;
+          try {
+            if (navigator.clipboard?.writeText) {
+              await navigator.clipboard.writeText(link);
+            } else {
+              const temp = document.createElement("input");
+              temp.value = link;
+              document.body.appendChild(temp);
+              temp.select();
+              document.execCommand("copy");
+              temp.remove();
+            }
+            btn.textContent = "Copiado!";
+            setTimeout(() => {
+              btn.textContent = originalText;
+            }, 1400);
+          } catch (err) {
+            btn.textContent = "Falhou";
+            setTimeout(() => {
+              btn.textContent = originalText;
+            }, 1400);
+          }
+        });
+      })();
+    </script>
+  {% endif %}
 {% endblock %}

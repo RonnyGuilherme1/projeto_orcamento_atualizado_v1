@@ -1,6 +1,6 @@
 import re
 
-from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, jsonify
+from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, jsonify, session
 from flask_login import login_user, logout_user, login_required, current_user
 from sqlalchemy.exc import IntegrityError
 
@@ -162,7 +162,11 @@ def register():
 def verify_pending():
     if current_user.is_verified:
         return redirect(url_for("index"))
-    return render_template("verify_pending.html")
+    dev_verify_link = None
+    if current_app.config.get("EMAIL_VERIFICATION_DEV_MODE"):
+        if session.get("last_verify_user_id") == current_user.id:
+            dev_verify_link = session.get("last_verify_link")
+    return render_template("verify_pending.html", dev_verify_link=dev_verify_link)
 
 
 @auth_bp.post("/resend-verification")
@@ -173,7 +177,10 @@ def resend_verification():
 
     ok = send_verification_email(current_user)
     if ok:
-        flash("Enviamos um novo link de verificação.", "success")
+        if current_app.config.get("EMAIL_VERIFICATION_DEV_MODE"):
+            flash("Geramos um novo link de verificação.", "success")
+        else:
+            flash("Enviamos um novo link de verificação.", "success")
     else:
         flash("Não foi possível enviar o e-mail agora. Veja o link no log do servidor.", "warning")
 
@@ -189,6 +196,8 @@ def verify(token):
 
     user.is_verified = True
     db.session.commit()
+    session.pop("last_verify_link", None)
+    session.pop("last_verify_user_id", None)
 
     flash("Conta verificada com sucesso. Você já pode usar o sistema.", "success")
     login_user(user)

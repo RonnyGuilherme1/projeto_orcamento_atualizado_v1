@@ -3,6 +3,13 @@ import os
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
+def _env_bool(name: str, default: bool = False) -> bool:
+    value = os.getenv(name)
+    if value is None:
+        return default
+    return str(value).strip().lower() in {"1", "true", "yes", "on"}
+
+
 class Config:
     # Essencial para sessão/login/flash
     SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-change-me")
@@ -63,15 +70,26 @@ class Config:
             "timeout": int(os.getenv("SQLITE_TIMEOUT", "30")),
         }
 
+    # Ambiente (opcional) - use para rotular logs/UX
+    APP_ENV = (os.getenv("APP_ENV") or os.getenv("FLASK_ENV") or os.getenv("ENV") or "development").lower()
+    IS_PRODUCTION = APP_ENV in {"prod", "production"} or os.getenv("RENDER") == "true" or bool(os.getenv("RENDER_EXTERNAL_URL"))
+
     # URL pública do app (Render). Ex: https://seuapp.onrender.com
-    APP_BASE_URL = os.getenv("APP_BASE_URL", "http://127.0.0.1:5000")
+    _app_base_url = os.getenv("APP_BASE_URL")
+    if not _app_base_url:
+        if IS_PRODUCTION:
+            raise RuntimeError("APP_BASE_URL deve estar configurado em produção.")
+        _app_base_url = "http://127.0.0.1:5000"
+    APP_BASE_URL = _app_base_url.rstrip("/")
 
     # URL do site de marketing (estático). Ex: https://controledeorcamento.onrender.com
     MARKETING_BASE_URL = os.getenv("MARKETING_BASE_URL", "https://controledeorcamento.onrender.com").rstrip("/")
 
     # Resend (envio de e-mail)
     RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
-    EMAIL_FROM = os.getenv("EMAIL_FROM", "Orcamento <onboarding@resend.dev>")
+    EMAIL_FROM = os.getenv("EMAIL_FROM", "Acme <onboarding@resend.dev>")
+    EMAIL_VERIFICATION_DEV_MODE = _env_bool("EMAIL_VERIFICATION_DEV_MODE", default=not IS_PRODUCTION)
+    EMAIL_SEND_ENABLED = _env_bool("EMAIL_SEND_ENABLED", default=True)
 
     # Tempo máximo (em segundos) para validação do token de verificação
     VERIFY_TOKEN_MAX_AGE = int(os.getenv("VERIFY_TOKEN_MAX_AGE", "86400"))
@@ -88,9 +106,4 @@ class Config:
     }
     SUBSCRIPTION_CYCLE_DAYS = int(os.getenv("SUBSCRIPTION_CYCLE_DAYS", "30"))
 
-    # Ambiente (opcional) - use para rotular logs/UX
-    ABACATEPAY_DEV_MODE = os.getenv("ABACATEPAY_DEV_MODE", "true").lower() in {
-        "1",
-        "true",
-        "yes",
-    }
+    ABACATEPAY_DEV_MODE = _env_bool("ABACATEPAY_DEV_MODE", default=True)
