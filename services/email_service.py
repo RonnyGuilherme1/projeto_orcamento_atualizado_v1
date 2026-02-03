@@ -59,7 +59,7 @@ def send_verification_email(user: User) -> bool:
 
         return True
 
-    except Exception as exc:  # noqa: BLE001
-        logger.warning("Falha ao enviar e-mail (Resend): %s", exc)
+    except requests.RequestException as exc:
+        logger.warning("Falha ao enviar e-mail (Resend): %s", exc, exc_info=True)
         logger.warning("Link de verificação: %s", verify_link)
         return False

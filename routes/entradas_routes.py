@@ -3,12 +3,13 @@ from datetime import datetime, date, timedelta
 from sqlalchemy import func
 
 from flask import Blueprint, request, jsonify
-from flask_login import login_required, current_user
+from flask_login import current_user
 
 from models.extensions import db
 from models.entrada_model import Entrada
 from services.date_utils import last_day_of_month
 from services.rules_engine import apply_rules_to_entry, normalize_tags
+from services.permissions import require_api_access, json_error
 
 entradas_bp = Blueprint("entradas", __name__)
 
@@ -40,25 +41,35 @@ def _normalize_categoria(tipo: str | None, value: str | None) -> str:
     return categoria
 
 
-def _require_verified():
-    if not current_user.is_verified:
-        return jsonify({"error": "email_not_verified"}), 403
-    return None
-
-
 @entradas_bp.route("/dados")
-@login_required
+@require_api_access(require_active=True)
 def dados():
-    blocked = _require_verified()
-    if blocked:
-        return blocked
+    limit_raw = request.args.get("limit")
+    offset_raw = request.args.get("offset")
+    limit = None
+    offset = None
+    if limit_raw not in (None, ""):
+        try:
+            limit = max(1, min(int(limit_raw), 2000))
+        except (TypeError, ValueError):
+            return json_error("invalid_limit", 422)
+    if offset_raw not in (None, ""):
+        try:
+            offset = max(0, int(offset_raw))
+        except (TypeError, ValueError):
+            return json_error("invalid_offset", 422)
 
-    entradas = (
+    query = (
         Entrada.query
         .filter_by(user_id=current_user.id)
         .order_by(Entrada.data.desc(), Entrada.id.desc())
-        .all()
     )
+    if offset:
+        query = query.offset(offset)
+    if limit:
+        query = query.limit(limit)
+
+    entradas = query.all()
 
     return jsonify({
         "entradas": [
@@ -81,26 +92,29 @@ def dados():
 
 
 @entradas_bp.route("/add", methods=["POST"])
-@login_required
+@require_api_access(require_active=True)
 def add():
-    blocked = _require_verified()
-    if blocked:
-        return blocked
 
     payload = request.json or {}
     tipo = payload.get("tipo")
     data_str = payload.get("data")
     descricao = (payload.get("descricao") or "").strip()
     categoria = _normalize_categoria(tipo, payload.get("categoria"))
-    valor = float(payload.get("valor") or 0)
+    try:
+        valor = float(payload.get("valor") or 0)
+    except (TypeError, ValueError):
+        return json_error("invalid_payload", 422)
     status = payload.get("status")
     metodo = (payload.get("metodo") or "").strip().lower() or None
     tags = normalize_tags(payload.get("tags"))
 
     if not tipo or not data_str or not descricao:
-        return jsonify({"error": "Dados inválidos"}), 400
+        return json_error("invalid_payload", 422)
 
-    data_dt = datetime.strptime(data_str, "%Y-%m-%d").date()
+    try:
+        data_dt = datetime.strptime(data_str, "%Y-%m-%d").date()
+    except ValueError:
+        return json_error("invalid_payload", 422)
 
     if tipo == "receita":
         status = None
@@ -114,7 +128,10 @@ def add():
         # Se criar já como pago e o front não mandar paid_at, assume a própria data da despesa.
         paid_at_str = payload.get("paid_at")
         if paid_at_str:
-            paid_at = datetime.strptime(paid_at_str, "%Y-%m-%d").date()
+            try:
+                paid_at = datetime.strptime(paid_at_str, "%Y-%m-%d").date()
+            except ValueError:
+                return json_error("invalid_payload", 422)
         else:
             paid_at = data_dt
 
@@ -142,11 +159,8 @@ def add():
 
 
 @entradas_bp.route("/edit/<int:entrada_id>", methods=["PUT"])
-@login_required
+@require_api_access(require_active=True)
 def edit(entrada_id):
-    blocked = _require_verified()
-    if blocked:
-        return blocked
 
     payload = request.json or {}
 
@@ -158,15 +172,21 @@ def edit(entrada_id):
     data_str = payload.get("data")
     descricao = (payload.get("descricao") or "").strip()
     categoria = _normalize_categoria(tipo, payload.get("categoria"))
-    valor = float(payload.get("valor") or 0)
+    try:
+        valor = float(payload.get("valor") or 0)
+    except (TypeError, ValueError):
+        return json_error("invalid_payload", 422)
     status = payload.get("status")
     metodo = (payload.get("metodo") or "").strip().lower() or None
     tags = normalize_tags(payload.get("tags"))
 
     if not tipo or not data_str or not descricao:
-        return jsonify({"error": "Dados inválidos"}), 400
+        return json_error("invalid_payload", 422)
 
-    e.data = datetime.strptime(data_str, "%Y-%m-%d").date()
+    try:
+        e.data = datetime.strptime(data_str, "%Y-%m-%d").date()
+    except ValueError:
+        return json_error("invalid_payload", 422)
     e.tipo = tipo
     e.descricao = descricao
     e.categoria = categoria
@@ -191,7 +211,10 @@ def edit(entrada_id):
             paid_at_str = payload.get("paid_at")
 
             if paid_at_str:
-                e.paid_at = datetime.strptime(paid_at_str, "%Y-%m-%d").date()
+                try:
+                    e.paid_at = datetime.strptime(paid_at_str, "%Y-%m-%d").date()
+                except ValueError:
+                    return json_error("invalid_payload", 422)
             else:
                 # CORREÇÃO PRINCIPAL:
                 # Se o front não manda paid_at, assume a própria data da despesa (vencimento/data planejada).
@@ -209,11 +232,8 @@ def edit(entrada_id):
 
 
 @entradas_bp.route("/delete/<int:entrada_id>", methods=["DELETE"])
-@login_required
+@require_api_access(require_active=True)
 def delete(entrada_id):
-    blocked = _require_verified()
-    if blocked:
-        return blocked
 
     e = Entrada.query.filter_by(id=entrada_id, user_id=current_user.id).first()
     if not e:
@@ -231,21 +251,18 @@ def _parse_date_param(value: str | None, field_name: str) -> date:
 
 
 @entradas_bp.route("/resumo-ciclo")
-@login_required
+@require_api_access(require_active=True)
 def resumo_ciclo():
-    blocked = _require_verified()
-    if blocked:
-        return blocked
 
     try:
         d = _parse_date_param(request.args.get("data"), "data")
         ate_raw = request.args.get("ate")
         ate = _parse_date_param(ate_raw, "ate") if ate_raw else last_day_of_month(d)
     except ValueError as ex:
-        return jsonify({"error": str(ex)}), 400
+        return json_error(str(ex), 422)
 
     if ate < d:
-        return jsonify({"error": "'ate' não pode ser menor que 'data'"}), 400
+        return json_error("'ate' não pode ser menor que 'data'", 422)
 
     dia_anterior = d - timedelta(days=1)
 
@@ -329,20 +346,17 @@ def resumo_ciclo():
 # Resumo por PERÍODO (somente o intervalo; sem projeções futuras)
 # =========================================================
 @entradas_bp.route("/resumo-periodo")
-@login_required
+@require_api_access(require_active=True)
 def resumo_periodo():
-    blocked = _require_verified()
-    if blocked:
-        return blocked
 
     try:
         de = _parse_date_param(request.args.get("de"), "de")
         ate = _parse_date_param(request.args.get("ate"), "ate")
     except ValueError as ex:
-        return jsonify({"error": str(ex)}), 400
+        return json_error(str(ex), 422)
 
     if ate < de:
-        return jsonify({"error": "'ate' não pode ser menor que 'de'"}), 400
+        return json_error("'ate' não pode ser menor que 'de'", 422)
 
     # Excluir "sobras" (ex.: 'Sobra do mês passado') do resumo, conforme pedido.
     desc_lower = func.lower(func.coalesce(Entrada.descricao, ""))

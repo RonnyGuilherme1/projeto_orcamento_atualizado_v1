@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import re
 import unicodedata
 from typing import Any, Dict, Optional
@@ -8,6 +9,8 @@ import requests
 from flask import current_app
 
 from services.plans import PLANS
+
+logger = logging.getLogger(__name__)
 
 
 class AbacatePayError(RuntimeError):
@@ -173,8 +176,14 @@ def create_plan_billing(
 
     try:
         body = resp.json()
-    except Exception:
+    except ValueError as exc:
         snippet = (resp.text or "").strip()
+        logger.warning(
+            "AbacatePay: JSON invalido em /v1/billing/create (HTTP %s). Trecho: %s",
+            resp.status_code,
+            snippet[:300],
+            exc_info=True,
+        )
         if "too many requests" in snippet.lower():
             raise AbacatePayError(
                 "Muitas tentativas em pouco tempo. Aguarde alguns minutos e tente novamente."
@@ -288,12 +297,20 @@ def get_billing_status(billing_id: str | None, external_id: str | None = None) -
                 resp = requests.post(url, json=payload, headers=headers, timeout=20)
         except requests.RequestException as exc:
             last_error = str(exc)
+            logger.warning("AbacatePay: falha na requisicao %s %s", method, url, exc_info=True)
             continue
 
         try:
             body = resp.json()
-        except Exception:
+        except ValueError as exc:
             last_error = f"Resposta invalida da AbacatePay (HTTP {resp.status_code})."
+            logger.warning(
+                "AbacatePay: JSON invalido em %s %s (HTTP %s)",
+                method,
+                url,
+                resp.status_code,
+                exc_info=True,
+            )
             continue
 
         if (not resp.ok) or (body.get("success") is False):
@@ -310,7 +327,13 @@ def get_billing_status(billing_id: str | None, external_id: str | None = None) -
         try:
             resp = requests.get(f"{base}/v1/billing/list", headers=headers, timeout=20)
             body = resp.json()
-        except Exception as exc:
+        except requests.RequestException as exc:
+            logger.warning("AbacatePay: falha ao listar cobrancas (dev)", exc_info=True)
+            if last_error:
+                raise AbacatePayError(f"Erro AbacatePay: {last_error}")
+            raise AbacatePayError(f"Erro AbacatePay: {exc}")
+        except ValueError as exc:
+            logger.warning("AbacatePay: JSON invalido ao listar cobrancas (dev)", exc_info=True)
             if last_error:
                 raise AbacatePayError(f"Erro AbacatePay: {last_error}")
             raise AbacatePayError(f"Erro AbacatePay: {exc}")
@@ -337,7 +360,11 @@ def list_billings() -> list[dict]:
     try:
         resp = requests.get(url, headers=headers, timeout=20)
         body = resp.json()
-    except Exception as exc:
+    except requests.RequestException as exc:
+        logger.warning("AbacatePay: falha ao listar cobrancas", exc_info=True)
+        raise AbacatePayError(f"Erro AbacatePay: {exc}")
+    except ValueError as exc:
+        logger.warning("AbacatePay: JSON invalido ao listar cobrancas", exc_info=True)
         raise AbacatePayError(f"Erro AbacatePay: {exc}")
 
     if (not resp.ok) or (body.get("success") is False):

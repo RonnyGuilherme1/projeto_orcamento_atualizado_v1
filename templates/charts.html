@@ -5,7 +5,6 @@
 {% block title %}Gr&aacute;ficos | Controle Financeiro{% endblock %}
 {% block page_title %}Gr&aacute;ficos{% endblock %}
 
-{% set is_pro = has_feature('reports') %}
 {% block content %}
   <div class="page charts-page" data-page="charts">
     <section class="panel charts-topbar">
@@ -294,12 +293,12 @@
           </div>
           <ul class="insight-list" id="insights-opportunities"></ul>
           <div class="insight-cta">
-            {% if is_pro %}
+            {% if has_feature('filters') %}
               <button class="btn btn-primary" type="button" id="insight-create-rule" title="Criar uma nova regra de automa&ccedil;&atilde;o">
                 Criar regra
               </button>
             {% else %}
-              <button class="btn btn-primary is-locked" type="button" data-locked="true" data-tooltip="Dispon&iacute;vel no PRO" title="Dispon&iacute;vel no PRO" aria-disabled="true">
+              <button class="btn btn-primary is-locked" type="button" data-locked="true" data-tooltip="Dispon&iacute;vel no Plus" title="Dispon&iacute;vel no Plus" aria-disabled="true">
                 <span class="lock-icon" aria-hidden="true">LOCK</span>
                 Criar regra
               </button>

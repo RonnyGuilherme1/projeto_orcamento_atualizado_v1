@@ -19,6 +19,7 @@ from models.recurrence_model import Recurrence, RecurrenceExecution
 from services.projection_engine import compute_projection
 from services.plans import PLANS, is_valid_plan
 from services.feature_gate import require_feature
+from services.permissions import require_api_access, json_error
 from services.checkout_store import (
     create_order,
     set_order_billing_id,
@@ -77,12 +78,6 @@ def _normalize_categoria(value: str | None) -> str:
     if categoria not in CATEGORIAS:
         return "outros"
     return categoria
-
-
-def _require_verified_json():
-    if not current_user.is_verified:
-        return jsonify({"error": "email_not_verified"}), 403
-    return None
 
 
 def _parse_iso_date(value: str | None) -> date | None:
@@ -461,7 +456,7 @@ def upgrade_return():
 
 
 @analytics_bp.get("/app/upgrade/status")
-@login_required
+@require_api_access(require_verified=False)
 def upgrade_status():
     token = (request.args.get("token") or "").strip()
     order = get_order_by_token(token)
@@ -770,12 +765,8 @@ def _build_charts_insights(summary: dict, categories: dict, highlights: dict, al
     }
 
 @analytics_bp.get("/app/charts/data")
-@login_required
-@require_feature("charts")
+@require_api_access(feature="charts")
 def charts_data():
-    blocked = _require_verified_json()
-    if blocked:
-        return blocked
 
     period_meta = _resolve_charts_period(request.args)
     start = period_meta["start"]
@@ -995,17 +986,13 @@ def charts_data():
 
 
 @analytics_bp.get("/app/charts/drilldown")
-@login_required
-@require_feature("charts")
+@require_api_access(feature="charts")
 def charts_drilldown():
-    blocked = _require_verified_json()
-    if blocked:
-        return blocked
 
     start = _parse_iso_date(request.args.get("start"))
     end = _parse_iso_date(request.args.get("end"))
     if not start or not end:
-        return jsonify({"error": "invalid_dates"}), 400
+        return json_error("invalid_dates", 422)
     if end < start:
         start, end = end, start
 
@@ -1095,18 +1082,14 @@ def charts_drilldown():
 
 @analytics_bp.get("/app/insights/data")
 @analytics_bp.get("/app/compare/data")
-@login_required
+@require_api_access(feature="insights")
 def insights_data():
-    blocked = _require_verified_json()
-    if blocked:
-        return blocked
-
     start = _parse_iso_date(request.args.get("start"))
     end = _parse_iso_date(request.args.get("end"))
     if not start or not end:
-        return jsonify({"error": "invalid_dates"}), 400
+        return json_error("invalid_dates", 422)
     if end < start:
-        return jsonify({"error": "invalid_range"}), 400
+        return json_error("invalid_range", 422)
 
     return jsonify(_summary_for_period(start, end))
 
@@ -1140,8 +1123,7 @@ def projection_page():
 
 
 @analytics_bp.route("/app/projection/data", methods=["GET", "POST"])
-@login_required
-@require_feature("projection")
+@require_api_access(feature="projection")
 def projection_data():
     payload = request.get_json(silent=True) if request.method == "POST" else request.args
     start_str = (payload.get("start") if payload else None) or None
@@ -1213,8 +1195,7 @@ def projection_data():
 
 
 @analytics_bp.get("/app/projection/scenarios")
-@login_required
-@require_feature("projection")
+@require_api_access(feature="projection")
 def projection_scenarios_list():
     rows = (
         db.session.query(ProjectionScenario)
@@ -1236,8 +1217,7 @@ def projection_scenarios_list():
 
 
 @analytics_bp.get("/app/projection/scenarios/<int:scenario_id>")
-@login_required
-@require_feature("projection")
+@require_api_access(feature="projection")
 def projection_scenarios_get(scenario_id: int):
     sc = (
         db.session.query(ProjectionScenario)
@@ -1254,13 +1234,12 @@ def projection_scenarios_get(scenario_id: int):
 
 
 @analytics_bp.post("/app/projection/scenarios")
-@login_required
-@require_feature("projection")
+@require_api_access(feature="projection")
 def projection_scenarios_create():
     payload = request.get_json(silent=True) or {}
     name = (payload.get("name") or "").strip()[:80]
     if not name:
-        return jsonify({"error": "Nome do cenário é obrigatório"}), 400
+        return json_error("nome_obrigatorio", 422)
 
     overrides = payload.get("overrides") or {}
     try:
@@ -1275,8 +1254,7 @@ def projection_scenarios_create():
 
 
 @analytics_bp.put("/app/projection/scenarios/<int:scenario_id>")
-@login_required
-@require_feature("projection")
+@require_api_access(feature="projection")
 def projection_scenarios_update(scenario_id: int):
     sc = (
         db.session.query(ProjectionScenario)
@@ -1303,8 +1281,7 @@ def projection_scenarios_update(scenario_id: int):
 
 
 @analytics_bp.delete("/app/projection/scenarios/<int:scenario_id>")
-@login_required
-@require_feature("projection")
+@require_api_access(feature="projection")
 def projection_scenarios_delete(scenario_id: int):
     sc = (
         db.session.query(ProjectionScenario)
@@ -1320,8 +1297,7 @@ def projection_scenarios_delete(scenario_id: int):
 
 
 @analytics_bp.post("/app/projection/entry/<int:entrada_id>/priority")
-@login_required
-@require_feature("projection")
+@require_api_access(feature="projection")
 def projection_entry_priority(entrada_id: int):
     payload = request.get_json(silent=True) or {}
     priority = str(payload.get("priority") or "media").strip().lower()
@@ -1795,13 +1771,8 @@ def _build_reports_payload(
 
 
 @analytics_bp.get("/app/reports/data")
-@login_required
-@require_feature("reports")
+@require_api_access(feature="reports")
 def reports_data():
-    blocked = _require_verified_json()
-    if blocked:
-        return blocked
-
     period = (request.args.get("period") or "month").strip().lower()
     mode = (request.args.get("mode") or "cash").strip().lower()
     type_filter = (request.args.get("type") or "all").strip().lower()
@@ -1826,13 +1797,8 @@ def reports_data():
 
 
 @analytics_bp.get("/app/reports/export/pdf")
-@login_required
-@require_feature("reports")
+@require_api_access(feature="reports")
 def reports_export_pdf():
-    blocked = _require_verified_json()
-    if blocked:
-        return blocked
-
     period = (request.args.get("period") or "month").strip().lower()
     mode = (request.args.get("mode") or "cash").strip().lower()
     type_filter = (request.args.get("type") or "all").strip().lower()
@@ -1902,13 +1868,8 @@ def reports_export_pdf():
 
 
 @analytics_bp.get("/app/reports/export/excel")
-@login_required
-@require_feature("reports")
+@require_api_access(feature="reports")
 def reports_export_excel():
-    blocked = _require_verified_json()
-    if blocked:
-        return blocked
-
     period = (request.args.get("period") or "month").strip().lower()
     mode = (request.args.get("mode") or "cash").strip().lower()
     type_filter = (request.args.get("type") or "all").strip().lower()

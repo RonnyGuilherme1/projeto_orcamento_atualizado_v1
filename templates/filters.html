@@ -167,8 +167,8 @@
         </div>
         <div class="panel-actions">
           <button class="btn-secondary" type="button" data-recurrence-new>Nova recorrencia</button>
-          {% if current_user.plan != 'pro' %}
-            <a class="lock-pill" href="/app/upgrade?plan=pro">Disponível no Pro</a>
+          {% if not has_feature('filters') %}
+            <a class="lock-pill" href="/app/upgrade?plan=plus">Disponível no Plus</a>
           {% endif %}
         </div>
       </div>
@@ -185,8 +185,8 @@
         </div>
         <div class="panel-actions">
           <button class="btn-secondary" type="button" data-reminder-new>Novo lembrete</button>
-          {% if current_user.plan != 'pro' %}
-            <a class="lock-pill" href="/app/upgrade?plan=pro">Disponível no Pro</a>
+          {% if not has_feature('filters') %}
+            <a class="lock-pill" href="/app/upgrade?plan=plus">Disponível no Plus</a>
           {% endif %}
         </div>
       </div>

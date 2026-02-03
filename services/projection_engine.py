@@ -2,12 +2,15 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import date, timedelta
+import logging
 from typing import Any
 
 from models.extensions import db
 from models.entrada_model import Entrada
 from models.recurrence_model import Recurrence
 
+
+logger = logging.getLogger(__name__)
 
 PRIORITY_ORDER = {"alta": 0, "media": 1, "baixa": 2}
 
@@ -119,11 +122,15 @@ def apply_overrides(events: list[dict[str, Any]], overrides: dict[str, Any]) -> 
     shift_map: dict[int, date] = {}
     if isinstance(shifts, list):
         for s in shifts:
+            if not isinstance(s, dict):
+                logger.warning("Projecao: override de shift invalido (nao dict).")
+                continue
             try:
                 eid = int(s.get("entrada_id"))
                 nd = date.fromisoformat(str(s.get("new_date")))
                 shift_map[eid] = nd
-            except Exception:
+            except (TypeError, ValueError) as exc:
+                logger.warning("Projecao: override de shift invalido: %s", exc)
                 continue
 
     # reductions: por categoria (somente despesas)
@@ -147,13 +154,17 @@ def apply_overrides(events: list[dict[str, Any]], overrides: dict[str, Any]) -> 
     split_map: dict[int, dict[str, Any]] = {}
     if isinstance(splits, list):
         for sp in splits:
+            if not isinstance(sp, dict):
+                logger.warning("Projecao: override de split invalido (nao dict).")
+                continue
             try:
                 eid = int(sp.get("entrada_id"))
                 parts = int(sp.get("parts") or 0)
                 if parts < 2 or parts > 24:
                     continue
                 split_map[eid] = {"parts": parts, "freq": str(sp.get("frequency") or "monthly")}
-            except Exception:
+            except (TypeError, ValueError) as exc:
+                logger.warning("Projecao: override de split invalido: %s", exc)
                 continue
 
     new_events: list[dict[str, Any]] = []
@@ -165,7 +176,7 @@ def apply_overrides(events: list[dict[str, Any]], overrides: dict[str, Any]) -> 
                 if eid in shift_map:
                     ev = dict(ev)
                     ev["date"] = shift_map[eid]
-            except Exception:
+            except (TypeError, ValueError):
                 pass
 
         # reductions
@@ -181,7 +192,7 @@ def apply_overrides(events: list[dict[str, Any]], overrides: dict[str, Any]) -> 
         if ev.get("source") == "entry":
             try:
                 eid = int(ev.get("id"))
-            except Exception:
+            except (TypeError, ValueError):
                 eid = None
             if eid is not None and eid in split_map and ev.get("tipo") == "despesa":
                 parts = int(split_map[eid]["parts"])
@@ -216,6 +227,9 @@ def apply_overrides(events: list[dict[str, Any]], overrides: dict[str, Any]) -> 
     extras = overrides.get("extras") if isinstance(overrides, dict) else None
     if isinstance(extras, list):
         for ex in extras:
+            if not isinstance(ex, dict):
+                logger.warning("Projecao: override extra invalido (nao dict).")
+                continue
             try:
                 d = date.fromisoformat(str(ex.get("date")))
                 valor = float(ex.get("valor") or 0.0)
@@ -238,7 +252,8 @@ def apply_overrides(events: list[dict[str, Any]], overrides: dict[str, Any]) -> 
                         "priority": "media",
                     }
                 )
-            except Exception:
+            except (TypeError, ValueError) as exc:
+                logger.warning("Projecao: override extra invalido: %s", exc)
                 continue
 
     return new_events, reserve_override

@@ -1,18 +1,20 @@
 from __future__ import annotations
 
 import json
-from datetime import date, datetime, timedelta
+from datetime import date
 
 from flask import Blueprint, jsonify, request
-from flask_login import current_user, login_required
+from flask_login import current_user
 
 from models.automation_rule_model import AutomationRule, RuleExecution
 from models.entrada_model import Entrada
-from models.recurrence_model import Recurrence, RecurrenceExecution
+from models.recurrence_model import Recurrence
 from models.reminder_model import Reminder
 from models.extensions import db
-from services.feature_gate import require_feature
-from services.rules_engine import apply_rule_to_entry, apply_rules_to_entry, normalize_category, normalize_tags
+from services.permissions import require_api_access, json_error
+from services.recurrence_runner import run_recurrence_once
+from services.reminder_runner import fetch_reminder_entries
+from services.rules_engine import apply_rule_to_entry, normalize_category, normalize_tags
 
 
 rules_bp = Blueprint("rules", __name__)
@@ -55,6 +57,16 @@ def _safe_list(value) -> list[dict]:
     if isinstance(value, list):
         return [item for item in value if isinstance(item, dict)]
     return []
+
+
+def _apply_pagination(query, limit_value=None, offset_value=None, max_limit: int = 500):
+    limit = _parse_int(limit_value, 0)
+    offset = _parse_int(offset_value, 0)
+    if offset > 0:
+        query = query.offset(offset)
+    if limit > 0:
+        query = query.limit(min(limit, max_limit))
+    return query
 
 
 def _serialize_rule(rule: AutomationRule) -> dict:
@@ -125,27 +137,26 @@ def _apply_rule_payload(rule: AutomationRule, payload: dict) -> None:
 
 
 @rules_bp.get("/api/rules")
-@login_required
-@require_feature("filters")
+@require_api_access(feature="filters")
 def list_rules():
-    rules = (
+    query = (
         AutomationRule.query.filter_by(user_id=current_user.id)
         .order_by(AutomationRule.priority.asc(), AutomationRule.id.asc())
-        .all()
     )
+    query = _apply_pagination(query, request.args.get("limit"), request.args.get("offset"))
+    rules = query.all()
     return jsonify({"rules": [_serialize_rule(rule) for rule in rules]})
 
 
 @rules_bp.post("/api/rules")
-@login_required
-@require_feature("filters")
+@require_api_access(feature="filters")
 def create_rule():
     payload = request.json or {}
     rule = AutomationRule(user_id=current_user.id)
     _apply_rule_payload(rule, payload)
 
     if not json.loads(rule.actions_json or "[]"):
-        return jsonify({"error": "acoes_obrigatorias"}), 400
+        return json_error("acoes_obrigatorias", 422)
 
     db.session.add(rule)
     db.session.commit()
@@ -153,8 +164,7 @@ def create_rule():
 
 
 @rules_bp.put("/api/rules/<int:rule_id>")
-@login_required
-@require_feature("filters")
+@require_api_access(feature="filters")
 def update_rule(rule_id: int):
     rule = AutomationRule.query.filter_by(id=rule_id, user_id=current_user.id).first()
     if not rule:
@@ -164,15 +174,14 @@ def update_rule(rule_id: int):
     _apply_rule_payload(rule, payload)
 
     if not json.loads(rule.actions_json or "[]"):
-        return jsonify({"error": "acoes_obrigatorias"}), 400
+        return json_error("acoes_obrigatorias", 422)
 
     db.session.commit()
     return jsonify({"ok": True, "rule": _serialize_rule(rule)})
 
 
 @rules_bp.patch("/api/rules/<int:rule_id>/toggle")
-@login_required
-@require_feature("filters")
+@require_api_access(feature="filters")
 def toggle_rule(rule_id: int):
     rule = AutomationRule.query.filter_by(id=rule_id, user_id=current_user.id).first()
     if not rule:
@@ -224,8 +233,7 @@ def _query_entries_from_payload(payload: dict):
 
 
 @rules_bp.post("/api/rules/<int:rule_id>/test")
-@login_required
-@require_feature("filters")
+@require_api_access(feature="filters")
 def test_rule(rule_id: int):
     rule = AutomationRule.query.filter_by(id=rule_id, user_id=current_user.id).first()
     if not rule:
@@ -258,8 +266,7 @@ def test_rule(rule_id: int):
 
 
 @rules_bp.post("/api/rules/<int:rule_id>/apply")
-@login_required
-@require_feature("filters")
+@require_api_access(feature="filters")
 def apply_rule(rule_id: int):
     rule = AutomationRule.query.filter_by(id=rule_id, user_id=current_user.id).first()
     if not rule:
@@ -280,8 +287,7 @@ def apply_rule(rule_id: int):
 
 
 @rules_bp.get("/api/rules/<int:rule_id>/log")
-@login_required
-@require_feature("filters")
+@require_api_access(feature="filters")
 def rule_log(rule_id: int):
     rule = AutomationRule.query.filter_by(id=rule_id, user_id=current_user.id).first()
     if not rule:
@@ -347,20 +353,19 @@ def _apply_reminder_payload(rem: Reminder, payload: dict) -> None:
 
 
 @rules_bp.get("/api/recurrences")
-@login_required
-@require_feature("filters")
+@require_api_access(feature="filters")
 def list_recurrences():
-    items = (
+    query = (
         Recurrence.query.filter_by(user_id=current_user.id)
         .order_by(Recurrence.created_at.desc(), Recurrence.id.desc())
-        .all()
     )
+    query = _apply_pagination(query, request.args.get("limit"), request.args.get("offset"))
+    items = query.all()
     return jsonify({"recurrences": [_serialize_recurrence(item) for item in items]})
 
 
 @rules_bp.post("/api/recurrences")
-@login_required
-@require_feature("filters")
+@require_api_access(feature="filters")
 def create_recurrence():
     payload = request.json or {}
     rec = Recurrence(user_id=current_user.id)
@@ -371,8 +376,7 @@ def create_recurrence():
 
 
 @rules_bp.put("/api/recurrences/<int:recurrence_id>")
-@login_required
-@require_feature("filters")
+@require_api_access(feature="filters")
 def update_recurrence(recurrence_id: int):
     rec = Recurrence.query.filter_by(id=recurrence_id, user_id=current_user.id).first()
     if not rec:
@@ -384,8 +388,7 @@ def update_recurrence(recurrence_id: int):
 
 
 @rules_bp.patch("/api/recurrences/<int:recurrence_id>/toggle")
-@login_required
-@require_feature("filters")
+@require_api_access(feature="filters")
 def toggle_recurrence(recurrence_id: int):
     rec = Recurrence.query.filter_by(id=recurrence_id, user_id=current_user.id).first()
     if not rec:
@@ -396,87 +399,33 @@ def toggle_recurrence(recurrence_id: int):
 
 
 @rules_bp.post("/api/recurrences/<int:recurrence_id>/run")
-@login_required
-@require_feature("filters")
+@require_api_access(feature="filters")
 def run_recurrence(recurrence_id: int):
     rec = Recurrence.query.filter_by(id=recurrence_id, user_id=current_user.id).first()
     if not rec:
         return jsonify({"error": "not_found"}), 404
     if not rec.is_enabled:
-        return jsonify({"error": "disabled"}), 400
+        return json_error("disabled", 422)
 
-    today = date.today()
-    day = max(1, min(31, int(rec.day_of_month or 1)))
-    year = today.year
-    month = today.month
-
-    try:
-        run_date = date(year, month, day)
-    except ValueError:
-        # se o dia nao existe no mes, usa ultimo dia
-        if month == 12:
-            run_date = date(year, month, 31)
-        else:
-            next_month = date(year, month + 1, 1)
-            run_date = next_month - timedelta(days=1)
-
-    exists = (
-        Entrada.query.filter(
-            Entrada.user_id == current_user.id,
-            Entrada.recurrence_id == rec.id,
-            Entrada.data == run_date,
-        )
-        .first()
-    )
-    if exists:
-        return jsonify({"ok": True, "created": False, "entry_id": exists.id})
-
-    status = rec.status if rec.tipo == "despesa" else None
-    paid_at = run_date if (rec.tipo == "despesa" and status == "pago") else None
-
-    entry = Entrada(
-        user_id=current_user.id,
-        data=run_date,
-        tipo=rec.tipo,
-        descricao=rec.descricao,
-        categoria=normalize_category(rec.tipo, rec.categoria),
-        valor=float(rec.valor or 0),
-        status=status,
-        paid_at=paid_at,
-        metodo=rec.metodo,
-        tags=rec.tags,
-        recurrence_id=rec.id,
-    )
-    db.session.add(entry)
-    db.session.flush()
-    apply_rules_to_entry(entry, current_user, trigger="create", dry_run=False)
-    rec.last_run_at = datetime.utcnow()
-    db.session.add(
-        RecurrenceExecution(
-            recurrence_id=rec.id,
-            entry_id=entry.id,
-            user_id=current_user.id,
-        )
-    )
+    created, entry = run_recurrence_once(rec, current_user)
     db.session.commit()
-    return jsonify({"ok": True, "created": True, "entry_id": entry.id})
+    return jsonify({"ok": True, "created": created, "entry_id": entry.id})
 
 
 @rules_bp.get("/api/reminders")
-@login_required
-@require_feature("filters")
+@require_api_access(feature="filters")
 def list_reminders():
-    items = (
+    query = (
         Reminder.query.filter_by(user_id=current_user.id)
         .order_by(Reminder.created_at.desc(), Reminder.id.desc())
-        .all()
     )
+    query = _apply_pagination(query, request.args.get("limit"), request.args.get("offset"))
+    items = query.all()
     return jsonify({"reminders": [_serialize_reminder(item) for item in items]})
 
 
 @rules_bp.post("/api/reminders")
-@login_required
-@require_feature("filters")
+@require_api_access(feature="filters")
 def create_reminder():
     payload = request.json or {}
     rem = Reminder(user_id=current_user.id)
@@ -487,8 +436,7 @@ def create_reminder():
 
 
 @rules_bp.put("/api/reminders/<int:reminder_id>")
-@login_required
-@require_feature("filters")
+@require_api_access(feature="filters")
 def update_reminder(reminder_id: int):
     rem = Reminder.query.filter_by(id=reminder_id, user_id=current_user.id).first()
     if not rem:
@@ -500,8 +448,7 @@ def update_reminder(reminder_id: int):
 
 
 @rules_bp.patch("/api/reminders/<int:reminder_id>/toggle")
-@login_required
-@require_feature("filters")
+@require_api_access(feature="filters")
 def toggle_reminder(reminder_id: int):
     rem = Reminder.query.filter_by(id=reminder_id, user_id=current_user.id).first()
     if not rem:
@@ -512,35 +459,13 @@ def toggle_reminder(reminder_id: int):
 
 
 @rules_bp.post("/api/reminders/<int:reminder_id>/test")
-@login_required
-@require_feature("filters")
+@require_api_access(feature="filters")
 def test_reminder(reminder_id: int):
     rem = Reminder.query.filter_by(id=reminder_id, user_id=current_user.id).first()
     if not rem:
         return jsonify({"error": "not_found"}), 404
 
-    today = date.today()
-    end = today + timedelta(days=int(rem.days_before or 3))
-
-    query = Entrada.query.filter(
-        Entrada.user_id == current_user.id,
-        Entrada.data >= today,
-        Entrada.data <= end,
-    )
-    if rem.tipo:
-        query = query.filter(Entrada.tipo == rem.tipo)
-    if rem.categoria:
-        query = query.filter(Entrada.categoria == rem.categoria)
-    if rem.status:
-        query = query.filter(Entrada.status == rem.status)
-    if rem.metodo:
-        query = query.filter(Entrada.metodo == rem.metodo)
-    if rem.min_value is not None:
-        query = query.filter(Entrada.valor >= float(rem.min_value))
-    if rem.max_value is not None:
-        query = query.filter(Entrada.valor <= float(rem.max_value))
-
-    items = query.order_by(Entrada.data.asc(), Entrada.id.asc()).limit(50).all()
+    items = fetch_reminder_entries(rem, user_id=current_user.id, limit=50)
     payload = [
         {
             "id": e.id,

@@ -25,6 +25,13 @@ from routes.rules_routes import rules_bp
 
 from services.plans import PLANS, is_valid_plan
 from services.feature_gate import user_has_feature
+from services.permissions import (
+    CSRF_EXEMPT_ENDPOINTS,
+    get_csrf_token,
+    is_json_request,
+    json_error,
+    validate_csrf,
+)
 
 from services.abacatepay import (
     create_plan_billing,
@@ -119,6 +126,7 @@ def inject_plan_helpers():
         "has_feature": has_feature,
         "abacatepay_card_enabled": card_enabled,
         "subscription_notice": subscription_notice,
+        "csrf_token": get_csrf_token(),
     }
 
 
@@ -148,8 +156,25 @@ def enforce_subscription():
     if is_subscription_active(current_user):
         return
 
+    if is_json_request():
+        return json_error("subscription_inactive", 403)
+
     flash("Pagamento pendente. Regularize sua assinatura para continuar.", "warning")
     return redirect(url_for("account_page", section="billing"))
+
+
+@app.before_request
+def enforce_csrf():
+    if request.method not in {"POST", "PUT", "PATCH", "DELETE"}:
+        return
+    endpoint = request.endpoint or ""
+    if endpoint in CSRF_EXEMPT_ENDPOINTS:
+        return
+    if validate_csrf():
+        return
+    if is_json_request():
+        return json_error("csrf_failed", 403)
+    return "Forbidden", 403
 
 
 def _only_digits(s: str) -> str:

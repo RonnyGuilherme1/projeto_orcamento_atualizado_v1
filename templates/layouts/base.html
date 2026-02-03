@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="csrf-token" content="{{ csrf_token }}" />
   <link rel="icon" type="image/png" href="/static/img/logo-recorte2.png">
 
   <title>{% block title %}Controle Financeiro{% endblock %}</title>
@@ -28,6 +29,7 @@
 <body class="{{ body_class|default('') }}">
   {% block shell %}{% endblock %}
 
+  <script src="/static/js/csrf.js"></script>
   {% if js_bundle %}
     {% if js_bundle is string %}
       <script src="{{ js_bundle }}"></script>

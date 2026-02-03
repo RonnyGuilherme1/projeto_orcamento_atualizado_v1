@@ -149,11 +149,7 @@
             </div>
             <div class="rule-actions">
               <button type="button" class="btn-secondary btn-small" id="dash-rule-new">Criar regra</button>
-              {% if is_pro %}
-                <a class="btn-secondary btn-small" href="/app/filters">Editar completo</a>
-              {% else %}
-                <button type="button" class="btn-secondary btn-small is-locked" data-locked="1" data-tooltip="Edi&ccedil;&atilde;o completa s&oacute; no Pro" aria-disabled="true">Editar completo</button>
-              {% endif %}
+              <a class="btn-secondary btn-small" href="/app/filters">Editar completo</a>
             </div>
             <div class="rules-list" id="dash-rules-list">
               <div class="rules-empty">Nenhuma regra cadastrada.</div>

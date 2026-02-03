@@ -6,7 +6,6 @@ from datetime import date, datetime
 from models.automation_rule_model import AutomationRule, RuleExecution
 from models.extensions import db
 from services.feature_gate import user_has_feature
-from services.subscription import is_subscription_active
 
 
 CATEGORIAS_RECEITA = {
@@ -283,7 +282,7 @@ def apply_rule_to_entry(rule: AutomationRule, entry, user, trigger: str, dry_run
         return None
     if not _rule_allows_trigger(rule, trigger):
         return None
-    if not user or not user_has_feature(user, "filters") or not is_subscription_active(user):
+    if not user or not user_has_feature(user, "filters"):
         return None
 
     conditions = _parse_json_list(rule.conditions_json)
@@ -321,7 +320,7 @@ def apply_rule_to_entry(rule: AutomationRule, entry, user, trigger: str, dry_run
 
 
 def apply_rules_to_entry(entry, user, trigger: str, dry_run: bool = False):
-    if not user or not user_has_feature(user, "filters") or not is_subscription_active(user):
+    if not user or not user_has_feature(user, "filters"):
         return []
 
     rules = get_active_rules(user.id, trigger)
