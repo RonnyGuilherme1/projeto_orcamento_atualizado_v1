@@ -18,6 +18,7 @@
   const exportTrigger = document.getElementById("export-trigger");
   const exportMenu = document.getElementById("export-menu");
   const exportDropdown = exportMenu ? exportMenu.closest(".export-dropdown") : null;
+  const insightCreateRule = document.getElementById("insight-create-rule");
 
   const kpiIncomeValue = document.getElementById("kpi-income-value");
   const kpiIncomeDelta = document.getElementById("kpi-income-delta");
@@ -93,7 +94,7 @@
   const MONTHS = [
     "Janeiro",
     "Fevereiro",
-    "Março",
+    "Mar\u00e7o",
     "Abril",
     "Maio",
     "Junho",
@@ -106,12 +107,12 @@
   ];
 
   const CATEGORY_LABELS = {
-    salario: "Salário",
+    salario: "Sal\u00e1rio",
     extras: "Extras",
     moradia: "Moradia",
     mercado: "Mercado",
     transporte: "Transporte",
-    servicos: "Serviços",
+    servicos: "Servi\u00e7os",
     outros: "Outros"
   };
 
@@ -165,7 +166,7 @@
 
   function fmtCount(value) {
     const num = Number(value) || 0;
-    return `${num} lançamentos`;
+    return `${num} lan\u00e7amentos`;
   }
 
   function fmtPct(value) {
@@ -250,16 +251,16 @@
       if (period === "quarter") {
         compareLabel.textContent = "Comparando com trimestre anterior";
       } else if (period === "custom") {
-        compareLabel.textContent = "Comparando com período anterior";
+        compareLabel.textContent = "Comparando com per\u00edodo anterior";
       } else {
-        compareLabel.textContent = "Comparando com mês anterior";
+        compareLabel.textContent = "Comparando com m\u00eas anterior";
       }
     }
 
     if (compareToggle) {
       const label = compareToggle.closest(".switch")?.querySelector(".switch-text");
       if (label) {
-        label.textContent = period === "quarter" ? "Trimestre anterior" : (period === "custom" ? "Período anterior" : "Mês anterior");
+        label.textContent = period === "quarter" ? "Trimestre anterior" : (period === "custom" ? "Per\u00edodo anterior" : "M\u00eas anterior");
       }
     }
   }
@@ -323,7 +324,7 @@
     if (!elDelta || !elChip) return;
 
     if (!state.compare || prevValue === null || prevValue === undefined) {
-      elDelta.textContent = "Sem comparação";
+      elDelta.textContent = "Sem compara\u00e7\u00e3o";
       elChip.textContent = "Neutro";
       elChip.classList.remove("is-positive", "is-negative");
       return;
@@ -351,7 +352,7 @@
         elChip.textContent = "Controlado";
         elChip.classList.add("is-positive");
       } else {
-        elChip.textContent = "Atenção";
+        elChip.textContent = "Aten\u00e7\u00e3o";
         elChip.classList.add("is-negative");
       }
       return;
@@ -678,11 +679,11 @@
     if (donutSubtitle) {
       const topLabel = state.donut.top === "all" ? "Todas" : `Top ${state.donut.top}`;
       const typeLabel = state.donut.type === "income" ? "receitas" : "despesas";
-      donutSubtitle.textContent = `${topLabel} ${typeLabel} do período`;
+      donutSubtitle.textContent = `${topLabel} ${typeLabel} do per\u00edodo`;
     }
 
     if (!items.length) {
-      if (donutLegend) donutLegend.innerHTML = "<li>Sem dados no período.</li>";
+      if (donutLegend) donutLegend.innerHTML = "<li>Sem dados no per\u00edodo.</li>";
       donut.style.removeProperty("--donut-gradient");
       return;
     }
@@ -708,7 +709,7 @@
           <li data-category="${item.key}">
             <span class="donut-dot" style="--dot:${color}"></span>
             <span>${item.label}</span>
-            <span class="item-meta">${fmtBRL(item.total)} · ${pct.toFixed(1)}%</span>
+            <span class="item-meta">${fmtBRL(item.total)} \u00b7 ${pct.toFixed(1)}%</span>
           </li>`;
       }).join("");
     }
@@ -725,9 +726,9 @@
 
   function updateInsights(data) {
     const insights = data?.insights || {};
-    renderInsightList(insightsAlerts, insights.alerts, "Sem alertas para este período.");
+    renderInsightList(insightsAlerts, insights.alerts, "Sem alertas para este per\u00edodo.");
     renderInsightList(insightsOpp, insights.opportunities, "Sem oportunidades identificadas.");
-    renderInsightList(insightsPatterns, insights.patterns, "Sem padrões relevantes.");
+    renderInsightList(insightsPatterns, insights.patterns, "Sem padr\u00f5es relevantes.");
   }
 
   function buildDrilldownUrl(params) {
@@ -748,7 +749,7 @@
     drilldownList.innerHTML = "";
     drilldownEmpty?.classList.remove("is-visible");
 
-    const titleLabel = params.label || "Detalhes do período";
+    const titleLabel = params.label || "Detalhes do per\u00edodo";
     if (drilldownTitle) drilldownTitle.textContent = titleLabel;
     if (drilldownPeriod) {
       drilldownPeriod.textContent = `${formatShortDate(params.start)} - ${formatShortDate(params.end)}`;
@@ -793,7 +794,7 @@
 
         drilldownList.innerHTML = items.map((item) => {
           const dateLabel = item.date ? formatShortDate(item.date) : "-";
-          const meta = [dateLabel, item.category_label || item.category || "", item.method || ""].filter(Boolean).join(" · ");
+          const meta = [dateLabel, item.category_label || item.category || "", item.method || ""].filter(Boolean).join(" \u00b7 ");
           const valueLabel = fmtBRL(item.value || 0);
           return `
             <li>
@@ -808,7 +809,7 @@
       .catch(() => {
         drilldownList.innerHTML = "";
         drilldownEmpty?.classList.add("is-visible");
-        pushToast("Não foi possível carregar o drilldown.", "error");
+        pushToast("N\u00e3o foi poss\u00edvel carregar o drilldown.", "error");
       })
       .finally(() => {
         page.classList.remove("is-loading");
@@ -927,12 +928,12 @@
         }
       })
       .catch(() => {
-        pushToast("Não foi possível carregar os gráficos.", "error");
+        pushToast("N\u00e3o foi poss\u00edvel carregar os gr\u00e1ficos.", "error");
         setEmptyState(lineCanvas, true);
         setEmptyState(donutCanvas, true);
         renderInsightList(insightsAlerts, [], "Falha ao carregar alertas.");
         renderInsightList(insightsOpp, [], "Falha ao carregar oportunidades.");
-        renderInsightList(insightsPatterns, [], "Falha ao carregar padrões.");
+        renderInsightList(insightsPatterns, [], "Falha ao carregar padres.");
       })
       .finally(() => {
         setLoading(false);
@@ -1033,7 +1034,7 @@
     if (type === "json") exportJSON(state.data);
     if (type === "svg") exportSVG();
 
-    pushToast("Exportação concluída.", "success");
+    pushToast("Exporta\u00e7\u00e3o conclu\u00edda.", "success");
     toggleExportMenu(false);
   }
 
@@ -1041,7 +1042,7 @@
     const target = event.target.closest("[data-locked='true']");
     if (!target) return;
     event.preventDefault();
-    pushToast("Disponível apenas no plano PRO.", "error");
+    pushToast("Dispon\u00edvel apenas no plano PRO.", "error");
   }
 
   function initDefaults() {
@@ -1135,10 +1136,13 @@
       const text = [
         "Alertas:\n" + (insights.alerts || []).join("\n"),
         "\nOportunidades:\n" + (insights.opportunities || []).join("\n"),
-        "\nPadrões:\n" + (insights.patterns || []).join("\n")
+        "\nPadr\u00f5es:\n" + (insights.patterns || []).join("\n")
       ].join("\n");
       downloadBlob("insights_periodo.txt", text, "text/plain");
       pushToast("Insights exportados.", "success");
+    });
+    insightCreateRule?.addEventListener("click", () => {
+      window.location.href = "/app/filters";
     });
 
     drilldownClose?.addEventListener("click", closeDrilldown);

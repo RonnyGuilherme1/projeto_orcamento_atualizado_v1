@@ -5,6 +5,7 @@
 {% block title %}Gr&aacute;ficos | Controle Financeiro{% endblock %}
 {% block page_title %}Gr&aacute;ficos{% endblock %}
 
+{% set is_pro = has_feature('reports') %}
 {% block content %}
   <div class="page charts-page" data-page="charts">
     <section class="panel charts-topbar">
@@ -18,9 +19,9 @@
           <div class="period-block">
             <span class="field-label">Per&iacute;odo</span>
             <div class="segmented" id="period-tabs" role="tablist">
-              <button class="segmented-btn is-active" type="button" data-period="month" role="tab" aria-selected="true">M&ecirc;s</button>
-              <button class="segmented-btn" type="button" data-period="quarter" role="tab" aria-selected="false">Trimestre</button>
-              <button class="segmented-btn" type="button" data-period="custom" role="tab" aria-selected="false">Personalizado</button>
+              <button class="segmented-btn is-active" type="button" data-period="month" role="tab" aria-selected="true" title="Analisar o m&ecirc;s selecionado">M&ecirc;s</button>
+              <button class="segmented-btn" type="button" data-period="quarter" role="tab" aria-selected="false" title="Comparar por trimestre">Trimestre</button>
+              <button class="segmented-btn" type="button" data-period="custom" role="tab" aria-selected="false" title="Definir um intervalo personalizado">Personalizado</button>
             </div>
             <div class="period-panels">
               <div class="period-panel is-active" data-period-panel="month" role="tabpanel">
@@ -84,7 +85,7 @@
 
           <div class="compare-block">
             <span class="field-label">Compara&ccedil;&atilde;o</span>
-            <label class="switch">
+            <label class="switch" title="Comparar com o per&iacute;odo anterior">
               <input id="compare-toggle" type="checkbox" checked />
               <span class="switch-track"></span>
               <span class="switch-text">M&ecirc;s anterior</span>
@@ -95,7 +96,7 @@
           <div class="export-block">
             <span class="field-label">Exportar</span>
             <div class="export-dropdown">
-              <button class="btn btn-ghost" type="button" id="export-trigger">Exportar</button>
+              <button class="btn btn-ghost" type="button" id="export-trigger" title="Exportar dados e gr&aacute;ficos">Exportar</button>
               <div class="export-menu" id="export-menu" role="menu">
                 <button type="button" data-export="csv" role="menuitem">CSV do per&iacute;odo</button>
                 <button type="button" data-export="json" role="menuitem">JSON completo</button>
@@ -161,9 +162,9 @@
             <div class="meta-controls">
               <label class="field field-inline field-meta">
                 <span class="field-label">Meta de saldo</span>
-                <input id="goal-line-input" class="control" type="text" inputmode="decimal" placeholder="R$ 0,00" />
+                <input id="goal-line-input" class="control" type="text" inputmode="decimal" placeholder="R$ 0,00" title="Defina uma meta de saldo" />
               </label>
-              <label class="switch small">
+              <label class="switch small" title="Exibir linha de meta no gr&aacute;fico">
                 <input id="goal-line-toggle" type="checkbox" />
                 <span class="switch-track"></span>
                 <span class="switch-text">Meta</span>
@@ -273,7 +274,7 @@
           <p>Alertas, oportunidades e padr&otilde;es para melhorar seu fluxo.</p>
         </div>
         <div class="insights-actions">
-          <button class="btn btn-ghost" type="button" id="refresh-insights">Atualizar insights</button>
+          <button class="btn btn-ghost" type="button" id="refresh-insights" title="Recalcular insights do per&iacute;odo">Atualizar insights</button>
         </div>
       </div>
 
@@ -293,10 +294,16 @@
           </div>
           <ul class="insight-list" id="insights-opportunities"></ul>
           <div class="insight-cta">
-            <button class="btn btn-primary" type="button" data-locked="true" title="Dispon&iacute;vel apenas no PRO">
-              <span class="lock-icon" aria-hidden="true">LOCK</span>
-              Criar regra
-            </button>
+            {% if is_pro %}
+              <button class="btn btn-primary" type="button" id="insight-create-rule" title="Criar uma nova regra de automa&ccedil;&atilde;o">
+                Criar regra
+              </button>
+            {% else %}
+              <button class="btn btn-primary is-locked" type="button" data-locked="true" data-tooltip="Dispon&iacute;vel no PRO" title="Dispon&iacute;vel no PRO" aria-disabled="true">
+                <span class="lock-icon" aria-hidden="true">LOCK</span>
+                Criar regra
+              </button>
+            {% endif %}
           </div>
         </article>
 
@@ -307,7 +314,7 @@
           </div>
           <ul class="insight-list" id="insights-patterns"></ul>
           <div class="insight-cta">
-            <button class="btn btn-ghost" type="button" id="export-insights">Exportar insights</button>
+            <button class="btn btn-ghost" type="button" id="export-insights" title="Salvar insights em arquivo de texto">Exportar insights</button>
           </div>
         </article>
       </div>

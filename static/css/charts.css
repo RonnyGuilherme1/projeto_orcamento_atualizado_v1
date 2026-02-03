@@ -41,8 +41,8 @@ body.app-body .topbar-grid{
   position: relative;
   z-index: 2;
   display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.4fr);
-  gap: 16px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr);
+  gap: 18px;
   align-items: start;
 }
 
@@ -66,8 +66,12 @@ body.app-body .plus-pill{
 
 body.app-body .topbar-actions{
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 0.9fr);
+  grid-auto-rows: minmax(0, auto);
+  column-gap: 16px;
+  row-gap: 14px;
+  align-content: start;
+  justify-items: start;
 }
 
 body.app-body .period-block,
@@ -75,15 +79,30 @@ body.app-body .compare-block,
 body.app-body .export-block{
   display: grid;
   gap: 8px;
+  min-width: 0;
+}
+
+body.app-body .period-block{
+  grid-column: 1;
+  grid-row: 1 / span 2;
+}
+
+body.app-body .compare-block{
+  grid-column: 2;
+}
+
+body.app-body .export-block{
+  grid-column: 2;
 }
 
 body.app-body .segmented{
   display: inline-flex;
+  flex-wrap: wrap;
   padding: 4px;
   border-radius: 999px;
   background: rgba(0, 0, 0, 0.35);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  gap: 4px;
+  gap: 8px;
 }
 
 body.app-body .segmented-btn{
@@ -95,6 +114,7 @@ body.app-body .segmented-btn{
   color: rgba(255, 255, 255, 0.68);
   background: transparent;
   cursor: pointer;
+  white-space: nowrap;
 }
 
 body.app-body .segmented-btn.is-active{
@@ -110,8 +130,13 @@ body.app-body .period-panels{
 
 body.app-body .period-panel{
   display: none;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+  min-width: 0;
+}
+
+body.app-body .period-panel .control{
+  width: 100%;
 }
 
 body.app-body .period-panel.is-active{
@@ -122,6 +147,10 @@ body.app-body .compare-meta{
   font-size: 11px;
   font-weight: 700;
   color: rgba(255, 255, 255, 0.6);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 body.app-body .switch{
@@ -132,6 +161,7 @@ body.app-body .switch{
   font-size: 12px;
   font-weight: 800;
   color: rgba(255, 255, 255, 0.8);
+  flex-wrap: wrap;
 }
 
 body.app-body .switch input{
@@ -280,6 +310,9 @@ body.app-body .kpi-chip{
   letter-spacing: 0.08em;
   background: rgba(255, 255, 255, 0.12);
   color: rgba(255, 255, 255, 0.7);
+  min-height: 20px;
+  display: inline-flex;
+  align-items: center;
 }
 
 body.app-body .kpi-chip.is-positive{
@@ -697,6 +730,13 @@ body.app-body .insights-header{
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  flex-wrap: wrap;
+}
+
+body.app-body .insights-actions{
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 body.app-body .insights-header h3{
@@ -721,6 +761,7 @@ body.app-body .insights-grid{
 body.app-body .insight-card{
   display: grid;
   gap: 12px;
+  min-width: 0;
 }
 
 body.app-body .insight-head{
@@ -772,6 +813,15 @@ body.app-body .insight-list li{
 body.app-body .insight-cta{
   display: flex;
   justify-content: flex-start;
+}
+
+body.app-body .insight-cta .btn{
+  white-space: nowrap;
+}
+
+body.app-body .btn.is-locked{
+  opacity: 0.7;
+  cursor: not-allowed;
 }
 
 body.app-body .lock-icon{
@@ -988,13 +1038,20 @@ body.app-body .charts-page.is-loading [data-skeleton]{
   100%{ background-position: -200% 0; }
 }
 
-@media (max-width: 1200px){
+@media (max-width: 1100px){
   body.app-body .topbar-grid{
     grid-template-columns: 1fr;
   }
 
   body.app-body .topbar-actions{
     grid-template-columns: 1fr;
+  }
+
+  body.app-body .period-block,
+  body.app-body .compare-block,
+  body.app-body .export-block{
+    grid-column: auto;
+    grid-row: auto;
   }
 
   body.app-body .kpi-grid{
@@ -1010,7 +1067,7 @@ body.app-body .charts-page.is-loading [data-skeleton]{
   }
 
   body.app-body .insights-grid{
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -1023,13 +1080,23 @@ body.app-body .charts-page.is-loading [data-skeleton]{
     grid-template-columns: 1fr;
   }
 
+  body.app-body .meta-controls{
+    flex-direction: column;
+    align-items: flex-end;
+  }
+}
+
+@media (max-width: 720px){
   body.app-body .period-panel{
     grid-template-columns: 1fr;
   }
 
-  body.app-body .meta-controls{
-    flex-direction: column;
-    align-items: flex-end;
+  body.app-body .compare-meta{
+    white-space: normal;
+  }
+
+  body.app-body .insights-grid{
+    grid-template-columns: 1fr;
   }
 }
 
