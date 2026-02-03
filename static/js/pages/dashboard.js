@@ -34,6 +34,38 @@
   const wRepExp = document.getElementById("dash-rep-exp");
   const wRepPeriod = document.getElementById("dash-rep-period");
 
+  const chartsCard = document.querySelector('[data-card="charts"]');
+  const chartRangeButtons = chartsCard ? chartsCard.querySelectorAll('[data-chart-range] .toggle-btn') : [];
+  const chartSeriesButtons = chartsCard ? chartsCard.querySelectorAll('[data-chart-series] .toggle-btn') : [];
+  const chartIncomeKpi = chartsCard ? chartsCard.querySelector('[data-kpi="income"]') : null;
+  const chartExpenseKpi = chartsCard ? chartsCard.querySelector('[data-kpi="expense"]') : null;
+
+  const insightsCard = document.querySelector('[data-card="insights"]');
+  const insightsFeedback = document.getElementById("dash-insights-feedback");
+
+  const rulesList = document.getElementById("dash-rules-list");
+  const ruleNewBtn = document.getElementById("dash-rule-new");
+  const ruleModal = document.getElementById("dash-rule-modal");
+  const ruleForm = document.getElementById("dash-rule-form");
+  const ruleCloseBtn = document.getElementById("dash-rule-close");
+  const ruleCancelBtn = document.getElementById("dash-rule-cancel");
+  const ruleNameInput = document.getElementById("dash-rule-name");
+  const ruleMatchInput = document.getElementById("dash-rule-match");
+  const ruleTypeSelect = document.getElementById("dash-rule-type");
+  const ruleCategorySelect = document.getElementById("dash-rule-category");
+  const ruleTagsInput = document.getElementById("dash-rule-tags");
+  const ruleFeedback = document.getElementById("dash-rule-feedback");
+
+  const projDelayInput = document.getElementById("dash-proj-delay");
+  const projSplitInput = document.getElementById("dash-proj-split");
+  const projSplitCountInput = document.getElementById("dash-proj-split-count");
+  const projExtraInput = document.getElementById("dash-proj-extra");
+  const projSimFeedback = document.getElementById("dash-proj-sim-feedback");
+  const projResetBtn = document.getElementById("dash-proj-reset");
+  const projSimButtons = document.querySelectorAll("[data-proj-sim]");
+
+  const reportButtons = document.querySelectorAll("[data-report-export]");
+
   // Esta página não existe? Sai sem fazer nada.
   if (!cardsRoot && !filtroDe && !listaPeriodo) return;
 
@@ -46,6 +78,20 @@
 
   let entradas = [];
 
+  const chartsState = {
+    range: 6,
+    showIncome: true,
+    showExpense: true,
+    refYm: null,
+  };
+
+  const projectionState = {
+    baseSaldo: 0,
+    basePend: 0,
+    adjustSaldo: 0,
+    adjustPend: 0,
+  };
+
   const mesesCurto = [
     "Jan", "Fev", "Mar", "Abr", "Mai", "Jun",
     "Jul", "Ago", "Set", "Out", "Nov", "Dez"
@@ -54,6 +100,13 @@
   function fmtBRL(valor) {
     const num = Number(valor) || 0;
     return num.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  }
+
+  function fmtSignedBRL(valor) {
+    const num = Number(valor) || 0;
+    if (num === 0) return fmtBRL(0);
+    const sign = num > 0 ? "+" : "-";
+    return `${sign}${fmtBRL(Math.abs(num))}`;
   }
 
   function fmtBRDate(iso) {
@@ -187,6 +240,432 @@
     });
   }
 
+  function updateChartsVisibility() {
+    if (chartIncomeKpi) {
+      chartIncomeKpi.classList.toggle("is-hidden", !chartsState.showIncome);
+    }
+    if (chartExpenseKpi) {
+      chartExpenseKpi.classList.toggle("is-hidden", !chartsState.showExpense);
+    }
+  }
+
+  function updateChartsWidget() {
+    if (!chartsState.refYm) return;
+    const range = Math.max(3, Number(chartsState.range) || 6);
+    let totalInc = 0;
+    let totalExp = 0;
+    let totalSaldo = 0;
+    const series = [];
+
+    for (let i = range - 1; i >= 0; i--) {
+      const key = addMonths(chartsState.refYm, -i);
+      const s = sumMonth(key);
+      totalInc += s.inc;
+      totalExp += s.exp;
+      totalSaldo += s.saldo;
+      series.push({ label: labelMonthShort(key), value: s.saldo });
+    }
+
+    if (wChartsIncome) wChartsIncome.textContent = fmtBRL(totalInc);
+    if (wChartsExpense) wChartsExpense.textContent = fmtBRL(totalExp);
+    if (wChartsBalance) {
+      wChartsBalance.textContent = fmtBRL(totalSaldo);
+      wChartsBalance.className = totalSaldo >= 0 ? "positivo" : "negativo";
+    }
+    if (wChartsPeriod) wChartsPeriod.textContent = `Ultimos ${range} meses`;
+    if (wChartsSpark) renderSpark(wChartsSpark, series);
+    updateChartsVisibility();
+  }
+
+  function initChartsControls() {
+    if (!chartsCard) return;
+    const activeRange = Array.from(chartRangeButtons).find(btn => btn.classList.contains("is-active"));
+    if (activeRange) {
+      chartsState.range = Number(activeRange.dataset.range) || chartsState.range;
+    }
+
+    chartRangeButtons.forEach(btn => {
+      btn.addEventListener("click", () => {
+        chartRangeButtons.forEach(el => el.classList.remove("is-active"));
+        btn.classList.add("is-active");
+        chartsState.range = Number(btn.dataset.range) || chartsState.range;
+        updateChartsWidget();
+      });
+    });
+
+    chartSeriesButtons.forEach(btn => {
+      const series = btn.dataset.series;
+      const isActive = btn.classList.contains("is-active");
+      btn.setAttribute("aria-pressed", isActive ? "true" : "false");
+      if (series === "income") chartsState.showIncome = isActive;
+      if (series === "expense") chartsState.showExpense = isActive;
+
+      btn.addEventListener("click", () => {
+        const nowActive = !btn.classList.contains("is-active");
+        btn.classList.toggle("is-active", nowActive);
+        btn.setAttribute("aria-pressed", nowActive ? "true" : "false");
+        if (series === "income") chartsState.showIncome = nowActive;
+        if (series === "expense") chartsState.showExpense = nowActive;
+        updateChartsVisibility();
+      });
+    });
+
+    updateChartsVisibility();
+  }
+
+  let insightsTimer = null;
+
+  function setInsightsFeedback(message) {
+    if (!insightsFeedback) return;
+    insightsFeedback.textContent = message;
+    insightsFeedback.classList.add("is-active");
+    if (insightsTimer) window.clearTimeout(insightsTimer);
+    insightsTimer = window.setTimeout(() => {
+      if (insightsFeedback) insightsFeedback.classList.remove("is-active");
+    }, 2400);
+  }
+
+  function initInsightsActions() {
+    if (!insightsCard) return;
+    insightsCard.addEventListener("click", event => {
+      const button = event.target.closest("[data-insight-action]");
+      if (!button) return;
+      if (button.dataset.locked) {
+        setInsightsFeedback("Disponivel no Pro.");
+        return;
+      }
+      const line = button.closest(".insight-line");
+      const label = line && line.dataset.insightLabel ? line.dataset.insightLabel : "Insight";
+      const action = button.dataset.insightAction;
+      const actionLabel = action === "alert" ? "Alerta simulado" : "Reducao simulada";
+      setInsightsFeedback(`${actionLabel} para ${label}.`);
+    });
+  }
+
+  const ruleCategories = {
+    despesa: [
+      { value: "moradia", label: "Moradia" },
+      { value: "mercado", label: "Mercado" },
+      { value: "transporte", label: "Transporte" },
+      { value: "servicos", label: "Servicos" },
+      { value: "outros", label: "Outros" },
+    ],
+    receita: [
+      { value: "salario", label: "Salario" },
+      { value: "extras", label: "Extras" },
+      { value: "outros", label: "Outros" },
+    ],
+  };
+
+  function populateRuleCategories() {
+    if (!ruleCategorySelect) return;
+    const type = (ruleTypeSelect && ruleTypeSelect.value) || "despesa";
+    const items = ruleCategories[type] || ruleCategories.despesa;
+    ruleCategorySelect.innerHTML = "";
+    items.forEach(item => {
+      const option = document.createElement("option");
+      option.value = item.value;
+      option.textContent = item.label;
+      ruleCategorySelect.appendChild(option);
+    });
+  }
+
+  function openRuleModal() {
+    if (!ruleModal) return;
+    ruleModal.classList.remove("hidden");
+    ruleModal.setAttribute("aria-hidden", "false");
+    if (ruleFeedback) ruleFeedback.textContent = "";
+    populateRuleCategories();
+    if (ruleMatchInput) ruleMatchInput.focus();
+  }
+
+  function closeRuleModal() {
+    if (!ruleModal) return;
+    ruleModal.classList.add("hidden");
+    ruleModal.setAttribute("aria-hidden", "true");
+  }
+
+  function setRuleFeedback(message, isError) {
+    if (!ruleFeedback) return;
+    ruleFeedback.textContent = message;
+    ruleFeedback.classList.toggle("is-error", !!isError);
+  }
+
+  function initRuleModal() {
+    if (ruleTypeSelect) {
+      populateRuleCategories();
+      ruleTypeSelect.addEventListener("change", populateRuleCategories);
+    }
+
+    if (ruleNewBtn) ruleNewBtn.addEventListener("click", openRuleModal);
+    if (ruleCloseBtn) ruleCloseBtn.addEventListener("click", closeRuleModal);
+    if (ruleCancelBtn) ruleCancelBtn.addEventListener("click", closeRuleModal);
+
+    if (ruleModal) {
+      ruleModal.addEventListener("click", event => {
+        if (event.target === ruleModal) closeRuleModal();
+      });
+    }
+
+    if (ruleForm) {
+      ruleForm.addEventListener("submit", async event => {
+        event.preventDefault();
+        if (!ruleMatchInput || !ruleCategorySelect || !ruleTypeSelect) return;
+        const match = String(ruleMatchInput.value || "").trim();
+        if (!match) {
+          setRuleFeedback("Informe o texto para acionar a regra.", true);
+          return;
+        }
+
+        const payload = {
+          name: String(ruleNameInput && ruleNameInput.value ? ruleNameInput.value : "Regra rapida").trim() || "Regra rapida",
+          is_enabled: true,
+          apply_on_create: true,
+          apply_on_edit: false,
+          apply_on_import: false,
+          stop_after_apply: true,
+          conditions: [
+            { field: "descricao", op: "contains", value: match },
+            { field: "tipo", op: "eq", value: String(ruleTypeSelect.value || "despesa").trim() },
+          ],
+          actions: [
+            { type: "set_category", value: String(ruleCategorySelect.value || "outros").trim() },
+          ],
+        };
+
+        const tags = ruleTagsInput ? String(ruleTagsInput.value || "").trim() : "";
+        if (tags) {
+          payload.actions.push({ type: "set_tags", value: tags });
+        }
+
+        const submitBtn = document.getElementById("dash-rule-submit");
+        if (submitBtn) submitBtn.disabled = true;
+
+        try {
+          const res = await fetch("/api/rules", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+          const data = await res.json();
+          if (!res.ok) {
+            const msg = data && data.error ? data.error : "Falha ao criar regra";
+            throw new Error(msg);
+          }
+          setRuleFeedback("Regra criada com sucesso.", false);
+          if (ruleForm) ruleForm.reset();
+          populateRuleCategories();
+          await hydrateRulesWidget();
+          window.setTimeout(() => closeRuleModal(), 600);
+        } catch (err) {
+          setRuleFeedback(err.message || "Falha ao criar regra", true);
+        } finally {
+          if (submitBtn) submitBtn.disabled = false;
+        }
+      });
+    }
+  }
+
+  function describeRule(rule) {
+    const conditions = Array.isArray(rule.conditions) ? rule.conditions : [];
+    const actions = Array.isArray(rule.actions) ? rule.actions : [];
+    const match = conditions.find(c => c.field === "descricao" && c.op === "contains");
+    const typeCond = conditions.find(c => c.field === "tipo" && c.op === "eq");
+    const actionCat = actions.find(a => a.type === "set_category");
+    const parts = [];
+    if (match && match.value) parts.push(`Se contem "${match.value}"`);
+    if (typeCond && typeCond.value) {
+      parts.push(typeCond.value === "receita" ? "Receita" : "Despesa");
+    }
+    if (actionCat && actionCat.value) {
+      const item = actionCat.value;
+      const label = ruleCategories.despesa.concat(ruleCategories.receita).find(cat => cat.value === item);
+      parts.push(`-> ${label ? label.label : item}`);
+    }
+    return parts.join(" ").trim();
+  }
+
+  function renderRulesList(rules) {
+    if (!rulesList) return;
+    rulesList.innerHTML = "";
+
+    if (!rules.length) {
+      const empty = document.createElement("div");
+      empty.className = "rules-empty";
+      empty.textContent = "Nenhuma regra cadastrada.";
+      rulesList.appendChild(empty);
+      return;
+    }
+
+    rules.slice(0, 3).forEach(rule => {
+      const row = document.createElement("div");
+      row.className = "rule-row";
+
+      const info = document.createElement("div");
+      info.className = "rule-info";
+
+      const title = document.createElement("strong");
+      title.textContent = rule.name || `Regra #${rule.id}`;
+
+      const desc = document.createElement("span");
+      const descText = describeRule(rule);
+      desc.textContent = descText || "Regra rapida";
+
+      info.appendChild(title);
+      info.appendChild(desc);
+
+      const toggle = document.createElement("label");
+      toggle.className = "rule-toggle";
+
+      const input = document.createElement("input");
+      input.type = "checkbox";
+      input.checked = !!rule.is_enabled;
+      input.dataset.ruleToggle = "1";
+      input.dataset.ruleId = rule.id;
+
+      const knob = document.createElement("span");
+      toggle.appendChild(input);
+      toggle.appendChild(knob);
+
+      row.appendChild(info);
+      row.appendChild(toggle);
+      rulesList.appendChild(row);
+    });
+  }
+
+  let rulesToggleBound = false;
+
+  function bindRulesToggle() {
+    if (!rulesList || rulesToggleBound) return;
+    rulesToggleBound = true;
+    rulesList.addEventListener("change", async event => {
+      const input = event.target.closest("[data-rule-toggle]");
+      if (!input) return;
+      const ruleId = input.dataset.ruleId;
+      if (!ruleId) return;
+      const isEnabled = input.checked;
+      input.disabled = true;
+      try {
+        const res = await fetch(`/api/rules/${ruleId}/toggle`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ is_enabled: isEnabled }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          const msg = data && data.error ? data.error : "Falha ao atualizar regra";
+          throw new Error(msg);
+        }
+        if (wRulesLast) wRulesLast.textContent = "Atualizado agora";
+        await hydrateRulesWidget();
+      } catch (err) {
+        input.checked = !isEnabled;
+        if (wRulesLast) wRulesLast.textContent = "Falha ao atualizar";
+      } finally {
+        input.disabled = false;
+      }
+    });
+  }
+
+  function updateProjectionSimulation() {
+    if (!wProjSaldo) return;
+    const saldo = projectionState.baseSaldo + projectionState.adjustSaldo;
+    const pend = Math.max(0, projectionState.basePend + projectionState.adjustPend);
+    wProjSaldo.textContent = fmtBRL(saldo);
+    if (wProjPend) wProjPend.textContent = fmtBRL(pend);
+
+    if (projSimFeedback) {
+      if (projectionState.adjustSaldo || projectionState.adjustPend) {
+        const parts = [];
+        if (projectionState.adjustSaldo) parts.push(`Saldo ${fmtSignedBRL(projectionState.adjustSaldo)}`);
+        if (projectionState.adjustPend) parts.push(`Pendentes ${fmtSignedBRL(projectionState.adjustPend)}`);
+        projSimFeedback.textContent = `Simulacao ativa: ${parts.join(" | ")}`;
+        projSimFeedback.classList.add("is-active");
+      } else {
+        projSimFeedback.textContent = "Simulacao desligada.";
+        projSimFeedback.classList.remove("is-active");
+      }
+    }
+  }
+
+  function applyProjectionDelta(deltaSaldo, deltaPend) {
+    projectionState.adjustSaldo += deltaSaldo;
+    projectionState.adjustPend += deltaPend;
+    updateProjectionSimulation();
+  }
+
+  function initProjectionSimulators() {
+    if (!projSimButtons.length) return;
+
+    projSimButtons.forEach(btn => {
+      btn.addEventListener("click", () => {
+        const action = btn.dataset.projSim;
+        if (action === "delay") {
+          const value = Number(projDelayInput && projDelayInput.value ? projDelayInput.value : 0);
+          if (!value || value <= 0) {
+            if (projSimFeedback) projSimFeedback.textContent = "Informe um valor para adiar.";
+            return;
+          }
+          applyProjectionDelta(value, -value);
+          if (projDelayInput) projDelayInput.value = "";
+        }
+
+        if (action === "split") {
+          const value = Number(projSplitInput && projSplitInput.value ? projSplitInput.value : 0);
+          const countValue = Number(projSplitCountInput && projSplitCountInput.value ? projSplitCountInput.value : 2);
+          const count = Number.isFinite(countValue) ? Math.max(2, countValue) : 2;
+          if (!value || value <= 0) {
+            if (projSimFeedback) projSimFeedback.textContent = "Informe o valor a parcelar.";
+            return;
+          }
+          const deferred = value - value / count;
+          if (deferred > 0) {
+            applyProjectionDelta(deferred, -deferred);
+          }
+          if (projSplitInput) projSplitInput.value = "";
+          if (projSplitCountInput) projSplitCountInput.value = "";
+        }
+
+        if (action === "extra") {
+          const value = Number(projExtraInput && projExtraInput.value ? projExtraInput.value : 0);
+          if (!value || value <= 0) {
+            if (projSimFeedback) projSimFeedback.textContent = "Informe o valor extra.";
+            return;
+          }
+          applyProjectionDelta(value, 0);
+          if (projExtraInput) projExtraInput.value = "";
+        }
+      });
+    });
+
+    if (projResetBtn) {
+      projResetBtn.addEventListener("click", () => {
+        projectionState.adjustSaldo = 0;
+        projectionState.adjustPend = 0;
+        updateProjectionSimulation();
+      });
+    }
+  }
+
+  function initReportExports() {
+    if (!reportButtons || !reportButtons.length) return;
+    reportButtons.forEach(btn => {
+      btn.addEventListener("click", () => {
+        if (btn.dataset.locked) return;
+        const type = btn.dataset.reportExport;
+        let url = "";
+        if (type === "pdf") {
+          const detail = btn.dataset.detail || "resumido";
+          url = `/app/reports/export/pdf?detail=${detail}&download=1`;
+        }
+        if (type === "excel") {
+          url = "/app/reports/export/excel";
+        }
+        if (url) window.open(url, "_blank");
+      });
+    });
+  }
+
   async function hydrateRulesWidget() {
     if (!wRulesTotal) return;
     try {
@@ -214,6 +693,8 @@
           wRulesLast.textContent = "Última: -";
         }
       }
+      renderRulesList(rules);
+      bindRulesToggle();
     } catch (e) {
       // silencioso
     }
@@ -230,8 +711,11 @@
 
       const saldo = Number(data.saldo_projetado) || 0;
       const pend = Number(data.total_despesas_pendentes) || 0;
-      if (wProjSaldo) wProjSaldo.textContent = fmtBRL(saldo);
-      if (wProjPend) wProjPend.textContent = fmtBRL(pend);
+      projectionState.baseSaldo = saldo;
+      projectionState.basePend = pend;
+      projectionState.adjustSaldo = 0;
+      projectionState.adjustPend = 0;
+      updateProjectionSimulation();
       if (wProjAte) wProjAte.textContent = fmtBRDate(data.ate);
       if (wProjRef) wProjRef.textContent = `Base: ${fmtBRDate(iso)}`;
     } catch (e) {
@@ -266,27 +750,12 @@
     const month = sumMonth(ym);
 
     // Charts
+    chartsState.refYm = ym;
     if (wChartsIncome || wChartsExpense || wChartsBalance || wChartsSpark || wChartsPeriod) {
-      if (wChartsIncome) wChartsIncome.textContent = fmtBRL(month.inc);
-      if (wChartsExpense) wChartsExpense.textContent = fmtBRL(month.exp);
-      if (wChartsBalance) {
-        wChartsBalance.textContent = fmtBRL(month.saldo);
-        wChartsBalance.className = month.saldo >= 0 ? "positivo" : "negativo";
-      }
-      if (wChartsPeriod) wChartsPeriod.textContent = labelMonth(ym);
-      if (wChartsSpark) {
-        const series = [];
-        // últimos 6 meses (do mais antigo -> atual)
-        for (let i = 5; i >= 0; i--) {
-          const key = addMonths(ym, -i);
-          const s = sumMonth(key);
-          series.push({ label: labelMonthShort(key), value: s.saldo });
-        }
-        renderSpark(wChartsSpark, series);
-      }
+      updateChartsWidget();
     }
 
-    // Insights
+// Insights
     if (wInsightsTopCat || wInsightsTopExp || wInsightsVar || wInsightsPeriod) {
       const topCat = groupTopExpenseCategory(ym);
       const topEntry = topExpenseEntry(ym);
@@ -542,6 +1011,13 @@
 
   if (filtroDe) filtroDe.addEventListener("change", onPeriodoChange);
   if (filtroAte) filtroAte.addEventListener("change", onPeriodoChange);
+
+  initChartsControls();
+  initInsightsActions();
+  bindRulesToggle();
+  initRuleModal();
+  initProjectionSimulators();
+  initReportExports();
 
   carregarDados();
 

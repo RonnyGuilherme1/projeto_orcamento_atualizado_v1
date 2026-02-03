@@ -11,55 +11,71 @@
     <!-- CARDS (TRIMESTRES) -->
     <div id="cards" class="cards-trimestres"></div>
 
-    <!-- WIDGETS (ATALHOS / ANÁLISES POR PLANO) -->
+    <!-- WIDGETS (ATALHOS / A??ES R?PIDAS POR PLANO) -->
     <section class="panel widgets-panel">
       <div class="panel-head">
         <div>
-          <h2 class="panel-title">Atalhos &amp; Análises</h2>
-          <p class="panel-subtitle">Resumo do mês e recursos disponíveis no seu plano (com bloqueio igual ao menu).</p>
+          <h2 class="panel-title">Atalhos &amp; A&ccedil;&otilde;es r&aacute;pidas</h2>
+          <p class="panel-subtitle">Micro-intera&ccedil;&otilde;es e simula&ccedil;&otilde;es sem alterar seus dados. Bloqueio por plano igual ao menu.</p>
         </div>
       </div>
 
+      {% set is_pro = has_feature('reports') %}
+
       <div class="widgets-grid">
-        {# Gráficos (Plus/Pro) #}
+        {# Gr?ficos (Plus/Pro) #}
         {% if has_feature('charts') %}
-          <a class="widget-card" href="/app/charts" aria-label="Abrir gráficos">
+          <article class="widget-card quick-card" data-card="charts">
             <div class="widget-head">
               <div class="widget-title">
                 <span class="widget-icon" aria-hidden="true">
                   <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14v4"/><path d="M12 10v8"/><path d="M17 6v12"/></svg>
                 </span>
-                <strong>Gráficos</strong>
+                <strong>Gr&aacute;ficos</strong>
               </div>
               <span class="pill">Plus</span>
+            </div>
+            <div class="quick-actions">
+              <div class="toggle-group" data-chart-range>
+                <button type="button" class="toggle-btn" data-range="3">3M</button>
+                <button type="button" class="toggle-btn is-active" data-range="6">6M</button>
+                <button type="button" class="toggle-btn" data-range="12">12M</button>
+              </div>
+              <div class="toggle-group" data-chart-series>
+                <button type="button" class="toggle-btn is-active" data-series="income">Receitas</button>
+                <button type="button" class="toggle-btn is-active" data-series="expense">Despesas</button>
+              </div>
             </div>
             <div class="widget-kpis">
-              <div class="kpi"><span>Receitas</span><strong id="dash-charts-income">R$ 0,00</strong></div>
-              <div class="kpi"><span>Despesas</span><strong id="dash-charts-expense">R$ 0,00</strong></div>
-              <div class="kpi"><span>Saldo</span><strong id="dash-charts-balance">R$ 0,00</strong></div>
+              <div class="kpi" data-kpi="income"><span>Receitas</span><strong id="dash-charts-income">R$ 0,00</strong></div>
+              <div class="kpi" data-kpi="expense"><span>Despesas</span><strong id="dash-charts-expense">R$ 0,00</strong></div>
+              <div class="kpi" data-kpi="balance"><span>Saldo</span><strong id="dash-charts-balance">R$ 0,00</strong></div>
             </div>
             <div class="widget-spark" aria-hidden="true" id="dash-charts-spark"></div>
-            <div class="widget-footer"><span id="dash-charts-period" class="muted">Mês de referência</span><span class="widget-cta">Ver gráficos →</span></div>
-          </a>
+            <div class="widget-footer">
+              <span id="dash-charts-period" class="muted">&Uacute;ltimos 6 meses</span>
+              <a class="widget-cta" href="/app/charts">Ver gr&aacute;ficos &rarr;</a>
+            </div>
+          </article>
         {% else %}
-          <a class="widget-card locked" href="/app/upgrade" aria-label="Fazer upgrade para liberar gráficos">
+          <a class="widget-card locked" href="/app/upgrade" aria-label="Fazer upgrade para liberar gr?ficos">
             <div class="widget-head">
               <div class="widget-title">
                 <span class="widget-icon" aria-hidden="true">
                   <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14v4"/><path d="M12 10v8"/><path d="M17 6v12"/></svg>
                 </span>
-                <strong>Gráficos</strong>
+                <strong>Gr&aacute;ficos</strong>
               </div>
               <span class="pill">Plus</span>
             </div>
-            <p class="widget-desc">Desbloqueie gráficos mensais/anuais e distribuição por categoria.</p>
-            <div class="widget-footer"><span class="muted">Recurso bloqueado</span><span class="widget-cta">Fazer upgrade →</span></div>
+            <p class="widget-desc">Desbloqueie gr&aacute;ficos mensais/anuais e distribui&ccedil;&atilde;o por categoria.</p>
+            <div class="widget-footer"><span class="muted">Recurso bloqueado</span><span class="widget-cta">Fazer upgrade &rarr;</span></div>
           </a>
         {% endif %}
 
         {# Insights (Plus/Pro) #}
         {% if has_feature('insights') %}
-          <a class="widget-card" href="/app/insights" aria-label="Abrir insights">
+          <article class="widget-card quick-card" data-card="insights">
             <div class="widget-head">
               <div class="widget-title">
                 <span class="widget-icon" aria-hidden="true">
@@ -69,13 +85,35 @@
               </div>
               <span class="pill">Plus</span>
             </div>
-            <div class="widget-lines">
-              <div class="line"><span>Top categoria</span><strong id="dash-insights-top-cat">-</strong></div>
-              <div class="line"><span>Maior saída</span><strong id="dash-insights-top-exp">R$ 0,00</strong></div>
-              <div class="line"><span>Variação (despesas)</span><strong id="dash-insights-var">-</strong></div>
+            <div class="insight-lines">
+              <div class="insight-line" data-insight-label="Top categoria">
+                <div class="insight-main"><span>Top categoria</span><strong id="dash-insights-top-cat">-</strong></div>
+                <div class="insight-actions">
+                  <button type="button" class="chip-btn {% if not is_pro %}is-locked{% endif %}" data-insight-action="alert" {% if not is_pro %}data-locked="1" data-tooltip="Dispon&iacute;vel no Pro" aria-disabled="true"{% endif %}>Criar alerta</button>
+                  <button type="button" class="chip-btn {% if not is_pro %}is-locked{% endif %}" data-insight-action="simulate" {% if not is_pro %}data-locked="1" data-tooltip="Dispon&iacute;vel no Pro" aria-disabled="true"{% endif %}>Simular redu&ccedil;&atilde;o</button>
+                </div>
+              </div>
+              <div class="insight-line" data-insight-label="Maior sa&iacute;da">
+                <div class="insight-main"><span>Maior sa&iacute;da</span><strong id="dash-insights-top-exp">R$ 0,00</strong></div>
+                <div class="insight-actions">
+                  <button type="button" class="chip-btn {% if not is_pro %}is-locked{% endif %}" data-insight-action="alert" {% if not is_pro %}data-locked="1" data-tooltip="Dispon&iacute;vel no Pro" aria-disabled="true"{% endif %}>Criar alerta</button>
+                  <button type="button" class="chip-btn {% if not is_pro %}is-locked{% endif %}" data-insight-action="simulate" {% if not is_pro %}data-locked="1" data-tooltip="Dispon&iacute;vel no Pro" aria-disabled="true"{% endif %}>Simular redu&ccedil;&atilde;o</button>
+                </div>
+              </div>
+              <div class="insight-line" data-insight-label="Varia&ccedil;&atilde;o (despesas)">
+                <div class="insight-main"><span>Varia&ccedil;&atilde;o (despesas)</span><strong id="dash-insights-var">-</strong></div>
+                <div class="insight-actions">
+                  <button type="button" class="chip-btn {% if not is_pro %}is-locked{% endif %}" data-insight-action="alert" {% if not is_pro %}data-locked="1" data-tooltip="Dispon&iacute;vel no Pro" aria-disabled="true"{% endif %}>Criar alerta</button>
+                  <button type="button" class="chip-btn {% if not is_pro %}is-locked{% endif %}" data-insight-action="simulate" {% if not is_pro %}data-locked="1" data-tooltip="Dispon&iacute;vel no Pro" aria-disabled="true"{% endif %}>Simular redu&ccedil;&atilde;o</button>
+                </div>
+              </div>
             </div>
-            <div class="widget-footer"><span id="dash-insights-period" class="muted">Mês de referência</span><span class="widget-cta">Ver insights →</span></div>
-          </a>
+            <div class="insight-feedback" id="dash-insights-feedback">Selecione uma a&ccedil;&atilde;o para simular.</div>
+            <div class="widget-footer">
+              <span id="dash-insights-period" class="muted">M&ecirc;s de refer&ecirc;ncia</span>
+              <a class="widget-cta" href="/app/insights">Ver insights &rarr;</a>
+            </div>
+          </article>
         {% else %}
           <a class="widget-card locked" href="/app/upgrade" aria-label="Fazer upgrade para liberar insights">
             <div class="widget-head">
@@ -87,117 +125,208 @@
               </div>
               <span class="pill">Plus</span>
             </div>
-            <p class="widget-desc">Veja variações do período e onde você está gastando mais.</p>
-            <div class="widget-footer"><span class="muted">Recurso bloqueado</span><span class="widget-cta">Fazer upgrade →</span></div>
+            <p class="widget-desc">Veja varia&ccedil;&otilde;es do per&iacute;odo e onde voc&ecirc; est&aacute; gastando mais.</p>
+            <div class="widget-footer"><span class="muted">Recurso bloqueado</span><span class="widget-cta">Fazer upgrade &rarr;</span></div>
           </a>
         {% endif %}
 
-        {# Regras & Automação (Plus/Pro - feature "filters") #}
+        {# Regras & Automa??o (Plus/Pro - feature "filters") #}
         {% if has_feature('filters') %}
-          <a class="widget-card" href="/app/filters" aria-label="Abrir regras e automação">
+          <article class="widget-card quick-card" data-card="rules">
             <div class="widget-head">
               <div class="widget-title">
                 <span class="widget-icon" aria-hidden="true">
                   <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 3H2l8 9v7l4 2v-9z"/></svg>
                 </span>
-                <strong>Regras &amp; automação</strong>
+                <strong>Regras &amp; automa&ccedil;&atilde;o</strong>
               </div>
               <span class="pill">Plus</span>
             </div>
             <div class="widget-kpis">
               <div class="kpi"><span>Ativas</span><strong id="dash-rules-active">0</strong></div>
               <div class="kpi"><span>Total</span><strong id="dash-rules-total">0</strong></div>
-              <div class="kpi"><span>Execuções</span><strong id="dash-rules-runs">0</strong></div>
+              <div class="kpi"><span>Execu&ccedil;&otilde;es</span><strong id="dash-rules-runs">0</strong></div>
             </div>
-            <div class="widget-footer"><span id="dash-rules-last" class="muted">Última: -</span><span class="widget-cta">Abrir automação →</span></div>
-          </a>
+            <div class="rule-actions">
+              <button type="button" class="btn-secondary btn-small" id="dash-rule-new">Criar regra</button>
+              {% if is_pro %}
+                <a class="btn-secondary btn-small" href="/app/filters">Editar completo</a>
+              {% else %}
+                <button type="button" class="btn-secondary btn-small is-locked" data-locked="1" data-tooltip="Edi&ccedil;&atilde;o completa s&oacute; no Pro" aria-disabled="true">Editar completo</button>
+              {% endif %}
+            </div>
+            <div class="rules-list" id="dash-rules-list">
+              <div class="rules-empty">Nenhuma regra cadastrada.</div>
+            </div>
+            <div class="widget-footer">
+              <span id="dash-rules-last" class="muted">&Uacute;ltima: -</span>
+              <a class="widget-cta" href="/app/filters">Abrir automa&ccedil;&atilde;o &rarr;</a>
+            </div>
+          </article>
         {% else %}
-          <a class="widget-card locked" href="/app/upgrade" aria-label="Fazer upgrade para liberar regras e automação">
+          <a class="widget-card locked" href="/app/upgrade" aria-label="Fazer upgrade para liberar regras e automa??o">
             <div class="widget-head">
               <div class="widget-title">
                 <span class="widget-icon" aria-hidden="true">
                   <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 3H2l8 9v7l4 2v-9z"/></svg>
                 </span>
-                <strong>Regras &amp; automação</strong>
+                <strong>Regras &amp; automa&ccedil;&atilde;o</strong>
               </div>
               <span class="pill">Plus</span>
             </div>
-            <p class="widget-desc">Classifique lançamentos automaticamente por descrição, categoria e status.</p>
-            <div class="widget-footer"><span class="muted">Recurso bloqueado</span><span class="widget-cta">Fazer upgrade →</span></div>
+            <p class="widget-desc">Classifique lan&ccedil;amentos automaticamente por descri&ccedil;&atilde;o, categoria e status.</p>
+            <div class="widget-footer"><span class="muted">Recurso bloqueado</span><span class="widget-cta">Fazer upgrade &rarr;</span></div>
           </a>
         {% endif %}
 
-        {# Projeção (Pro) #}
+        {# Proje??o (Pro) #}
         {% if has_feature('projection') %}
-          <a class="widget-card" href="/app/projection" aria-label="Abrir projeção">
+          <article class="widget-card quick-card" data-card="projection">
             <div class="widget-head">
               <div class="widget-title">
                 <span class="widget-icon" aria-hidden="true">
                   <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-7"/></svg>
                 </span>
-                <strong>Projeção</strong>
+                <strong>Proje&ccedil;&atilde;o</strong>
               </div>
               <span class="pill">Pro</span>
             </div>
             <div class="widget-lines">
               <div class="line"><span>Saldo projetado</span><strong id="dash-proj-saldo">R$ 0,00</strong></div>
               <div class="line"><span>Despesas pendentes</span><strong id="dash-proj-pend">R$ 0,00</strong></div>
-              <div class="line"><span>Até</span><strong id="dash-proj-ate">-</strong></div>
+              <div class="line"><span>At&eacute;</span><strong id="dash-proj-ate">-</strong></div>
             </div>
-            <div class="widget-footer"><span id="dash-proj-ref" class="muted">Base: hoje</span><span class="widget-cta">Abrir projeção →</span></div>
-          </a>
+            <div class="simulators">
+              <div class="sim-row">
+                <span class="sim-label">Adiar despesa</span>
+                <input id="dash-proj-delay" class="control control-sm" type="number" step="0.01" placeholder="0,00" />
+                <button type="button" class="btn-secondary btn-small" data-proj-sim="delay">Simular</button>
+              </div>
+              <div class="sim-row has-two-inputs">
+                <span class="sim-label">Parcelar despesa</span>
+                <input id="dash-proj-split" class="control control-sm" type="number" step="0.01" placeholder="0,00" />
+                <input id="dash-proj-split-count" class="control control-sm" type="number" min="2" max="12" placeholder="x" />
+                <button type="button" class="btn-secondary btn-small" data-proj-sim="split">Simular</button>
+              </div>
+              <div class="sim-row">
+                <span class="sim-label">Adicionar renda extra</span>
+                <input id="dash-proj-extra" class="control control-sm" type="number" step="0.01" placeholder="0,00" />
+                <button type="button" class="btn-secondary btn-small" data-proj-sim="extra">Simular</button>
+              </div>
+            </div>
+            <div class="sim-feedback" id="dash-proj-sim-feedback">Simula&ccedil;&atilde;o desligada.</div>
+            <div class="widget-footer">
+              <span id="dash-proj-ref" class="muted">Base: hoje</span>
+              <button type="button" class="widget-cta link-btn" id="dash-proj-reset">Resetar simula&ccedil;&atilde;o</button>
+            </div>
+          </article>
         {% else %}
-          <a class="widget-card locked" href="/app/upgrade" aria-label="Fazer upgrade para liberar projeção">
+          <a class="widget-card locked" href="/app/upgrade" aria-label="Fazer upgrade para liberar proje??o">
             <div class="widget-head">
               <div class="widget-title">
                 <span class="widget-icon" aria-hidden="true">
                   <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-7"/></svg>
                 </span>
-                <strong>Projeção</strong>
+                <strong>Proje&ccedil;&atilde;o</strong>
               </div>
               <span class="pill">Pro</span>
             </div>
-            <p class="widget-desc">Simule saldo futuro, datas de pagamento e cenários do seu mês.</p>
-            <div class="widget-footer"><span class="muted">Recurso bloqueado</span><span class="widget-cta">Fazer upgrade →</span></div>
+            <p class="widget-desc">Simule saldo futuro, datas de pagamento e cen&aacute;rios do seu m&ecirc;s.</p>
+            <div class="widget-footer"><span class="muted">Recurso bloqueado</span><span class="widget-cta">Fazer upgrade &rarr;</span></div>
           </a>
         {% endif %}
 
-        {# Relatórios (Pro) #}
+        {# Relat?rios (Pro) #}
         {% if has_feature('reports') %}
-          <a class="widget-card" href="/app/reports" aria-label="Abrir relatórios">
+          <article class="widget-card quick-card" data-card="reports">
             <div class="widget-head">
               <div class="widget-title">
                 <span class="widget-icon" aria-hidden="true">
                   <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h10a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M8 7h8"/><path d="M8 11h8"/><path d="M8 15h5"/></svg>
                 </span>
-                <strong>Relatórios</strong>
+                <strong>Relat&oacute;rios</strong>
               </div>
               <span class="pill">Pro</span>
             </div>
+            <div class="report-actions">
+              <button type="button" class="btn-primary btn-small" data-report-export="pdf" data-detail="resumido">PDF resumido</button>
+              <button type="button" class="btn-secondary btn-small" data-report-export="pdf" data-detail="detalhado">PDF detalhado</button>
+              <button type="button" class="btn-secondary btn-small" data-report-export="excel">Exportar Excel</button>
+            </div>
             <div class="widget-kpis">
-              <div class="kpi"><span>Lançamentos</span><strong id="dash-rep-count">0</strong></div>
+              <div class="kpi"><span>Lan&ccedil;amentos</span><strong id="dash-rep-count">0</strong></div>
               <div class="kpi"><span>Receitas</span><strong id="dash-rep-inc">R$ 0,00</strong></div>
               <div class="kpi"><span>Despesas</span><strong id="dash-rep-exp">R$ 0,00</strong></div>
             </div>
-            <div class="widget-footer"><span id="dash-rep-period" class="muted">Mês de referência</span><span class="widget-cta">Abrir relatórios →</span></div>
-          </a>
+            <div class="widget-footer">
+              <span id="dash-rep-period" class="muted">M&ecirc;s de refer&ecirc;ncia</span>
+              <a class="widget-cta" href="/app/reports">Abrir relat&oacute;rios &rarr;</a>
+            </div>
+          </article>
         {% else %}
-          <a class="widget-card locked" href="/app/upgrade" aria-label="Fazer upgrade para liberar relatórios">
+          <article class="widget-card locked">
             <div class="widget-head">
               <div class="widget-title">
                 <span class="widget-icon" aria-hidden="true">
                   <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h10a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M8 7h8"/><path d="M8 11h8"/><path d="M8 15h5"/></svg>
                 </span>
-                <strong>Relatórios</strong>
+                <strong>Relat&oacute;rios</strong>
               </div>
               <span class="pill">Pro</span>
             </div>
-            <p class="widget-desc">Gere resumos, exporte e acompanhe evolução do orçamento com relatórios.</p>
-            <div class="widget-footer"><span class="muted">Recurso bloqueado</span><span class="widget-cta">Fazer upgrade →</span></div>
-          </a>
+            <div class="report-actions">
+              <button type="button" class="btn-primary btn-small is-locked" data-locked="1" data-tooltip="Dispon&iacute;vel no Pro" aria-disabled="true">PDF resumido</button>
+              <button type="button" class="btn-secondary btn-small is-locked" data-locked="1" data-tooltip="Dispon&iacute;vel no Pro" aria-disabled="true">PDF detalhado</button>
+              <button type="button" class="btn-secondary btn-small is-locked" data-locked="1" data-tooltip="Dispon&iacute;vel no Pro" aria-disabled="true">Exportar Excel</button>
+            </div>
+            <p class="widget-desc">Gere resumos, exporte e acompanhe evolu&ccedil;&atilde;o do or&ccedil;amento com relat&oacute;rios.</p>
+            <div class="widget-footer"><span class="muted">Recurso bloqueado</span><a class="widget-cta" href="/app/upgrade">Fazer upgrade &rarr;</a></div>
+          </article>
         {% endif %}
       </div>
     </section>
+
+    {# Modal: regra r?pida #}
+    <div id="dash-rule-modal" class="modal-overlay hidden" aria-hidden="true">
+      <div class="modal" role="dialog" aria-modal="true" aria-label="Criar regra r&aacute;pida">
+        <div class="modal-header">
+          <h3>Criar regra r&aacute;pida</h3>
+          <button id="dash-rule-close" class="modal-close" type="button" aria-label="Fechar">&times;</button>
+        </div>
+        <form id="dash-rule-form" class="modal-body">
+          <label class="field span-all">
+            <span class="field-label">Nome da regra</span>
+            <input id="dash-rule-name" type="text" class="control" placeholder="Ex.: Mercado recorrente" />
+          </label>
+          <label class="field span-all">
+            <span class="field-label">Quando a descri&ccedil;&atilde;o contiver</span>
+            <input id="dash-rule-match" type="text" class="control" placeholder="Ex.: Mercado, Uber, Sal&aacute;rio" required />
+          </label>
+          <label class="field">
+            <span class="field-label">Tipo</span>
+            <select id="dash-rule-type" class="control">
+              <option value="despesa" selected>Despesa</option>
+              <option value="receita">Receita</option>
+            </select>
+          </label>
+          <label class="field">
+            <span class="field-label">Categoria</span>
+            <select id="dash-rule-category" class="control"></select>
+          </label>
+          <label class="field span-all">
+            <span class="field-label">Tags (opcional)</span>
+            <input id="dash-rule-tags" type="text" class="control" placeholder="Ex.: fixo, trabalho" />
+          </label>
+          <div class="modal-helper span-all" id="dash-rule-helper">A regra &eacute; criada ativa e pode ser desativada depois.</div>
+          <div class="modal-actions">
+            <button id="dash-rule-cancel" type="button" class="btn-secondary">Cancelar</button>
+            <button id="dash-rule-submit" type="submit" class="btn-primary">Criar regra</button>
+          </div>
+          <div class="modal-feedback span-all" id="dash-rule-feedback" aria-live="polite"></div>
+        </form>
+      </div>
+    </div>
+
 
     <!-- RESUMO POR PERÍODO (SOMENTE MOVIMENTO NO INTERVALO) -->
     <section class="panel resumo-panel">
