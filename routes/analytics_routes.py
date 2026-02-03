@@ -3,12 +3,13 @@ from __future__ import annotations
 import csv
 import io
 import json
+import os
 import unicodedata
 from datetime import date, datetime, timedelta
 
 from sqlalchemy import func
 
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, make_response
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, make_response, current_app
 from flask_login import login_required, current_user
 
 from models.extensions import db
@@ -29,6 +30,7 @@ from services.checkout_store import (
 from services.abacatepay import create_plan_billing, get_billing_status, AbacatePayError, payment_warning_message
 from services.date_utils import last_day_of_month
 from services.subscription import apply_paid_order
+from services.reports_pdf import render_reports_pdf
 
 
 analytics_bp = Blueprint("analytics", __name__)
@@ -1419,40 +1421,41 @@ def reports_export_pdf():
         flow_limit=flow_limit,
     )
 
-    def fmt_brl(valor: float) -> str:
-        num = float(valor) if valor is not None else 0.0
-        return f"R$ {num:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-
-    def fmt_date(value: str | None) -> str:
-        if not value:
-            return "-"
-        try:
-            return date.fromisoformat(value).strftime("%d/%m/%Y")
-        except Exception:
-            return value
-
     period_label = _format_period_label(
         date.fromisoformat(payload["period"]["start"]),
         date.fromisoformat(payload["period"]["end"]),
     )
     mode_label = MODE_LABELS.get(mode, mode.title())
-    auto_print = str(request.args.get("print") or "").lower() in {"1", "true", "yes"}
+    type_label = "Ambos" if type_filter == "all" else ("Receitas" if type_filter == "income" else "Despesas")
+    status_label = "Todos" if status_filter == "all" else ("Pago/Recebido" if status_filter == "paid" else "Pendente")
+    generated_at = datetime.now().strftime("%d/%m/%Y %H:%M")
+    user_name = (getattr(current_user, "full_name", None) or current_user.email)
 
-    return render_template(
-        "reports_print.html",
-        data=payload,
-        sections=sections,
-        detail=detail,
-        period_label=period_label,
-        mode_label=mode_label,
-        generated_at=datetime.now().strftime("%d/%m/%Y %H:%M"),
-        user_name=(getattr(current_user, "full_name", None) or current_user.email),
-        auto_print=auto_print,
-        type_filter=type_filter,
-        status_filter=status_filter,
-        fmt_brl=fmt_brl,
-        fmt_date=fmt_date,
-    )
+    logo_path = os.path.join(current_app.root_path, "static", "img", "logo-recorte2.png")
+    meta = {
+        "title": "Relatorio Financeiro",
+        "user_name": user_name,
+        "period_label": period_label,
+        "mode_label": mode_label,
+        "type_label": type_label,
+        "status_label": status_label,
+        "generated_at": generated_at,
+        "logo_path": logo_path,
+    }
+
+    try:
+        pdf_bytes = render_reports_pdf(payload, sections, detail, meta)
+    except Exception:
+        current_app.logger.exception("Falha ao gerar PDF de relatorios.")
+        return "Nao foi possivel gerar o PDF agora.", 500
+
+    download = str(request.args.get("download") or "").lower() in {"1", "true", "yes"}
+    disposition = "attachment" if download else "inline"
+    response = make_response(pdf_bytes)
+    response.headers["Content-Type"] = "application/pdf"
+    response.headers["Content-Disposition"] = f"{disposition}; filename=relatorio_financeiro.pdf"
+    response.headers["Content-Length"] = str(len(pdf_bytes))
+    return response
 
 
 @analytics_bp.get("/app/reports/export/excel")

@@ -15,6 +15,13 @@
   const statusEl = document.getElementById("reports-status");
   const tabButtons = page.querySelectorAll(".tab-btn");
   const tabPanels = page.querySelectorAll(".tab-panel");
+  const pdfModal = document.getElementById("reports-pdf-modal");
+  const pdfFrame = pdfModal?.querySelector("[data-pdf-frame]");
+  const pdfPrintBtn = pdfModal?.querySelector("[data-pdf-print]");
+  const pdfDownload = pdfModal?.querySelector("[data-pdf-download]");
+  const pdfCloseEls = pdfModal?.querySelectorAll("[data-pdf-close]") || [];
+
+  let autoPrintNext = false;
 
   const summaryEls = {
     income: document.getElementById("report-total-income"),
@@ -131,6 +138,45 @@
 
   function buildQuery() {
     return buildQueryParams().toString();
+  }
+
+  function buildPdfUrl(params) {
+    return `/app/reports/export/pdf?${params.toString()}`;
+  }
+
+  function buildDownloadUrl(url) {
+    try {
+      const downloadUrl = new URL(url, window.location.origin);
+      downloadUrl.searchParams.set("download", "1");
+      return downloadUrl.toString();
+    } catch (err) {
+      return `${url}${url.includes("?") ? "&" : "?"}download=1`;
+    }
+  }
+
+  function setModalOpen(isOpen) {
+    if (!pdfModal) return;
+    pdfModal.classList.toggle("is-open", isOpen);
+    pdfModal.setAttribute("aria-hidden", isOpen ? "false" : "true");
+    document.body.classList.toggle("has-pdf-modal", isOpen);
+  }
+
+  function closePdfModal() {
+    if (!pdfModal) return;
+    setModalOpen(false);
+    if (pdfFrame) pdfFrame.src = "about:blank";
+    autoPrintNext = false;
+  }
+
+  function openPdfModal(url, options = {}) {
+    if (!pdfModal || !pdfFrame) {
+      window.open(url, "_blank");
+      return;
+    }
+    autoPrintNext = !!options.autoPrint;
+    pdfFrame.src = url;
+    if (pdfDownload) pdfDownload.href = buildDownloadUrl(url);
+    setModalOpen(true);
   }
 
   function renderSummary(data) {
@@ -559,6 +605,7 @@
   }
 
   function handleExport(action) {
+    if (locked) return;
     const params = buildQueryParams();
     const options = getExportOptions();
     if (options.sections.length) {
@@ -566,9 +613,8 @@
     }
     if (options.detail) params.set("detail", options.detail);
 
-    let url = "";
     if (action === "excel") {
-      url = `/app/reports/export/excel?${params.toString()}`;
+      const url = `/app/reports/export/excel?${params.toString()}`;
       const link = document.createElement("a");
       link.href = url;
       link.download = "";
@@ -578,11 +624,9 @@
       return;
     }
 
-    if (action === "print") {
-      params.set("print", "1");
-    }
-    url = `/app/reports/export/pdf?${params.toString()}`;
-    window.open(url, "_blank");
+    const url = buildPdfUrl(params);
+    const shouldAutoPrint = action === "print";
+    openPdfModal(url, { autoPrint: shouldAutoPrint });
   }
 
   const controls = page.querySelectorAll(".reports-filters .control, .reports-range .control");
@@ -597,6 +641,40 @@
 
   page.querySelectorAll("[data-export]").forEach(btn => {
     btn.addEventListener("click", () => handleExport(btn.dataset.export));
+  });
+
+  if (pdfFrame) {
+    pdfFrame.addEventListener("load", () => {
+      if (!autoPrintNext) return;
+      autoPrintNext = false;
+      window.setTimeout(() => {
+        try {
+          pdfFrame.contentWindow?.focus();
+          pdfFrame.contentWindow?.print();
+        } catch (err) {
+          // ignore
+        }
+      }, 200);
+    });
+  }
+
+  pdfPrintBtn?.addEventListener("click", () => {
+    try {
+      pdfFrame?.contentWindow?.focus();
+      pdfFrame?.contentWindow?.print();
+    } catch (err) {
+      // ignore
+    }
+  });
+
+  pdfCloseEls.forEach(el => {
+    el.addEventListener("click", closePdfModal);
+  });
+
+  document.addEventListener("keydown", (ev) => {
+    if (ev.key === "Escape" && pdfModal?.classList.contains("is-open")) {
+      closePdfModal();
+    }
   });
 
   const initialTab = page.querySelector(".tab-btn.is-active")?.dataset.tab || tabButtons[0]?.dataset.tab;
