@@ -17,11 +17,7 @@
   const tabPanels = page.querySelectorAll(".tab-panel");
   const pdfModal = document.getElementById("reports-pdf-modal");
   const pdfFrame = pdfModal?.querySelector("[data-pdf-frame]");
-  const pdfPrintBtn = pdfModal?.querySelector("[data-pdf-print]");
-  const pdfDownload = pdfModal?.querySelector("[data-pdf-download]");
   const pdfCloseEls = pdfModal?.querySelectorAll("[data-pdf-close]") || [];
-
-  let autoPrintNext = false;
 
   const summaryEls = {
     income: document.getElementById("report-total-income"),
@@ -144,16 +140,6 @@
     return `/app/reports/export/pdf?${params.toString()}`;
   }
 
-  function buildDownloadUrl(url) {
-    try {
-      const downloadUrl = new URL(url, window.location.origin);
-      downloadUrl.searchParams.set("download", "1");
-      return downloadUrl.toString();
-    } catch (err) {
-      return `${url}${url.includes("?") ? "&" : "?"}download=1`;
-    }
-  }
-
   function setModalOpen(isOpen) {
     if (!pdfModal) return;
     pdfModal.classList.toggle("is-open", isOpen);
@@ -165,17 +151,14 @@
     if (!pdfModal) return;
     setModalOpen(false);
     if (pdfFrame) pdfFrame.src = "about:blank";
-    autoPrintNext = false;
   }
 
-  function openPdfModal(url, options = {}) {
+  function openPdfModal(url) {
     if (!pdfModal || !pdfFrame) {
       window.open(url, "_blank");
       return;
     }
-    autoPrintNext = !!options.autoPrint;
     pdfFrame.src = url;
-    if (pdfDownload) pdfDownload.href = buildDownloadUrl(url);
     setModalOpen(true);
   }
 
@@ -625,8 +608,7 @@
     }
 
     const url = buildPdfUrl(params);
-    const shouldAutoPrint = action === "print";
-    openPdfModal(url, { autoPrint: shouldAutoPrint });
+    openPdfModal(url);
   }
 
   const controls = page.querySelectorAll(".reports-filters .control, .reports-range .control");
@@ -641,30 +623,6 @@
 
   page.querySelectorAll("[data-export]").forEach(btn => {
     btn.addEventListener("click", () => handleExport(btn.dataset.export));
-  });
-
-  if (pdfFrame) {
-    pdfFrame.addEventListener("load", () => {
-      if (!autoPrintNext) return;
-      autoPrintNext = false;
-      window.setTimeout(() => {
-        try {
-          pdfFrame.contentWindow?.focus();
-          pdfFrame.contentWindow?.print();
-        } catch (err) {
-          // ignore
-        }
-      }, 200);
-    });
-  }
-
-  pdfPrintBtn?.addEventListener("click", () => {
-    try {
-      pdfFrame?.contentWindow?.focus();
-      pdfFrame?.contentWindow?.print();
-    } catch (err) {
-      // ignore
-    }
   });
 
   pdfCloseEls.forEach(el => {

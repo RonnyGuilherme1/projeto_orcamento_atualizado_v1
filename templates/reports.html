@@ -352,20 +352,11 @@
       </div>
     {% endif %}
 
-    <div class="reports-pdf-modal" id="reports-pdf-modal" aria-hidden="true">
-      <div class="reports-pdf-backdrop" data-pdf-close></div>
-      <div class="reports-pdf-dialog" role="dialog" aria-modal="true" aria-label="Imprimir relatório">
-        <div class="reports-pdf-toolbar">
-          <div class="reports-pdf-title">Imprimir relatório</div>
-          <div class="reports-pdf-actions">
-            <button class="btn-secondary" type="button" data-pdf-print>Imprimir</button>
-            <a class="btn-secondary" href="#" data-pdf-download download>Baixar PDF</a>
-            <button class="btn-secondary" type="button" data-pdf-close>Fechar</button>
-          </div>
-        </div>
-        <div class="reports-pdf-body">
-          <iframe class="reports-pdf-frame" data-pdf-frame title="Pré-visualização do relatório"></iframe>
-        </div>
+    <div class="pdf-modal" id="reports-pdf-modal" aria-hidden="true">
+      <div class="pdf-backdrop" data-pdf-close></div>
+      <div class="pdf-shell" role="dialog" aria-modal="true" aria-label="Pré-visualização do relatório">
+        <button class="pdf-close" type="button" aria-label="Fechar" data-pdf-close>&times;</button>
+        <iframe class="pdf-frame" data-pdf-frame title="Pré-visualização do relatório"></iframe>
       </div>
     </div>
   </div>

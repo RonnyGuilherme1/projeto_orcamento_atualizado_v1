@@ -13,9 +13,9 @@ from reportlab.lib.units import mm
 from reportlab.lib.utils import ImageReader
 from reportlab.pdfgen import canvas
 from reportlab.platypus import (
+    KeepTogether,
     ListFlowable,
     ListItem,
-    PageBreak,
     Paragraph,
     SimpleDocTemplate,
     Spacer,
@@ -25,8 +25,8 @@ from reportlab.platypus import (
 
 
 PAGE_MARGIN = 16 * mm
-HEADER_SPACE = 20 * mm
-FOOTER_SPACE = 12 * mm
+HEADER_SPACE = 14 * mm
+FOOTER_SPACE = 10 * mm
 TOP_MARGIN = PAGE_MARGIN + HEADER_SPACE
 BOTTOM_MARGIN = PAGE_MARGIN + FOOTER_SPACE
 
@@ -246,10 +246,24 @@ def render_reports_pdf(payload: dict, sections: set[str], detail: str, meta: dic
     if not ordered_sections:
         ordered_sections = ["summary", "dre", "flow"]
 
+    def add_section_gap():
+        if story:
+            story.append(Spacer(1, 12))
+
+    def add_section_header(title: str, subtitle: str):
+        story.append(
+            KeepTogether(
+                [
+                    Paragraph(title, styles["SectionTitle"]),
+                    Paragraph(subtitle, styles["SectionSubtitle"]),
+                ]
+            )
+        )
+
     summary = payload.get("summary", {})
     if "summary" in ordered_sections:
-        story.append(Paragraph("Resumo executivo", styles["SectionTitle"]))
-        story.append(Paragraph("Indicadores gerenciais do periodo selecionado.", styles["SectionSubtitle"]))
+        add_section_gap()
+        add_section_header("Resumo executivo", "Indicadores gerenciais do periodo selecionado.")
 
         net_value = float(summary.get("net") or 0.0)
         economy_pct = summary.get("economy_pct") or 0.0
@@ -281,7 +295,7 @@ def render_reports_pdf(payload: dict, sections: set[str], detail: str, meta: dic
             )
         )
         story.append(kpi_table)
-        story.append(Spacer(1, 10))
+        story.append(Spacer(1, 8))
 
         notes: list[str] = []
         notes.append(f"Resultado liquido de {_fmt_brl(net_value)} no periodo.")
@@ -312,16 +326,9 @@ def render_reports_pdf(payload: dict, sections: set[str], detail: str, meta: dic
             )
         )
 
-    def maybe_page_break(section_key: str):
-        if section_key in ordered_sections and section_key != ordered_sections[-1]:
-            story.append(PageBreak())
-
-    if "summary" in ordered_sections:
-        maybe_page_break("summary")
-
     if "dre" in ordered_sections:
-        story.append(Paragraph("DRE", styles["SectionTitle"]))
-        story.append(Paragraph("Demonstrativo por categoria.", styles["SectionSubtitle"]))
+        add_section_gap()
+        add_section_header("DRE", "Demonstrativo por categoria.")
         dre_rows = payload.get("dre", {}).get("rows") or []
         dre_total = payload.get("dre", {}).get("total") or {}
         if not dre_rows:
@@ -355,12 +362,10 @@ def render_reports_pdf(payload: dict, sections: set[str], detail: str, meta: dic
                 )
             col_widths = [doc.width * 0.45, doc.width * 0.18, doc.width * 0.18, doc.width * 0.19]
             story.append(make_table(rows, col_widths, right_cols={1, 2, 3}))
-        maybe_page_break("dre")
-
     if "flow" in ordered_sections:
         suffix = " (resumido)" if detail == "resumido" else ""
-        story.append(Paragraph(f"Fluxo de caixa{suffix}", styles["SectionTitle"]))
-        story.append(Paragraph("Movimentacoes cronologicas com saldo acumulado.", styles["SectionSubtitle"]))
+        add_section_gap()
+        add_section_header(f"Fluxo de caixa{suffix}", "Movimentacoes cronologicas com saldo acumulado.")
         flow_rows = payload.get("flow", {}).get("rows") or []
         final_balance = payload.get("flow", {}).get("final_balance")
         if not flow_rows:
@@ -411,11 +416,9 @@ def render_reports_pdf(payload: dict, sections: set[str], detail: str, meta: dic
                 doc.width * 0.12,
             ]
             story.append(make_table(rows, col_widths, right_cols={4, 5, 6}))
-        maybe_page_break("flow")
-
     if "categories" in ordered_sections:
-        story.append(Paragraph("Categorias", styles["SectionTitle"]))
-        story.append(Paragraph("Distribuicao percentual das despesas.", styles["SectionSubtitle"]))
+        add_section_gap()
+        add_section_header("Categorias", "Distribuicao percentual das despesas.")
         category_rows = payload.get("categories", {}).get("rows") or []
         if not category_rows:
             story.append(Paragraph("Sem dados no periodo.", styles["BodySmall"]))
@@ -443,11 +446,9 @@ def render_reports_pdf(payload: dict, sections: set[str], detail: str, meta: dic
                 )
             col_widths = [doc.width * 0.44, doc.width * 0.2, doc.width * 0.18, doc.width * 0.18]
             story.append(make_table(rows, col_widths, right_cols={1, 2, 3}))
-        maybe_page_break("categories")
-
     if "recurring" in ordered_sections:
-        story.append(Paragraph("Recorrencias", styles["SectionTitle"]))
-        story.append(Paragraph("Receitas recorrentes detectadas.", styles["SectionSubtitle"]))
+        add_section_gap()
+        add_section_header("Recorrencias", "Receitas recorrentes detectadas.")
         recurring_items = payload.get("recurring", {}).get("items") or []
         if not recurring_items:
             story.append(Paragraph("Sem recorrencias no periodo.", styles["BodySmall"]))
@@ -473,11 +474,9 @@ def render_reports_pdf(payload: dict, sections: set[str], detail: str, meta: dic
                 )
             col_widths = [doc.width * 0.44, doc.width * 0.2, doc.width * 0.18, doc.width * 0.18]
             story.append(make_table(rows, col_widths, right_cols={2, 3}))
-        maybe_page_break("recurring")
-
     if "pending" in ordered_sections:
-        story.append(Paragraph("Pendencias", styles["SectionTitle"]))
-        story.append(Paragraph("Despesas nao pagas no periodo.", styles["SectionSubtitle"]))
+        add_section_gap()
+        add_section_header("Pendencias", "Despesas nao pagas no periodo.")
         pending_items = payload.get("pending", {}).get("items") or []
         if not pending_items:
             story.append(Paragraph("Sem pendencias no periodo.", styles["BodySmall"]))
