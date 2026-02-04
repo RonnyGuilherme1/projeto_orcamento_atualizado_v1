@@ -7,9 +7,9 @@
 
 {% block content %}
   {% set plan = PLANS.get(order.plan, PLANS['basic']) %}
-  {% set back_url = back_url or url_for('analytics.upgrade') %}
+  {% set back_url = url_for('analytics.upgrade') %}
   {% set status_url = status_url or url_for('analytics.upgrade_status', token=order.token) %}
-  {% set status_label = 'Pago' if order.status == 'PAID' else 'Pendente' if order.status == 'PENDING' else order.status %}
+  {% set status_label = 'Confirmado' if order.status == 'PAID' else 'Pendente' if order.status == 'PENDING' else order.status %}
 
   <div class="app-card upgrade-return">
     <div class="upgrade-return-hero">
@@ -20,14 +20,9 @@
           Assim que a confirmação chegar, o seu plano será atualizado automaticamente.
         </p>
       </div>
-      <div class="upgrade-return-plan">
-        <span class="upgrade-return-plan-label">Plano selecionado</span>
-        <span class="upgrade-return-plan-pill">{{ plan['name'] }}</span>
-        <span class="upgrade-return-plan-price">R$ {{ '%.2f'|format(plan['price_month']) }} / mês</span>
-      </div>
     </div>
 
-    <div class="upgrade-return-panel">
+    <div class="upgrade-return-grid">
       <div class="upgrade-return-status-card">
         <div class="upgrade-return-status-head">
           <span class="status-label">Status do pagamento</span>
@@ -50,6 +45,12 @@
           aguarde alguns minutos e tente novamente.
         </p>
         <p id="status-warning" class="upgrade-return-warning" style="display:none;"></p>
+      </div>
+
+      <div class="upgrade-return-plan">
+        <span class="upgrade-return-plan-label">Plano selecionado</span>
+        <span class="upgrade-return-plan-pill">{{ plan['name'] }}</span>
+        <span class="upgrade-return-plan-price">R$ {{ '%.2f'|format(plan['price_month']) }} / mês</span>
       </div>
 
       <div class="upgrade-return-steps">
@@ -82,7 +83,7 @@
         <div>Valor</div>
       </div>
       {% for item in billing_history %}
-        {% set item_status_label = 'Pago' if item.status == 'PAID' else 'Pendente' if item.status == 'PENDING' else item.status %}
+        {% set item_status_label = 'Confirmado' if item.status == 'PAID' else 'Pendente' if item.status == 'PENDING' else item.status %}
         <div class="history-row">
           <div>{{ item.date }}</div>
           <div>{{ item.plan }}</div>
@@ -112,7 +113,7 @@
 
       function statusLabel(rawStatus) {
         const status = String(rawStatus || '').toUpperCase();
-        if (status === 'PAID') return 'Pago';
+        if (status === 'PAID') return 'Confirmado';
         if (status === 'PENDING') return 'Pendente';
         return rawStatus || '';
       }

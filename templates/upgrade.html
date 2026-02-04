@@ -27,7 +27,7 @@
   <section class="plan-grid" id="planos">
     {% for key, plan in PLANS.items() %}
       {% set is_current = current_plan == key %}
-      <article class="plan-card {% if plan.get('popular') %}plan-popular{% endif %}">
+      <article class="plan-card {% if plan.get('popular') %}plan-popular{% endif %} {% if is_current %}plan-current{% endif %}">
         {% if plan.get('badge') %}
           <div class="plan-badge">{{ plan['badge'] }}</div>
           {% if plan.get('badge_sub') %}<div class="plan-badge-sub">{{ plan['badge_sub'] }}</div>{% endif %}
@@ -74,12 +74,7 @@
           {% if is_current %}
             <button class="btn-secondary" type="button" disabled>Plano atual</button>
           {% else %}
-            {% if current_plan == 'basic' and key != 'basic' %}
-              {% set cta_label = 'Assinar ' ~ plan['name'] %}
-            {% else %}
-              {% set cta_label = 'Trocar para ' ~ plan['name'] %}
-            {% endif %}
-            <a class="btn-primary" href="{{ url_for('analytics.upgrade_checkout_page', plan=key) }}">{{ cta_label }}</a>
+            <a class="btn-primary" href="{{ url_for('analytics.upgrade_checkout_page', plan=key) }}">Trocar para {{ plan['name'] }}</a>
           {% endif %}
           <a class="btn-ghost" href="#comparativo">Ver comparação</a>
         </div>
@@ -144,12 +139,5 @@
       </table>
     </div>
 
-    <div class="compare-note">
-      <strong>Observação:</strong>
-      <span>
-        Para iniciar o checkout é necessário ter <b>conta verificada</b> e dados completos (nome, CPF/CNPJ e telefone).
-        Isso garante ativação automática no seu usuário.
-      </span>
-    </div>
   </section>
 {% endblock %}
