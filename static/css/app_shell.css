@@ -538,6 +538,9 @@ body.app-body input[type="number"]::-webkit-outer-spin-button {
 .notifications-list {
   display: grid;
   gap: 10px;
+  max-height: min(360px, 60vh);
+  overflow-y: auto;
+  padding-right: 2px;
 }
 
 .notification-item {

@@ -1946,6 +1946,9 @@ body.app-body .notification-clear:hover{
 body.app-body .notifications-list{
   display: grid;
   gap: 10px;
+  max-height: min(360px, 60vh);
+  overflow-y: auto;
+  padding-right: 2px;
 }
 
 body.app-body .notification-link{
