@@ -1,4 +1,5 @@
 import os
+from datetime import timedelta
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -11,8 +12,30 @@ def _env_bool(name: str, default: bool = False) -> bool:
 
 
 class Config:
+    # Ambiente (opcional) - use para rotular logs/UX
+    APP_ENV = (
+        os.getenv("APP_ENV")
+        or os.getenv("FLASK_ENV")
+        or os.getenv("ENV")
+        or "development"
+    ).lower()
+    IS_PRODUCTION = APP_ENV in {"prod", "production"} or os.getenv("RENDER") == "true" or bool(os.getenv("RENDER_EXTERNAL_URL"))
+
+    def _is_weak_secret(value: str) -> bool:
+        if not value:
+            return True
+        if value == "dev-secret-change-me":
+            return True
+        if len(value) < 32:
+            return True
+        return False
+
     # Essencial para sessão/login/flash
-    SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-change-me")
+    SECRET_KEY = os.getenv("SECRET_KEY", "")
+    if not SECRET_KEY:
+        SECRET_KEY = "dev-secret-change-me"
+    if IS_PRODUCTION and _is_weak_secret(SECRET_KEY):
+        raise RuntimeError("SECRET_KEY ausente ou fraco em produção.")
 
     # Banco:
     # - Local: sqlite
@@ -70,9 +93,20 @@ class Config:
             "timeout": int(os.getenv("SQLITE_TIMEOUT", "30")),
         }
 
-    # Ambiente (opcional) - use para rotular logs/UX
-    APP_ENV = (os.getenv("APP_ENV") or os.getenv("FLASK_ENV") or os.getenv("ENV") or "development").lower()
-    IS_PRODUCTION = APP_ENV in {"prod", "production"} or os.getenv("RENDER") == "true" or bool(os.getenv("RENDER_EXTERNAL_URL"))
+    DEBUG = _env_bool("DEBUG", default=not IS_PRODUCTION)
+    if IS_PRODUCTION:
+        DEBUG = False
+    TESTING = _env_bool("TESTING", default=False)
+
+    # Sessão / cookies
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = os.getenv("SESSION_COOKIE_SAMESITE", "Lax")
+    SESSION_COOKIE_SECURE = IS_PRODUCTION
+    REMEMBER_COOKIE_SECURE = IS_PRODUCTION
+    REMEMBER_COOKIE_HTTPONLY = True
+    REMEMBER_COOKIE_SAMESITE = os.getenv("REMEMBER_COOKIE_SAMESITE", "Lax")
+    PERMANENT_SESSION_LIFETIME = timedelta(days=int(os.getenv("SESSION_LIFETIME_DAYS", "7")))
+    PREFERRED_URL_SCHEME = "https" if IS_PRODUCTION else "http"
 
     # URL pública do app (Render). Ex: https://seuapp.onrender.com
     _app_base_url = os.getenv("APP_BASE_URL")
@@ -96,8 +130,10 @@ class Config:
 
     # AbacatePay
     ABACATEPAY_API_KEY = os.getenv("ABACATEPAY_API_KEY", "")
-    # Secret configurado na URL do webhook (query param webhookSecret)
+    # Secret configurado no webhook (header ou query param, conforme provedor)
     ABACATEPAY_WEBHOOK_SECRET = os.getenv("ABACATEPAY_WEBHOOK_SECRET", "")
+    if IS_PRODUCTION and not ABACATEPAY_WEBHOOK_SECRET:
+        raise RuntimeError("ABACATEPAY_WEBHOOK_SECRET deve estar configurado em produção.")
     # Habilita cartao (beta) no checkout.
     ABACATEPAY_CARD_ENABLED = os.getenv("ABACATEPAY_CARD_ENABLED", "").lower() in {
         "1",
@@ -106,4 +142,17 @@ class Config:
     }
     SUBSCRIPTION_CYCLE_DAYS = int(os.getenv("SUBSCRIPTION_CYCLE_DAYS", "30"))
 
-    ABACATEPAY_DEV_MODE = _env_bool("ABACATEPAY_DEV_MODE", default=True)
+    ABACATEPAY_DEV_MODE = _env_bool("ABACATEPAY_DEV_MODE", default=not IS_PRODUCTION)
+
+    # HSTS (aplicar somente quando HTTPS for garantido)
+    HSTS_ENABLED = _env_bool("HSTS_ENABLED", default=False)
+    HSTS_INCLUDE_SUBDOMAINS = _env_bool("HSTS_INCLUDE_SUBDOMAINS", default=True)
+    HSTS_PRELOAD = _env_bool("HSTS_PRELOAD", default=False)
+
+    # Rate limiting (em memória - produção multi-instância exige Redis)
+    RATE_LIMIT_LOGIN = int(os.getenv("RATE_LIMIT_LOGIN", "10"))
+    RATE_LIMIT_LOGIN_WINDOW = int(os.getenv("RATE_LIMIT_LOGIN_WINDOW", "900"))
+    RATE_LIMIT_REGISTER = int(os.getenv("RATE_LIMIT_REGISTER", "5"))
+    RATE_LIMIT_REGISTER_WINDOW = int(os.getenv("RATE_LIMIT_REGISTER_WINDOW", "3600"))
+    RATE_LIMIT_RESEND_VERIFICATION = int(os.getenv("RATE_LIMIT_RESEND_VERIFICATION", "3"))
+    RATE_LIMIT_RESEND_VERIFICATION_WINDOW = int(os.getenv("RATE_LIMIT_RESEND_VERIFICATION_WINDOW", "900"))

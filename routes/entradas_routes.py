@@ -10,6 +10,17 @@ from models.entrada_model import Entrada
 from services.date_utils import last_day_of_month
 from services.rules_engine import apply_rules_to_entry, normalize_tags
 from services.permissions import require_api_access, json_error
+from services.input_validation import (
+    MAX_DESCRIPTION_LEN,
+    MAX_TAGS_LEN,
+    normalize_method,
+    normalize_priority,
+    normalize_status,
+    normalize_text,
+    normalize_tipo,
+    parse_amount,
+    parse_iso_date,
+)
 
 entradas_bp = Blueprint("entradas", __name__)
 
@@ -39,6 +50,55 @@ def _normalize_categoria(tipo: str | None, value: str | None) -> str:
     if categoria not in allowed:
         return "outros"
     return categoria
+
+
+def _validate_entry_payload(payload: dict) -> tuple[dict | None, str | None]:
+    tipo = normalize_tipo(payload.get("tipo"))
+    if not tipo:
+        return None, "invalid_tipo"
+
+    data_dt = parse_iso_date(payload.get("data"))
+    if not data_dt:
+        return None, "invalid_data"
+
+    descricao = normalize_text(payload.get("descricao"), max_len=MAX_DESCRIPTION_LEN, min_len=1)
+    if not descricao:
+        return None, "invalid_descricao"
+
+    valor = parse_amount(payload.get("valor"))
+    if valor is None:
+        return None, "invalid_valor"
+
+    raw_status = payload.get("status")
+    status = normalize_status(tipo, raw_status)
+    if raw_status not in (None, "") and status is None:
+        return None, "invalid_status"
+
+    if tipo == "despesa":
+        status = status or "em_andamento"
+
+    raw_metodo = payload.get("metodo")
+    metodo = normalize_method(raw_metodo)
+    if raw_metodo not in (None, "") and metodo is None:
+        return None, "invalid_metodo"
+
+    tags = normalize_tags(payload.get("tags"))
+    if tags and len(tags) > MAX_TAGS_LEN:
+        return None, "invalid_tags"
+
+    priority = normalize_priority(payload.get("priority"))
+
+    return {
+        "tipo": tipo,
+        "data": data_dt,
+        "descricao": descricao,
+        "valor": valor,
+        "status": status,
+        "metodo": metodo,
+        "tags": tags,
+        "priority": priority,
+        "categoria": _normalize_categoria(tipo, payload.get("categoria")),
+    }, None
 
 
 @entradas_bp.route("/dados")
@@ -96,44 +156,38 @@ def dados():
 def add():
 
     payload = request.json or {}
-    tipo = payload.get("tipo")
-    data_str = payload.get("data")
-    descricao = (payload.get("descricao") or "").strip()
-    categoria = _normalize_categoria(tipo, payload.get("categoria"))
-    try:
-        valor = float(payload.get("valor") or 0)
-    except (TypeError, ValueError):
-        return json_error("invalid_payload", 422)
-    status = payload.get("status")
-    metodo = (payload.get("metodo") or "").strip().lower() or None
-    tags = normalize_tags(payload.get("tags"))
+    clean, error = _validate_entry_payload(payload)
+    if error:
+        return json_error(error, 422)
 
-    if not tipo or not data_str or not descricao:
-        return json_error("invalid_payload", 422)
-
-    try:
-        data_dt = datetime.strptime(data_str, "%Y-%m-%d").date()
-    except ValueError:
-        return json_error("invalid_payload", 422)
-
-    if tipo == "receita":
-        status = None
-    else:
-        status = status or "em_andamento"
+    tipo = clean["tipo"]
+    data_dt = clean["data"]
+    descricao = clean["descricao"]
+    categoria = clean["categoria"]
+    valor = clean["valor"]
+    status = clean["status"]
+    metodo = clean["metodo"]
+    tags = clean["tags"]
+    priority = clean["priority"]
 
     paid_at = None
     received_at = None
-    if tipo != "receita" and status == "pago":
-        # CORREÇÃO:
-        # Se criar já como pago e o front não mandar paid_at, assume a própria data da despesa.
-        paid_at_str = payload.get("paid_at")
-        if paid_at_str:
-            try:
-                paid_at = datetime.strptime(paid_at_str, "%Y-%m-%d").date()
-            except ValueError:
-                return json_error("invalid_payload", 422)
+    if tipo == "receita":
+        if status == "recebido":
+            received_at = data_dt
         else:
-            paid_at = data_dt
+            status = None
+    else:
+        if status == "pago":
+            # CORREÇÃO:
+            # Se criar já como pago e o front não mandar paid_at, assume a própria data da despesa.
+            paid_at_str = payload.get("paid_at")
+            if paid_at_str:
+                paid_at = parse_iso_date(paid_at_str)
+                if not paid_at:
+                    return json_error("invalid_paid_at", 422)
+            else:
+                paid_at = data_dt
 
     e = Entrada(
         user_id=current_user.id,
@@ -147,7 +201,7 @@ def add():
         status=status,
         paid_at=paid_at,
         received_at=received_at,
-        priority=(payload.get('priority') or 'media'),
+        priority=priority,
     )
 
     db.session.add(e)
@@ -168,40 +222,33 @@ def edit(entrada_id):
     if not e:
         return jsonify({"error": "Not found"}), 404
 
-    tipo = payload.get("tipo")
-    data_str = payload.get("data")
-    descricao = (payload.get("descricao") or "").strip()
-    categoria = _normalize_categoria(tipo, payload.get("categoria"))
-    try:
-        valor = float(payload.get("valor") or 0)
-    except (TypeError, ValueError):
-        return json_error("invalid_payload", 422)
-    status = payload.get("status")
-    metodo = (payload.get("metodo") or "").strip().lower() or None
-    tags = normalize_tags(payload.get("tags"))
+    clean, error = _validate_entry_payload(payload)
+    if error:
+        return json_error(error, 422)
 
-    if not tipo or not data_str or not descricao:
-        return json_error("invalid_payload", 422)
+    tipo = clean["tipo"]
+    status = clean["status"]
 
-    try:
-        e.data = datetime.strptime(data_str, "%Y-%m-%d").date()
-    except ValueError:
-        return json_error("invalid_payload", 422)
+    e.data = clean["data"]
     e.tipo = tipo
-    e.descricao = descricao
-    e.categoria = categoria
-    e.valor = valor
+    e.descricao = clean["descricao"]
+    e.categoria = clean["categoria"]
+    e.valor = clean["valor"]
     if "metodo" in payload:
-        e.metodo = metodo
+        e.metodo = clean["metodo"]
     if "tags" in payload:
-        e.tags = tags
+        e.tags = clean["tags"]
     if "priority" in payload:
-        e.priority = payload.get("priority") or e.priority
+        e.priority = clean["priority"] or e.priority
 
     if tipo == "receita":
-        e.status = None
+        if status == "recebido":
+            e.status = "recebido"
+            e.received_at = e.data
+        else:
+            e.status = None
+            e.received_at = None
         e.paid_at = None
-        e.received_at = None
     else:
         old_status = e.status
         new_status = status or "em_andamento"
@@ -211,10 +258,10 @@ def edit(entrada_id):
             paid_at_str = payload.get("paid_at")
 
             if paid_at_str:
-                try:
-                    e.paid_at = datetime.strptime(paid_at_str, "%Y-%m-%d").date()
-                except ValueError:
-                    return json_error("invalid_payload", 422)
+                paid_at = parse_iso_date(paid_at_str)
+                if not paid_at:
+                    return json_error("invalid_paid_at", 422)
+                e.paid_at = paid_at
             else:
                 # CORREÇÃO PRINCIPAL:
                 # Se o front não manda paid_at, assume a própria data da despesa (vencimento/data planejada).

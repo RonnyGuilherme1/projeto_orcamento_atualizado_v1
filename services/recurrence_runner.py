@@ -43,8 +43,15 @@ def run_recurrence_once(rec: Recurrence, user, run_date: date | None = None) -> 
     if existing:
         return False, existing
 
-    status = rec.status if rec.tipo == "despesa" else None
-    paid_at = run_date if (rec.tipo == "despesa" and status == "pago") else None
+    status = None
+    paid_at = None
+    received_at = None
+    if rec.tipo == "despesa":
+        status = rec.status
+        paid_at = run_date if status == "pago" else None
+    elif rec.tipo == "receita" and rec.status == "recebido":
+        status = "recebido"
+        received_at = run_date
 
     entry = Entrada(
         user_id=user.id,
@@ -55,6 +62,7 @@ def run_recurrence_once(rec: Recurrence, user, run_date: date | None = None) -> 
         valor=float(rec.valor or 0),
         status=status,
         paid_at=paid_at,
+        received_at=received_at,
         metodo=rec.metodo,
         tags=rec.tags,
         recurrence_id=rec.id,

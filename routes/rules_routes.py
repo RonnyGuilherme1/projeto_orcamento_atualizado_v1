@@ -12,6 +12,16 @@ from models.recurrence_model import Recurrence
 from models.reminder_model import Reminder
 from models.extensions import db
 from services.permissions import require_api_access, json_error
+from services.input_validation import (
+    MAX_DESCRIPTION_LEN,
+    MAX_NAME_LEN,
+    MAX_TAGS_LEN,
+    normalize_method,
+    normalize_status,
+    normalize_text,
+    normalize_tipo,
+    parse_amount,
+)
 from services.recurrence_runner import run_recurrence_once
 from services.reminder_runner import fetch_reminder_entries
 from services.rules_engine import apply_rule_to_entry, normalize_category, normalize_tags
@@ -51,6 +61,26 @@ def _safe_float(value, default=None):
         return float(value)
     except (TypeError, ValueError):
         return default
+
+
+def _normalize_frequency(value: str | None) -> str:
+    raw = (value or "monthly").strip().lower()
+    mapping = {
+        "mensal": "monthly",
+        "semanal": "weekly",
+        "anual": "yearly",
+        "diario": "daily",
+    }
+    raw = mapping.get(raw, raw)
+    if raw in {"daily", "weekly", "monthly", "yearly"}:
+        return raw
+    return "monthly"
+
+
+def _parse_optional_amount(value):
+    if value in (None, ""):
+        return None
+    return parse_amount(value)
 
 
 def _safe_list(value) -> list[dict]:
@@ -322,34 +352,101 @@ def rule_log(rule_id: int):
     return jsonify({"ok": True, "executions": items})
 
 
-def _apply_recurrence_payload(rec: Recurrence, payload: dict) -> None:
-    rec.name = (payload.get("name") or "Nova recorrencia").strip()
+def _apply_recurrence_payload(rec: Recurrence, payload: dict) -> str | None:
+    name = normalize_text(payload.get("name") or "Nova recorrencia", max_len=MAX_NAME_LEN, min_len=1)
+    if not name:
+        return "invalid_name"
+
+    tipo = normalize_tipo(payload.get("tipo") or "despesa")
+    if not tipo:
+        return "invalid_tipo"
+
+    descricao = normalize_text(payload.get("descricao") or name, max_len=MAX_DESCRIPTION_LEN, min_len=1)
+    if not descricao:
+        return "invalid_descricao"
+
+    valor = parse_amount(payload.get("valor"))
+    if valor is None:
+        return "invalid_valor"
+
+    raw_status = payload.get("status")
+    status = normalize_status(tipo, raw_status)
+    if raw_status not in (None, "") and status is None:
+        return "invalid_status"
+    if tipo != "despesa":
+        status = status if status == "recebido" else None
+
+    raw_metodo = payload.get("metodo")
+    metodo = normalize_method(raw_metodo)
+    if raw_metodo not in (None, "") and metodo is None:
+        return "invalid_metodo"
+
+    tags = normalize_tags(payload.get("tags"))
+    if tags and len(tags) > MAX_TAGS_LEN:
+        return "invalid_tags"
+
+    rec.name = name
     rec.is_enabled = _parse_bool(payload.get("is_enabled"), True)
-    rec.frequency = (payload.get("frequency") or "monthly").strip().lower()
+    rec.frequency = _normalize_frequency(payload.get("frequency"))
     rec.day_of_month = max(1, min(31, _parse_int(payload.get("day_of_month"), 1)))
 
-    rec.tipo = (payload.get("tipo") or "despesa").strip().lower()
-    rec.descricao = (payload.get("descricao") or "").strip() or rec.name
-    rec.categoria = normalize_category(rec.tipo, payload.get("categoria"))
-    rec.valor = _safe_float(payload.get("valor"), 0.0) or 0.0
+    rec.tipo = tipo
+    rec.descricao = descricao
+    rec.categoria = normalize_category(tipo, payload.get("categoria"))
+    rec.valor = valor
 
-    rec.status = (payload.get("status") or "").strip().lower() or None
-    rec.metodo = (payload.get("metodo") or "").strip().lower() or None
-    rec.tags = normalize_tags(payload.get("tags"))
+    rec.status = status
+    rec.metodo = metodo
+    rec.tags = tags
+    return None
 
 
-def _apply_reminder_payload(rem: Reminder, payload: dict) -> None:
-    rem.name = (payload.get("name") or "Novo lembrete").strip()
+def _apply_reminder_payload(rem: Reminder, payload: dict) -> str | None:
+    name = normalize_text(payload.get("name") or "Novo lembrete", max_len=MAX_NAME_LEN, min_len=1)
+    if not name:
+        return "invalid_name"
+
+    raw_tipo = (payload.get("tipo") or "").strip()
+    tipo = None
+    if raw_tipo:
+        tipo = normalize_tipo(raw_tipo)
+        if not tipo:
+            return "invalid_tipo"
+
+    raw_status = payload.get("status")
+    status = None
+    if raw_status not in (None, ""):
+        status_norm = str(raw_status).strip().lower()
+        if status_norm not in {"em_andamento", "pago", "nao_pago", "recebido"}:
+            return "invalid_status"
+        status = status_norm
+
+    raw_metodo = payload.get("metodo")
+    metodo = normalize_method(raw_metodo)
+    if raw_metodo not in (None, "") and metodo is None:
+        return "invalid_metodo"
+
+    min_value = _parse_optional_amount(payload.get("min_value"))
+    max_value = _parse_optional_amount(payload.get("max_value"))
+    if payload.get("min_value") not in (None, "") and min_value is None:
+        return "invalid_min_value"
+    if payload.get("max_value") not in (None, "") and max_value is None:
+        return "invalid_max_value"
+    if min_value is not None and max_value is not None and min_value > max_value:
+        return "invalid_value_range"
+
+    rem.name = name
     rem.is_enabled = _parse_bool(payload.get("is_enabled"), True)
-    rem.days_before = max(1, _parse_int(payload.get("days_before"), 3))
+    rem.days_before = max(1, min(365, _parse_int(payload.get("days_before"), 3)))
 
-    rem.tipo = (payload.get("tipo") or "").strip().lower() or None
+    rem.tipo = tipo
     rem.categoria = (payload.get("categoria") or "").strip().lower() or None
-    rem.status = (payload.get("status") or "").strip().lower() or None
-    rem.metodo = (payload.get("metodo") or "").strip().lower() or None
+    rem.status = status
+    rem.metodo = metodo
 
-    rem.min_value = _safe_float(payload.get("min_value"))
-    rem.max_value = _safe_float(payload.get("max_value"))
+    rem.min_value = min_value
+    rem.max_value = max_value
+    return None
 
 
 @rules_bp.get("/api/recurrences")
@@ -369,7 +466,9 @@ def list_recurrences():
 def create_recurrence():
     payload = request.json or {}
     rec = Recurrence(user_id=current_user.id)
-    _apply_recurrence_payload(rec, payload)
+    error = _apply_recurrence_payload(rec, payload)
+    if error:
+        return json_error(error, 422)
     db.session.add(rec)
     db.session.commit()
     return jsonify({"ok": True, "recurrence": _serialize_recurrence(rec)})
@@ -382,7 +481,9 @@ def update_recurrence(recurrence_id: int):
     if not rec:
         return jsonify({"error": "not_found"}), 404
     payload = request.json or {}
-    _apply_recurrence_payload(rec, payload)
+    error = _apply_recurrence_payload(rec, payload)
+    if error:
+        return json_error(error, 422)
     db.session.commit()
     return jsonify({"ok": True, "recurrence": _serialize_recurrence(rec)})
 
@@ -429,7 +530,9 @@ def list_reminders():
 def create_reminder():
     payload = request.json or {}
     rem = Reminder(user_id=current_user.id)
-    _apply_reminder_payload(rem, payload)
+    error = _apply_reminder_payload(rem, payload)
+    if error:
+        return json_error(error, 422)
     db.session.add(rem)
     db.session.commit()
     return jsonify({"ok": True, "reminder": _serialize_reminder(rem)})
@@ -442,7 +545,9 @@ def update_reminder(reminder_id: int):
     if not rem:
         return jsonify({"error": "not_found"}), 404
     payload = request.json or {}
-    _apply_reminder_payload(rem, payload)
+    error = _apply_reminder_payload(rem, payload)
+    if error:
+        return json_error(error, 422)
     db.session.commit()
     return jsonify({"ok": True, "reminder": _serialize_reminder(rem)})
 

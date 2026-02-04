@@ -9,6 +9,7 @@ from services.email_service import send_verification_email
 from services.plans import is_valid_plan
 from services.password_policy import validate_password, PasswordValidationError
 from services.permissions import is_json_request, json_error
+from services.rate_limiter import limiter, rate_limit_key
 from services.document_validation import (
     normalize_cpf,
     normalize_phone,
@@ -17,6 +18,23 @@ from services.document_validation import (
 )
 
 auth_bp = Blueprint("auth", __name__)
+
+
+def _rate_limit_or_reject(action: str, *, limit: int, window: int, identifier: str | None, redirect_url: str):
+    key = rate_limit_key(action, identifier)
+    allowed, retry_after = limiter.check(key, limit=limit, window_seconds=window)
+    if allowed:
+        return None
+
+    retry_after = retry_after or window
+    if is_json_request():
+        resp = jsonify({"error": "rate_limited"})
+        resp.status_code = 429
+        resp.headers["Retry-After"] = str(retry_after)
+        return resp
+
+    flash(f"Muitas tentativas. Tente novamente em {retry_after}s.", "error")
+    return redirect(redirect_url)
 
 
 @auth_bp.get("/login")
@@ -32,6 +50,16 @@ def login():
     checkout_token = (request.form.get("checkout_token") or "").strip()
     login_id = (request.form.get("login_id") or "").strip()
     password = request.form.get("password") or ""
+
+    rate_block = _rate_limit_or_reject(
+        "login",
+        limit=int(current_app.config.get("RATE_LIMIT_LOGIN", 10)),
+        window=int(current_app.config.get("RATE_LIMIT_LOGIN_WINDOW", 900)),
+        identifier=login_id.lower() if login_id else None,
+        redirect_url=url_for("auth.login_page"),
+    )
+    if rate_block is not None:
+        return rate_block
 
     if not login_id or not password:
         flash("Preencha usuário/e-mail e senha.", "error")
@@ -94,6 +122,16 @@ def register():
             return json_error(message, status)
         flash(message, "error")
         return redirect(url_for("auth.register_page", plan=plan))
+
+    rate_block = _rate_limit_or_reject(
+        "register",
+        limit=int(current_app.config.get("RATE_LIMIT_REGISTER", 5)),
+        window=int(current_app.config.get("RATE_LIMIT_REGISTER_WINDOW", 3600)),
+        identifier=email or username or None,
+        redirect_url=url_for("auth.register_page", plan=plan),
+    )
+    if rate_block is not None:
+        return rate_block
 
     if not username or not email or not password or not confirm:
         return _reject("Preencha usuario, e-mail e senha.")
@@ -179,6 +217,16 @@ def resend_verification():
     if current_user.is_verified:
         return redirect(url_for("index"))
 
+    rate_block = _rate_limit_or_reject(
+        "resend_verification",
+        limit=int(current_app.config.get("RATE_LIMIT_RESEND_VERIFICATION", 3)),
+        window=int(current_app.config.get("RATE_LIMIT_RESEND_VERIFICATION_WINDOW", 900)),
+        identifier=str(current_user.id),
+        redirect_url=url_for("auth.verify_pending"),
+    )
+    if rate_block is not None:
+        return rate_block
+
     ok = send_verification_email(current_user)
     if ok:
         if current_app.config.get("EMAIL_VERIFICATION_DEV_MODE"):
@@ -193,7 +241,10 @@ def resend_verification():
 
 @auth_bp.get("/verify/<token>")
 def verify(token):
-    user = User.verify_token(token)
+    user = User.verify_token(
+        token,
+        max_age_seconds=int(current_app.config.get("VERIFY_TOKEN_MAX_AGE", 60 * 60 * 24)),
+    )
     if not user:
         flash("Link inválido ou expirado.", "error")
         return redirect(url_for("auth.login_page"))
@@ -209,6 +260,12 @@ def verify(token):
 
 
 @auth_bp.get("/logout")
+@login_required
+def logout_confirm():
+    return render_template("logout_confirm.html")
+
+
+@auth_bp.post("/logout")
 @login_required
 def logout():
     logout_user()

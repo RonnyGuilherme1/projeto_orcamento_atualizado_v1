@@ -1,4 +1,5 @@
 import re
+import hmac
 from datetime import datetime
 from urllib.parse import urlparse, parse_qs
 
@@ -40,6 +41,7 @@ from services.permissions import (
     require_verified_email,
     validate_csrf,
 )
+from services.email_service import send_verification_email
 
 from services.abacatepay import (
     create_plan_billing,
@@ -143,6 +145,8 @@ def inject_plan_helpers():
 def enforce_subscription():
     if not current_user.is_authenticated:
         return
+    if not getattr(current_user, "is_verified", False):
+        return
     if not request.path.startswith("/app"):
         return
 
@@ -173,6 +177,20 @@ def enforce_subscription():
 
 
 @app.before_request
+def enforce_verified_for_app():
+    if not current_user.is_authenticated:
+        return
+    if not request.path.startswith("/app"):
+        return
+    if getattr(current_user, "is_verified", False):
+        return
+    if is_json_request():
+        return json_error("email_not_verified", 403)
+    flash("Confirme seu e-mail para continuar.", "warning")
+    return redirect(url_for("auth.verify_pending"))
+
+
+@app.before_request
 def enforce_csrf():
     if request.method not in {"POST", "PUT", "PATCH", "DELETE"}:
         return
@@ -184,6 +202,42 @@ def enforce_csrf():
     if is_json_request():
         return json_error("csrf_failed", 403)
     return "Forbidden", 403
+
+
+@app.after_request
+def apply_security_headers(response):
+    response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    response.headers.setdefault("X-Frame-Options", "DENY")
+    response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+    response.headers.setdefault(
+        "Permissions-Policy",
+        "geolocation=(), microphone=(), camera=(), payment=()",
+    )
+
+    if not response.headers.get("Content-Security-Policy"):
+        csp = (
+            "default-src 'self'; "
+            "script-src 'self' 'unsafe-inline'; "
+            "style-src 'self' 'unsafe-inline'; "
+            "img-src 'self' data:; "
+            "font-src 'self' data:; "
+            "connect-src 'self'; "
+            "object-src 'none'; "
+            "base-uri 'self'; "
+            "frame-ancestors 'none'; "
+            "form-action 'self'"
+        )
+        response.headers["Content-Security-Policy"] = csp
+
+    if app.config.get("IS_PRODUCTION") and app.config.get("HSTS_ENABLED"):
+        hsts = "max-age=31536000"
+        if app.config.get("HSTS_INCLUDE_SUBDOMAINS"):
+            hsts += "; includeSubDomains"
+        if app.config.get("HSTS_PRELOAD"):
+            hsts += "; preload"
+        response.headers.setdefault("Strict-Transport-Security", hsts)
+
+    return response
 
 
 def _only_digits(s: str) -> str:
@@ -492,10 +546,21 @@ def checkout_status():
 
 @app.post("/webhook/abacatepay")
 def abacatepay_webhook():
-    # Validação simples via query param (conforme docs da AbacatePay)
-    secret = (request.args.get("webhookSecret") or "").strip()
     expected = (app.config.get("ABACATEPAY_WEBHOOK_SECRET") or "").strip()
-    if expected and secret != expected:
+    if not expected:
+        return jsonify({"ok": False, "error": "misconfigured"}), 500
+
+    secret = (
+        request.headers.get("X-AbacatePay-Webhook-Secret")
+        or request.headers.get("X-Webhook-Secret")
+        or request.args.get("webhookSecret")
+        or request.args.get("secret")
+        or ""
+    ).strip()
+
+    if not secret:
+        return jsonify({"ok": False, "error": "missing_secret"}), 401
+    if not hmac.compare_digest(secret, expected):
         return jsonify({"ok": False, "error": "invalid_secret"}), 401
 
     payload = request.get_json(silent=True) or {}
@@ -618,6 +683,7 @@ def account_access_save():
     errors = []
     changes = []
 
+    email_changed = False
     if new_email:
         if new_email == (current_user.email or "").lower():
             new_email = ""
@@ -627,7 +693,9 @@ def account_access_save():
             errors.append("Esse e-mail ja esta em uso.")
         else:
             current_user.email = new_email
+            current_user.is_verified = False
             changes.append("email")
+            email_changed = True
 
     if new_password or confirm_password:
         if new_password != confirm_password:
@@ -651,6 +719,11 @@ def account_access_save():
         return redirect(url_for("account_page", section="access"))
 
     db.session.commit()
+    if email_changed:
+        send_verification_email(current_user)
+        flash("E-mail atualizado. Enviamos um novo link de verificação.", "warning")
+        return redirect(url_for("auth.verify_pending"))
+
     flash("Dados de acesso atualizados.", "success")
     return redirect(url_for("account_page", section="access"))
 
@@ -759,4 +832,4 @@ def healthz():
 
 
 if __name__ == "__main__":
-    app.run(debug=True, use_reloader=False)
+    app.run(debug=bool(app.config.get("DEBUG")), use_reloader=False)

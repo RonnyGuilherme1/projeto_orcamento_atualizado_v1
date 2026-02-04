@@ -57,7 +57,10 @@
   </div>
 
   <div class="public-actions verify-footer-actions">
-    <a class="btn-secondary" href="/logout">Sair</a>
+    <form action="/logout" method="POST">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
+      <button class="btn-secondary" type="submit">Sair</button>
+    </form>
     <a class="btn-link" href="/login">Voltar ao login</a>
   </div>
 {% endblock %}

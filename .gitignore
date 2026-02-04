@@ -1,23 +1,49 @@
 venv/
+Venv/
 .venv/
 __pycache__/
 *.pyc
-.env.example
+.pytest_cache/
 *.db
+*.db-shm
+*.db-wal
 
 # SQLite local
 *.sqlite
 *.sqlite3
+*.sqlite-journal
+database.db
+
 # VSCode
 .vscode/
+
 # Logs
 *.log
+*.log.*
+
 # OS
 .DS_Store
 Thumbs.db
+
 # Node
 node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
 # Env files
+.env*
+!.env.example
+
+# Instance / uploads / backups
+instance/
+backups/
+backup/
+*.bak
+*.bkp
+*.dump
+*.sql
+
+# Secrets / keys
+*.pem
+*.key

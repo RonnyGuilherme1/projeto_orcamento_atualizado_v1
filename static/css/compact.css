@@ -298,6 +298,35 @@ body.public-body .plan-card-body .value {
   font-size: calc(18px * var(--ui-scale));
 }
 
+/* Logout forms should look like links/buttons without default styles */
+.nav-link-form {
+  display: inline-flex;
+  margin: 0;
+}
+
+.nav-link-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.user-menu-item-form {
+  margin: 0;
+}
+
+.user-menu-item-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+}
+
+.public-actions form {
+  display: inline-flex;
+  margin: 0;
+}
+
 body.public-body .plan-card-body .period,
 body.public-body .plan-card-body .plan-list,
 body.public-body .plan-summary-title,

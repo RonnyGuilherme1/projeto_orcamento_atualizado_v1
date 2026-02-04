@@ -61,7 +61,10 @@
       <a class="user-menu-item" href="/app/account?section=access" data-sidebar-close>Alterar senha</a>
       <a class="user-menu-item" href="/app/account?section=notifications" data-sidebar-close>Notificações</a>
       <a class="user-menu-item" href="/app/upgrade" data-sidebar-close>Gerenciar plano</a>
-      <a class="user-menu-item danger" href="/logout" data-sidebar-close>Sair da conta</a>
+      <form class="user-menu-item-form" action="/logout" method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
+        <button class="user-menu-item danger user-menu-item-button" type="submit" data-sidebar-close>Sair da conta</button>
+      </form>
     </div>
   </div>
 </aside>

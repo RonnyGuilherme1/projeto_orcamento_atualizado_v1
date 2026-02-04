@@ -1,0 +1,19 @@
+{% extends "base_public.html" %}
+{% set page_class = 'page-message' %}
+{% set page_css = ['/static/css/message.css'] %}
+
+{% block title %}Sair | Controle Financeiro{% endblock %}
+
+{% block headline %}Sair da conta{% endblock %}
+
+{% block subhead %}
+  <p class="public-subtitle">Confirme se deseja encerrar sua sessão.</p>
+{% endblock %}
+
+{% block content %}
+  <form class="public-actions" action="/logout" method="POST">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
+    <button class="btn-secondary" type="submit">Confirmar saída</button>
+    <a class="btn-link" href="/app">Cancelar</a>
+  </form>
+{% endblock %}
