@@ -106,7 +106,7 @@ body.app-body .charts-page .plus-pill{
   font-weight: 900;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #fff;
+  color: var(--text);
   background: var(--accent-soft);
   border: 1px solid var(--accent-border);
 }
@@ -166,7 +166,7 @@ body.app-body .charts-page .segmented-btn{
 
 body.app-body .charts-page .segmented-btn.is-active{
   background: rgba(76, 175, 80, 0.22);
-  color: #ffffff;
+  color: var(--text);
 }
 
 body.app-body .charts-page .period-panels{
@@ -439,7 +439,7 @@ body.app-body .chip{
 
 body.app-body .chip.is-active{
   background: rgba(76, 175, 80, 0.22);
-  color: #ffffff;
+  color: var(--text);
   border-color: rgba(76, 175, 80, 0.4);
 }
 

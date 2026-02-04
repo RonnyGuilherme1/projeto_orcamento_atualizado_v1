@@ -773,12 +773,12 @@ body.app-body .panel-actions{
 
 .widget-card{
   text-decoration: none;
-  color: rgba(255, 255, 255, 0.92);
-  border: 1px solid rgba(255, 255, 255, 0.10);
+  color: var(--text);
+  border: 1px solid var(--border);
   border-radius: 18px;
   padding: 14px 14px 12px;
-  background: rgba(0, 0, 0, 0.18);
-  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.38);
+  background: var(--surface);
+  box-shadow: var(--shadow);
   transition: transform 140ms ease, border-color 140ms ease, background 140ms ease;
   display: grid;
   gap: 10px;
@@ -788,7 +788,7 @@ body.app-body .panel-actions{
 .widget-card:hover{
   transform: translateY(-1px);
   border-color: rgba(76, 175, 80, 0.35);
-  background: rgba(0, 0, 0, 0.22);
+  background: var(--surface-2);
 }
 
 .widget-card.locked{
@@ -825,9 +825,9 @@ body.app-body .panel-actions{
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.05);
-  color: rgba(255, 255, 255, 0.90);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
 }
 
 .widget-kpis{
@@ -837,15 +837,15 @@ body.app-body .panel-actions{
 }
 
 .widget-kpis .kpi{
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--divider);
+  background: var(--surface-2);
   border-radius: 14px;
   padding: 10px 10px;
   min-width: 0;
 }
 
 .widget-kpis .kpi span{
-  color: rgba(255, 255, 255, 0.70);
+  color: var(--text-muted);
   font-size: 11px;
   font-weight: 850;
   display: block;
@@ -868,8 +868,8 @@ body.app-body .panel-actions{
 }
 
 .widget-lines .line{
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--divider);
+  background: var(--surface-2);
   border-radius: 14px;
   padding: 10px 10px;
   display: flex;
@@ -879,7 +879,7 @@ body.app-body .panel-actions{
 }
 
 .widget-lines .line span{
-  color: rgba(255, 255, 255, 0.72);
+  color: var(--text-muted);
   font-size: 11px;
   font-weight: 850;
 }
@@ -894,7 +894,7 @@ body.app-body .panel-actions{
 }
 
 .widget-desc{
-  color: rgba(255, 255, 255, 0.72);
+  color: var(--text-muted);
   font-size: 12px;
   font-weight: 700;
   line-height: 1.35;
@@ -906,21 +906,21 @@ body.app-body .panel-actions{
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-top: 1px solid var(--divider);
   padding-top: 10px;
 }
 
 .widget-cta{
   font-weight: 950;
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.92);
+  color: var(--text);
 }
 
 .widget-spark{
   height: 70px;
   border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--divider);
+  background: var(--surface-2);
   display: flex;
   align-items: flex-end;
   gap: 8px;
@@ -932,8 +932,8 @@ body.app-body .panel-actions{
   flex: 1;
   min-width: 0;
   border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.10);
-  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border);
+  background: var(--surface);
   position: relative;
 }
 
@@ -955,7 +955,7 @@ body.app-body .panel-actions{
   text-align: center;
   font-size: 10px;
   font-weight: 900;
-  color: rgba(255, 255, 255, 0.72);
+  color: var(--text-muted);
 }
 
 
@@ -977,14 +977,14 @@ body.app-body .panel-actions{
   gap: 6px;
   padding: 4px;
   border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--chip-border);
+  background: var(--chip-bg);
 }
 
 .widgets-panel .toggle-btn{
   border: 1px solid transparent;
   background: transparent;
-  color: rgba(255, 255, 255, 0.75);
+  color: var(--text-muted);
   font-weight: 900;
   font-size: 11px;
   letter-spacing: -0.01em;
@@ -996,7 +996,7 @@ body.app-body .panel-actions{
 .widgets-panel .toggle-btn.is-active{
   border-color: rgba(76, 175, 80, 0.6);
   background: rgba(76, 175, 80, 0.18);
-  color: rgba(255, 255, 255, 0.95);
+  color: var(--text);
 }
 
 .widgets-panel .kpi.is-hidden{
@@ -1043,13 +1043,14 @@ body.app-body .panel-actions{
   left: 50%;
   transform: translateX(-50%);
   padding: 6px 8px;
-  background: rgba(15, 20, 24, 0.95);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: var(--overlay);
+  border: 1px solid var(--border);
   border-radius: 10px;
-  color: rgba(255, 255, 255, 0.92);
+  color: var(--text);
   font-size: 11px;
   white-space: nowrap;
   pointer-events: none;
+  box-shadow: var(--shadow);
   z-index: 10;
 }
 
@@ -1064,8 +1065,8 @@ body.app-body .panel-actions{
 }
 
 .widgets-panel .insight-line{
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--divider);
+  background: var(--surface-2);
   border-radius: 14px;
   padding: 10px;
   display: grid;
@@ -1080,7 +1081,7 @@ body.app-body .panel-actions{
 }
 
 .widgets-panel .insight-main span{
-  color: rgba(255, 255, 255, 0.72);
+  color: var(--text-muted);
   font-size: 11px;
   font-weight: 850;
 }
@@ -1098,9 +1099,9 @@ body.app-body .panel-actions{
 }
 
 .widgets-panel .chip-btn{
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.05);
-  color: rgba(255, 255, 255, 0.88);
+  border: 1px solid var(--chip-border);
+  background: var(--chip-bg);
+  color: var(--chip-text);
   border-radius: 999px;
   padding: 6px 10px;
   font-size: 11px;
@@ -1109,22 +1110,22 @@ body.app-body .panel-actions{
 }
 
 .widgets-panel .chip-btn:hover{
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--surface-2);
 }
 
 .widgets-panel .chip-btn.is-locked:hover{
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--chip-bg);
 }
 
 .widgets-panel .insight-feedback{
   margin-top: 8px;
   font-size: 12px;
   font-weight: 800;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-muted);
 }
 
 .widgets-panel .insight-feedback.is-active{
-  color: rgba(166, 243, 187, 0.95);
+  color: var(--success);
 }
 
 .widgets-panel .rule-actions,
@@ -1142,10 +1143,11 @@ body.app-body .panel-actions{
 .widgets-panel .rules-empty{
   font-size: 12px;
   font-weight: 700;
-  color: rgba(255, 255, 255, 0.65);
-  border: 1px dashed rgba(255, 255, 255, 0.12);
+  color: var(--text-muted);
+  border: 1px dashed var(--divider);
   border-radius: 12px;
   padding: 10px;
+  background: var(--surface-2);
 }
 
 .widgets-panel .rule-row{
@@ -1153,8 +1155,8 @@ body.app-body .panel-actions{
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--divider);
+  background: var(--surface-2);
   border-radius: 12px;
   padding: 8px 10px;
 }
@@ -1172,7 +1174,7 @@ body.app-body .panel-actions{
 
 .widgets-panel .rule-info span{
   font-size: 11px;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-muted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1193,9 +1195,9 @@ body.app-body .panel-actions{
 .widgets-panel .rule-toggle span{
   position: absolute;
   inset: 0;
-  background: rgba(255, 255, 255, 0.12);
+  background: var(--chip-bg);
   border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid var(--chip-border);
   transition: background 140ms ease;
 }
 
@@ -1207,7 +1209,7 @@ body.app-body .panel-actions{
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.9);
+  background: var(--text);
   transition: transform 140ms ease;
 }
 
@@ -1243,14 +1245,14 @@ body.app-body .panel-actions{
 .widgets-panel .sim-label{
   font-size: 11px;
   font-weight: 800;
-  color: rgba(255, 255, 255, 0.72);
+  color: var(--text-muted);
 }
 
 .widgets-panel .sim-feedback{
   margin-top: 6px;
   font-size: 12px;
   font-weight: 800;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-muted);
 }
 
 .dashboard-page .modal-overlay{
@@ -1344,7 +1346,7 @@ body.app-body .panel-actions{
 }
 
 .widgets-panel .sim-feedback.is-active{
-  color: rgba(166, 243, 187, 0.95);
+  color: var(--success);
 }
 
 @media (max-width: 600px){

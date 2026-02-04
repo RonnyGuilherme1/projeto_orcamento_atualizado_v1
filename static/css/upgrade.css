@@ -662,11 +662,11 @@ body.app-body .page{
 }
 
 body.app-body .panel{
-  border: 1px solid rgba(255, 255, 255, 0.10);
+  border: 1px solid var(--border);
   border-radius: 4px;
   padding: 16px;
-  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.35);
-  background: rgba(255, 255, 255, 0.05);
+  box-shadow: var(--shadow);
+  background: var(--surface);
 }
 
 body.app-body .panel + .panel{
@@ -689,7 +689,7 @@ body.app-body .panel-title{
 }
 
 body.app-body .panel-subtitle{
-  color: rgba(255, 255, 255, 0.70);
+  color: var(--text-muted);
   font-size: 13px;
   font-weight: 700;
   line-height: 1.35;
@@ -712,28 +712,28 @@ body.app-body .field{
 body.app-body .field label{
   font-weight: 900;
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.72);
+  color: var(--text-muted);
 }
 
 body.app-body .field .field-label{
   font-weight: 900;
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.72);
+  color: var(--text-muted);
 }
 
 body.app-body .btn-secondary{
   padding: 0 16px;
   border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.05);
-  color: rgba(255, 255, 255, 0.92);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
   font-weight: 950;
   cursor: pointer;
   height: 46px;
 }
 
 body.app-body .btn-secondary:hover{
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--surface);
 }
 
 body.app-body .btn-secondary:disabled{
@@ -745,9 +745,9 @@ body.app-body .control{
   height: 44px;
   padding: 10px 12px;
   border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(0, 0, 0, 0.18);
-  color: rgba(255, 255, 255, 0.92);
+  border: 1px solid var(--input-border);
+  background: var(--input-bg);
+  color: var(--input-text);
   outline: none;
   min-width: 0;
   width: 100%;
@@ -755,7 +755,7 @@ body.app-body .control{
 
 body.app-body .control:focus{
   box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.18);
-  border-color: rgba(76, 175, 80, 0.45);
+  border-color: var(--focus);
 }
 
 body.app-body textarea.control{
@@ -1591,8 +1591,8 @@ body.app-body .pricing-grid{
 }
 
 .btn-pill.btn-secondary{
-  background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(255, 255, 255, 0.18);
+  background: var(--surface-2);
+  border-color: var(--border);
   padding-top: 10px;
 }
 
@@ -2096,7 +2096,7 @@ body.app-body.theme-light .page-upgrade .upgrade-return-step-list span{
   flex: 0 0 260px;
   border-radius: 16px;
   border: 1px solid var(--border);
-  background: rgba(0, 0, 0, 0.18);
+  background: var(--surface);
   padding: 14px 16px;
   display: grid;
   gap: 8px;
@@ -2107,7 +2107,7 @@ body.app-body.theme-light .page-upgrade .upgrade-return-step-list span{
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-muted);
   font-weight: 800;
 }
 
@@ -2132,8 +2132,8 @@ body.app-body.theme-light .page-upgrade .upgrade-return-step-list span{
   gap: 12px;
   padding: 22px;
   border-radius: 18px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(0, 0, 0, 0.18);
+  border: 1px solid var(--border);
+  background: var(--surface);
   box-shadow: var(--shadow);
 }
 
@@ -2143,14 +2143,14 @@ body.app-body.theme-light .page-upgrade .upgrade-return-step-list span{
 }
 
 .page-upgrade .plan-card.plan-current{
-  border-color: rgba(255, 255, 255, 0.18);
-  background: rgba(255, 255, 255, 0.04);
+  border-color: var(--divider);
+  background: var(--surface-2);
 }
 
 .page-upgrade .plan-card.plan-current .btn-secondary{
-  background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(255, 255, 255, 0.18);
-  color: rgba(255, 255, 255, 0.7);
+  background: var(--surface-2);
+  border-color: var(--border);
+  color: var(--text-muted);
 }
 
 .page-upgrade .plan-badge{
@@ -2166,9 +2166,9 @@ body.app-body.theme-light .page-upgrade .upgrade-return-step-list span{
   font-size: 11px;
   letter-spacing: .04em;
   text-transform: uppercase;
-  border: 1px solid rgba(103, 255, 145, .28);
-  color: rgba(164, 255, 194, .95);
-  background: rgba(32, 80, 54, .18);
+  border: 1px solid rgba(76, 175, 80, 0.35);
+  color: var(--text);
+  background: rgba(76, 175, 80, 0.18);
   margin-bottom: 8px;
 }
 
@@ -2184,9 +2184,9 @@ body.app-body.theme-light .page-upgrade .upgrade-return-step-list span{
   font-size: 11px;
   letter-spacing: .04em;
   text-transform: uppercase;
-  border: 1px solid rgba(255, 255, 255, .12);
-  color: rgba(255, 255, 255, .85);
-  background: rgba(255, 255, 255, .06);
+  border: 1px solid var(--chip-border);
+  color: var(--chip-text);
+  background: var(--chip-bg);
   margin-bottom: 8px;
 }
 
@@ -2223,12 +2223,12 @@ body.app-body.theme-light .page-upgrade .upgrade-return-step-list span{
 
 .page-upgrade .plan-period{
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.65);
+  color: var(--text-muted);
 }
 
 .page-upgrade .plan-desc{
   margin: 0;
-  color: rgba(255, 255, 255, 0.72);
+  color: var(--text-muted);
   font-size: 13px;
   line-height: 1.5;
 }
@@ -2242,7 +2242,7 @@ body.app-body.theme-light .page-upgrade .upgrade-return-step-list span{
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-muted);
   font-weight: 800;
 }
 
@@ -2253,14 +2253,14 @@ body.app-body.theme-light .page-upgrade .upgrade-return-step-list span{
   display: grid;
   gap: 8px;
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.72);
+  color: var(--text);
   line-height: 1.45;
 }
 
 .page-upgrade .plan-impact{
   font-style: italic;
-  color: rgba(255, 255, 255, 0.75);
-  border-left: 2px solid rgba(255, 255, 255, 0.2);
+  color: var(--text-muted);
+  border-left: 2px solid var(--divider);
   padding-left: 10px;
   margin-top: 2px;
 }
@@ -2301,8 +2301,8 @@ body.app-body.theme-light .page-upgrade .upgrade-return-step-list span{
 
 .page-upgrade .compare{
   border-radius: 18px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(0, 0, 0, 0.18);
+  border: 1px solid var(--border);
+  background: var(--surface);
   overflow: auto;
   box-shadow: var(--shadow);
 }
@@ -2317,7 +2317,7 @@ body.app-body.theme-light .page-upgrade .upgrade-return-step-list span{
 .page-upgrade .compare td{
   padding: 12px 14px;
   text-align: center;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid var(--divider);
   font-size: 13px;
 }
 
@@ -2330,7 +2330,7 @@ body.app-body.theme-light .page-upgrade .upgrade-return-step-list span{
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: rgba(255, 255, 255, 0.75);
+  color: var(--text-muted);
   font-weight: 900;
 }
 
@@ -2340,8 +2340,9 @@ body.app-body.theme-light .page-upgrade .upgrade-return-step-list span{
   justify-content: center;
   padding: 4px 10px;
   border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--chip-border);
+  background: var(--chip-bg);
+  color: var(--chip-text);
   font-weight: 900;
   font-size: 10px;
 }
@@ -2359,27 +2360,27 @@ body.app-body.theme-light .page-upgrade .upgrade-return-step-list span{
 
 .page-upgrade .compare .feat{
   font-weight: 800;
-  color: rgba(255, 255, 255, 0.86);
+  color: var(--text);
 }
 
 .page-upgrade .compare .yes{
-  color: #9ee49f;
+  color: var(--accent);
   font-weight: 900;
 }
 
 .page-upgrade .compare .no{
-  color: rgba(255, 255, 255, 0.45);
+  color: var(--text-muted);
 }
 
 .page-upgrade .compare-note{
   margin-top: 12px;
   display: grid;
   gap: 4px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
   border-radius: 14px;
   padding: 12px 14px;
-  color: rgba(255, 255, 255, 0.78);
+  color: var(--text-muted);
   font-size: 12px;
 }
 
