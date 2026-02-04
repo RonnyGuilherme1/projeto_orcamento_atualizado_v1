@@ -752,7 +752,7 @@
       td.colSpan = 9;
       td.textContent = 'Sem eventos no período.';
       td.style.padding = '14px';
-      td.style.color = 'rgba(255,255,255,0.7)';
+      td.style.color = 'var(--text-muted)';
       tr.appendChild(td);
       tbody.appendChild(tr);
       return;
@@ -828,7 +828,7 @@
         wrap.appendChild(btnSplit);
       } else {
         const small = document.createElement('span');
-        small.style.color = 'rgba(255,255,255,0.55)';
+        small.style.color = 'var(--text-muted)';
         small.style.fontWeight = '900';
         small.style.fontSize = '12px';
         small.textContent = '—';
@@ -957,7 +957,7 @@
     reductionsWrap.innerHTML = '';
     if (!Array.isArray(categories) || categories.length === 0) {
       const div = document.createElement('div');
-      div.style.color = 'rgba(255,255,255,0.65)';
+      div.style.color = 'var(--text-muted)';
       div.style.fontWeight = '900';
       div.style.fontSize = '12px';
       div.textContent = 'Sem categorias de despesa no período.';
@@ -978,7 +978,7 @@
       name.style.fontSize = '12px';
       name.textContent = `${c.label || c.key}`;
       const meta = document.createElement('span');
-      meta.style.color = 'rgba(255,255,255,0.65)';
+      meta.style.color = 'var(--text-muted)';
       meta.style.fontWeight = '900';
       meta.style.fontSize = '12px';
       meta.textContent = `Total: ${fmtBRL.format(Number(c.total || 0))}`;

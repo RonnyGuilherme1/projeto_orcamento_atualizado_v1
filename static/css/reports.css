@@ -8,7 +8,7 @@
 
 .reports-page .panel{
   border-radius: 18px;
-  border-color: rgba(255,255,255,0.12);
+  border-color: var(--border);
 }
 
 .reports-hero{
@@ -53,7 +53,7 @@
   border-radius: 999px;
   border: 1px solid rgba(76,175,80,0.4);
   background: rgba(76,175,80,0.18);
-  color: rgba(255,255,255,0.95);
+  color: #fff;
   font-weight: 900;
   font-size: 11px;
   width: fit-content;
@@ -97,7 +97,7 @@
 .reports-status{
   font-size: 12px;
   font-weight: 900;
-  color: rgba(255,255,255,0.65);
+  color: var(--text-muted);
 }
 
 .reports-status.is-loading{
@@ -116,8 +116,9 @@
 .report-pill{
   padding: 6px 10px;
   border-radius: 999px;
-  border: 1px solid rgba(255,255,255,0.12);
-  background: rgba(255,255,255,0.06);
+  border: 1px solid var(--chip-border);
+  background: var(--chip-bg);
+  color: var(--chip-text);
   font-size: 12px;
   font-weight: 900;
 }
@@ -129,9 +130,9 @@
 }
 
 .report-card{
-  border: 1px solid rgba(255,255,255,0.1);
+  border: 1px solid var(--border);
   border-radius: 16px;
-  background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
+  background: linear-gradient(180deg, var(--surface), var(--surface-2));
   padding: 14px;
   display: grid;
   gap: 10px;
@@ -149,13 +150,13 @@
   gap: 8px;
   font-size: 13px;
   font-weight: 850;
-  color: rgba(255,255,255,0.7);
+  color: var(--text-muted);
 }
 
 .report-metric strong{
   display: block;
   font-size: 15px;
-  color: rgba(255,255,255,0.95);
+  color: var(--text);
 }
 
 .report-highlight{
@@ -167,26 +168,26 @@
 
 .report-highlight.positive{
   background: rgba(76,175,80,0.18);
-  color: rgba(255,255,255,0.95);
+  color: var(--text);
   border: 1px solid rgba(76,175,80,0.4);
 }
 
 .report-highlight.warning{
   background: rgba(255,193,7,0.12);
-  color: rgba(255,255,255,0.92);
+  color: var(--text);
   border: 1px solid rgba(255,193,7,0.35);
 }
 
 .report-highlight.negative{
   background: rgba(244,67,54,0.16);
-  color: rgba(255,255,255,0.95);
+  color: var(--text);
   border: 1px solid rgba(244,67,54,0.35);
 }
 
 .report-alerts{
   margin: 0;
   padding-left: 16px;
-  color: rgba(255,255,255,0.75);
+  color: var(--text-muted);
   font-size: 12px;
   font-weight: 850;
   display: grid;
@@ -203,7 +204,7 @@
   justify-content: space-between;
   gap: 12px;
   flex-wrap: wrap;
-  border-bottom: 1px solid rgba(255,255,255,0.08);
+  border-bottom: 1px solid var(--divider);
   padding-bottom: 10px;
 }
 
@@ -214,9 +215,9 @@
 }
 
 .tab-btn{
-  border: 1px solid rgba(255,255,255,0.12);
-  background: rgba(255,255,255,0.04);
-  color: rgba(255,255,255,0.82);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text-muted);
   font-weight: 900;
   padding: 8px 14px;
   border-radius: 999px;
@@ -232,7 +233,7 @@
 .tab-hint{
   font-size: 12px;
   font-weight: 900;
-  color: rgba(255,255,255,0.65);
+  color: var(--text-muted);
 }
 
 .tab-panels{
@@ -270,7 +271,7 @@
 
 .panel-subhead p{
   margin: 4px 0 0;
-  color: rgba(255,255,255,0.65);
+  color: var(--text-muted);
   font-weight: 850;
   font-size: 12px;
 }
@@ -278,7 +279,7 @@
 .report-table{
   width: 100%;
   border-collapse: collapse;
-  border: 1px solid rgba(255,255,255,0.1);
+  border: 1px solid var(--border);
   border-radius: 16px;
   overflow: hidden;
   display: block;
@@ -299,14 +300,14 @@
   text-align: left;
   font-size: 12px;
   font-weight: 900;
-  color: rgba(255,255,255,0.85);
-  border-bottom: 1px solid rgba(255,255,255,0.08);
+  color: var(--text);
+  border-bottom: 1px solid var(--divider);
 }
 
 .report-table thead th{
   position: sticky;
   top: 0;
-  background: rgba(10,12,16,0.95);
+  background: var(--table-head-bg);
   z-index: 2;
 }
 
@@ -316,11 +317,11 @@
 }
 
 .report-table tbody tr:hover{
-  background: rgba(255,255,255,0.04);
+  background: var(--table-row-hover);
 }
 
 .report-table tbody tr.is-total{
-  background: rgba(255,255,255,0.06);
+  background: var(--surface-2);
   font-weight: 900;
 }
 
@@ -340,8 +341,8 @@
   position: relative;
   padding: 12px 12px;
   border-radius: 14px;
-  border: 1px solid rgba(255,255,255,0.1);
-  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
   font-weight: 900;
   display: flex;
   align-items: center;
@@ -371,8 +372,8 @@
 }
 
 .recurring-card{
-  border: 1px solid rgba(255,255,255,0.1);
-  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
   border-radius: 16px;
   padding: 12px;
   display: grid;
@@ -387,7 +388,7 @@
 
 .recurring-card p{
   margin: 0;
-  color: rgba(255,255,255,0.7);
+  color: var(--text-muted);
   font-weight: 850;
   font-size: 12px;
 }
@@ -397,8 +398,9 @@
   align-items: center;
   padding: 4px 10px;
   border-radius: 999px;
-  background: rgba(255,255,255,0.06);
-  border: 1px solid rgba(255,255,255,0.12);
+  background: var(--chip-bg);
+  border: 1px solid var(--chip-border);
+  color: var(--chip-text);
   font-size: 11px;
   font-weight: 900;
   width: fit-content;
@@ -412,8 +414,8 @@
 }
 
 .pending-card{
-  border: 1px solid rgba(255,255,255,0.1);
-  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
   border-radius: 16px;
   padding: 12px;
 }
@@ -429,7 +431,7 @@
   padding-left: 18px;
   display: grid;
   gap: 6px;
-  color: rgba(255,255,255,0.75);
+  color: var(--text-muted);
   font-size: 12px;
   font-weight: 850;
 }
@@ -457,7 +459,7 @@
   gap: 8px;
   font-size: 12px;
   font-weight: 900;
-  color: rgba(255,255,255,0.82);
+  color: var(--text);
 }
 
 .export-details{
@@ -476,8 +478,8 @@
   gap: 6px;
   padding: 4px;
   border-radius: 999px;
-  background: rgba(255,255,255,0.08);
-  border: 1px solid rgba(255,255,255,0.14);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
   flex-wrap: wrap;
 }
 
@@ -485,7 +487,7 @@
   flex: 1 1 120px;
   border: 0;
   background: transparent;
-  color: rgba(255,255,255,0.78);
+  color: var(--text-muted);
   font-size: 12px;
   font-weight: 900;
   padding: 8px 12px;
@@ -495,9 +497,9 @@
 }
 
 .detail-segment.is-active{
-  background: #f8fafc;
-  color: #0f1720;
-  box-shadow: 0 8px 16px rgba(15,23,32,0.25);
+  background: var(--surface-3);
+  color: var(--text);
+  box-shadow: var(--shadow);
 }
 
 .detail-microcopy{
@@ -509,7 +511,7 @@
   margin: 0;
   font-size: 12px;
   font-weight: 800;
-  color: rgba(255,255,255,0.68);
+  color: var(--text-muted);
   display: none;
 }
 
@@ -526,7 +528,7 @@
 .reports-lock{
   position: absolute;
   inset: 0;
-  background: rgba(6,8,12,0.75);
+  background: var(--overlay-backdrop);
   backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
@@ -545,8 +547,8 @@
   max-width: 420px;
   padding: 20px;
   border-radius: 18px;
-  border: 1px solid rgba(255,255,255,0.12);
-  background: rgba(12,15,20,0.95);
+  border: 1px solid var(--border);
+  background: var(--overlay);
   text-align: center;
   display: grid;
   gap: 12px;
@@ -560,7 +562,7 @@
 
 .lock-card p{
   margin: 0;
-  color: rgba(255,255,255,0.75);
+  color: var(--text-muted);
   font-weight: 850;
   font-size: 13px;
 }
@@ -595,7 +597,7 @@
   height: 0;
   border-left: 5px solid transparent;
   border-right: 5px solid transparent;
-  border-top: 6px solid rgba(255, 255, 255, 0.75);
+  border-top: 6px solid var(--text-muted);
   transform: translateY(-40%);
   pointer-events: none;
 }
@@ -607,9 +609,9 @@
   top: calc(100% + 6px);
   z-index: 40;
   border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.10);
-  background: #0f141b;
-  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.45);
+  border: 1px solid var(--border);
+  background: var(--overlay);
+  box-shadow: var(--shadow);
   padding: 6px;
   display: none;
   max-height: 240px;
@@ -625,7 +627,7 @@
   text-align: left;
   border: 0;
   background: transparent;
-  color: rgba(255, 255, 255, 0.88);
+  color: var(--text);
   padding: 8px 10px;
   border-radius: 8px;
   cursor: pointer;
@@ -634,8 +636,8 @@
 
 .reports-page .select-option:hover,
 .reports-page .select-option.is-selected{
-  background: rgba(255, 255, 255, 0.12);
-  color: #ffffff;
+  background: var(--surface-2);
+  color: var(--heading);
 }
 
 .reports-page .select.is-disabled .select-trigger{
@@ -667,7 +669,7 @@
   height: 0;
   border-left: 5px solid transparent;
   border-right: 5px solid transparent;
-  border-top: 6px solid rgba(255, 255, 255, 0.75);
+  border-top: 6px solid var(--text-muted);
   transform: translateY(-40%);
   pointer-events: none;
 }
@@ -679,9 +681,9 @@
   top: calc(100% + 6px);
   z-index: 40;
   border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.10);
-  background: #0f141b;
-  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.45);
+  border: 1px solid var(--border);
+  background: var(--overlay);
+  box-shadow: var(--shadow);
   padding: 6px;
   display: none;
   max-height: 240px;
@@ -699,14 +701,14 @@
   padding: 6px 8px;
   border-radius: 8px;
   cursor: pointer;
-  color: rgba(255, 255, 255, 0.88);
+  color: var(--text);
   font-size: 13px;
   font-weight: 800;
 }
 
 .reports-page .multi-option:hover{
-  background: rgba(255, 255, 255, 0.12);
-  color: #fff;
+  background: var(--surface-2);
+  color: var(--heading);
 }
 
 .reports-page .multi-option input{
@@ -734,7 +736,7 @@
 .pdf-backdrop{
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.65);
+  background: var(--overlay-backdrop);
 }
 
 .pdf-shell{
@@ -742,19 +744,19 @@
   z-index: 1;
   width: min(1100px, 92vw);
   height: min(84vh, 900px);
-  background: #111;
+  background: var(--overlay);
   border-radius: 14px;
   overflow: hidden;
-  box-shadow: 0 30px 70px rgba(0, 0, 0, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border);
   display: flex;
   flex-direction: column;
 }
 
 .pdf-header{
   height: 44px;
-  background: #111;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--overlay);
+  border-bottom: 1px solid var(--divider);
   display: flex;
   align-items: center;
   justify-content: flex-end;
@@ -765,9 +767,9 @@
   width: 34px;
   height: 34px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.08);
-  color: #fff;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: var(--surface-2);
+  color: var(--text);
+  border: 1px solid var(--border);
   display: grid;
   place-items: center;
   font-size: 20px;
@@ -776,19 +778,19 @@
 }
 
 .pdf-close:hover{
-  background: rgba(255, 255, 255, 0.16);
+  background: var(--surface);
 }
 
 .pdf-body{
   flex: 1;
-  background: #222;
+  background: var(--surface-3);
 }
 
 .pdf-frame{
   width: 100%;
   height: 100%;
   border: 0;
-  background: #222;
+  background: var(--surface-3);
 }
 
 body.has-pdf-modal{
@@ -868,67 +870,3 @@ body.has-pdf-modal{
   }
 }
 
-body.app-body.theme-light .reports-page .panel{
-  border-color: rgba(15, 23, 32, 0.18);
-}
-
-body.app-body.theme-light .report-card,
-body.app-body.theme-light .pending-card,
-body.app-body.theme-light .recurring-card,
-body.app-body.theme-light .category-bar{
-  background: #f8fafc;
-  border-color: rgba(15, 23, 32, 0.15);
-}
-
-body.app-body.theme-light .report-table{
-  border-color: rgba(15, 23, 32, 0.15);
-}
-
-body.app-body.theme-light .report-table thead{
-  background: #f1f5f9;
-}
-
-body.app-body.theme-light .report-table th,
-body.app-body.theme-light .report-table td{
-  color: #0f1720;
-}
-
-body.app-body.theme-light .detail-segmented{
-  background: rgba(15,23,32,0.08);
-  border-color: rgba(15,23,32,0.2);
-}
-
-body.app-body.theme-light .detail-segment{
-  color: rgba(15,23,32,0.72);
-}
-
-body.app-body.theme-light .detail-segment.is-active{
-  background: #0f1720;
-  color: #f8fafc;
-}
-
-body.app-body.theme-light .detail-copy{
-  color: rgba(15,23,32,0.65);
-}
-
-body.app-body.theme-light .reports-status,
-body.app-body.theme-light .panel-subhead p,
-body.app-body.theme-light .report-alerts,
-body.app-body.theme-light .pending-card ul{
-  color: #0f1720;
-}
-
-body.app-body.theme-light .report-highlight.positive{
-  background: rgba(76, 175, 80, 0.2);
-  color: #0f1720;
-}
-
-body.app-body.theme-light .report-highlight.warning{
-  background: rgba(255, 193, 7, 0.22);
-  color: #0f1720;
-}
-
-body.app-body.theme-light .report-highlight.negative{
-  background: rgba(244, 67, 54, 0.18);
-  color: #0f1720;
-}

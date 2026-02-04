@@ -150,6 +150,7 @@
     body.classList.toggle('theme-light', safeTheme === 'light');
     body.classList.toggle('theme-dark', safeTheme === 'dark');
     localStorage.setItem(THEME_KEY, safeTheme);
+    document.dispatchEvent(new CustomEvent('theme:changed', { detail: { theme: safeTheme } }));
   }
 
   if (themeToggle) {

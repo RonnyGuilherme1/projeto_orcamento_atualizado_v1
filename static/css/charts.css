@@ -1,11 +1,37 @@
 body.app-body .charts-page{
-  --accent: #4caf50;
+  --accent: var(--accent);
   --accent-strong: #1bbf6a;
   --accent-soft: rgba(76, 175, 80, 0.15);
-  --ink: rgba(255, 255, 255, 0.9);
-  --ink-soft: rgba(255, 255, 255, 0.65);
-  --card-bg: rgba(10, 14, 18, 0.88);
-  --card-border: rgba(255, 255, 255, 0.08);
+  --accent-border: rgba(76, 175, 80, 0.35);
+  --ink: var(--text);
+  --ink-soft: var(--text-muted);
+  --card-bg: var(--surface);
+  --card-border: var(--border);
+  --chart-topbar-bg: linear-gradient(135deg, rgba(16, 24, 32, 0.96), rgba(8, 14, 18, 0.98));
+  --chart-topbar-border: rgba(255, 255, 255, 0.08);
+  --chart-segmented-bg: rgba(0, 0, 0, 0.35);
+  --chart-segmented-border: rgba(255, 255, 255, 0.08);
+  --chart-segmented-text: var(--text-muted);
+  --chart-switch-track: rgba(255, 255, 255, 0.2);
+  --chart-switch-knob: #ffffff;
+  --chart-canvas-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(0, 0, 0, 0.35));
+  --chart-grid-strong: rgba(255, 255, 255, 0.06);
+  --chart-grid-soft: rgba(255, 255, 255, 0.04);
+  --chart-ref: rgba(255, 255, 255, 0.25);
+  --chart-ref-goal: rgba(76, 175, 80, 0.65);
+  --chart-guide: rgba(255, 255, 255, 0.18);
+  --chart-empty-bg: rgba(8, 12, 16, 0.55);
+  --chart-tooltip-bg: rgba(10, 14, 18, 0.92);
+  --chart-tooltip-text: var(--text);
+  --chart-tooltip-border: var(--border);
+  --chart-kpi-bg: rgba(0, 0, 0, 0.22);
+  --chart-kpi-border: rgba(255, 255, 255, 0.08);
+  --donut-hole: rgba(11, 15, 20, 0.96);
+  --modal-bg: var(--overlay);
+  --modal-border: var(--border);
+  --modal-shadow: var(--shadow);
+  --skeleton-base: rgba(255, 255, 255, 0.08);
+  --skeleton-highlight: rgba(255, 255, 255, 0.18);
   --chart-income: rgba(76, 175, 80, 0.95);
   --chart-expense: rgba(245, 166, 35, 0.95);
   --chart-balance: rgba(108, 178, 255, 0.95);
@@ -18,12 +44,33 @@ body.app-body .charts-page{
   gap: 18px;
 }
 
+body.app-body.theme-light .charts-page{
+  --chart-topbar-bg: var(--surface);
+  --chart-topbar-border: var(--border);
+  --chart-segmented-bg: var(--surface-2);
+  --chart-segmented-border: var(--border);
+  --chart-segmented-text: var(--text-muted);
+  --chart-switch-track: rgba(15, 23, 42, 0.18);
+  --chart-canvas-bg: var(--surface);
+  --chart-grid-strong: rgba(15, 23, 42, 0.06);
+  --chart-grid-soft: rgba(15, 23, 42, 0.04);
+  --chart-ref: rgba(15, 23, 42, 0.22);
+  --chart-guide: rgba(15, 23, 42, 0.16);
+  --chart-empty-bg: rgba(15, 23, 42, 0.06);
+  --chart-tooltip-bg: var(--overlay);
+  --chart-kpi-bg: var(--surface-2);
+  --chart-kpi-border: var(--border);
+  --donut-hole: var(--surface-3);
+  --skeleton-base: rgba(15, 23, 42, 0.08);
+  --skeleton-highlight: rgba(15, 23, 42, 0.16);
+}
+
 body.app-body .charts-page .charts-topbar{
   position: relative;
   overflow: hidden;
   border-radius: 18px;
-  background: linear-gradient(135deg, rgba(16, 24, 32, 0.96), rgba(8, 14, 18, 0.98));
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--chart-topbar-bg);
+  border: 1px solid var(--chart-topbar-border);
 }
 
 body.app-body .charts-page .charts-topbar::after{
@@ -59,9 +106,9 @@ body.app-body .charts-page .plus-pill{
   font-weight: 900;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.85);
-  background: rgba(27, 191, 106, 0.18);
-  border: 1px solid rgba(76, 175, 80, 0.35);
+  color: #fff;
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-border);
 }
 
 body.app-body .charts-page .topbar-actions{
@@ -100,8 +147,8 @@ body.app-body .charts-page .segmented{
   flex-wrap: wrap;
   padding: 4px;
   border-radius: 999px;
-  background: rgba(0, 0, 0, 0.35);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--chart-segmented-bg);
+  border: 1px solid var(--chart-segmented-border);
   gap: 8px;
 }
 
@@ -111,7 +158,7 @@ body.app-body .charts-page .segmented-btn{
   border-radius: 999px;
   font-size: 12px;
   font-weight: 800;
-  color: rgba(255, 255, 255, 0.68);
+  color: var(--chart-segmented-text);
   background: transparent;
   cursor: pointer;
   white-space: nowrap;
@@ -146,7 +193,7 @@ body.app-body .charts-page .period-panel.is-active{
 body.app-body .charts-page .compare-meta{
   font-size: 11px;
   font-weight: 700;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-muted);
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -160,7 +207,7 @@ body.app-body .charts-page .switch{
   cursor: pointer;
   font-size: 12px;
   font-weight: 800;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text);
   flex-wrap: wrap;
 }
 
@@ -172,7 +219,7 @@ body.app-body .charts-page .switch-track{
   width: 36px;
   height: 20px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--chart-switch-track);
   position: relative;
   transition: background 0.2s ease;
 }
@@ -183,7 +230,7 @@ body.app-body .charts-page .switch-track::after{
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  background: #ffffff;
+  background: var(--chart-switch-knob);
   top: 3px;
   left: 3px;
   transition: transform 0.2s ease;
@@ -226,9 +273,9 @@ body.app-body .charts-page .export-menu{
   min-width: 180px;
   padding: 8px;
   border-radius: 12px;
-  background: rgba(10, 14, 18, 0.98);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow: 0 18px 32px rgba(0, 0, 0, 0.45);
+  background: var(--chart-tooltip-bg);
+  border: 1px solid var(--chart-tooltip-border);
+  box-shadow: var(--shadow);
   display: grid;
   gap: 6px;
   opacity: 0;
@@ -249,7 +296,7 @@ body.app-body .charts-page .export-menu button{
   padding: 8px 10px;
   border-radius: 10px;
   background: transparent;
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--text);
   font-size: 12px;
   font-weight: 800;
   text-align: left;
@@ -257,7 +304,7 @@ body.app-body .charts-page .export-menu button{
 }
 
 body.app-body .charts-page .export-menu button:hover{
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--surface-2);
 }
 
 body.app-body .kpi-grid{
@@ -270,8 +317,8 @@ body.app-body .kpi-card{
   display: grid;
   gap: 10px;
   border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(7, 12, 16, 0.8);
+  border: 1px solid var(--card-border);
+  background: var(--chart-kpi-bg);
   padding: 14px;
 }
 
@@ -287,7 +334,7 @@ body.app-body .kpi-label{
   font-weight: 900;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-muted);
 }
 
 body.app-body .kpi-card strong{
@@ -298,7 +345,7 @@ body.app-body .kpi-card strong{
 body.app-body .kpi-delta{
   font-size: 12px;
   font-weight: 800;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-muted);
 }
 
 body.app-body .kpi-chip{
@@ -308,21 +355,24 @@ body.app-body .kpi-chip{
   font-weight: 900;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  background: rgba(255, 255, 255, 0.12);
-  color: rgba(255, 255, 255, 0.7);
+  background: var(--chip-bg);
+  color: var(--chip-text);
+  border: 1px solid var(--chip-border);
   min-height: 20px;
   display: inline-flex;
   align-items: center;
 }
 
 body.app-body .kpi-chip.is-positive{
-  background: rgba(27, 191, 106, 0.2);
-  color: rgba(166, 255, 205, 0.95);
+  background: rgba(76, 175, 80, 0.18);
+  color: var(--success);
+  border-color: rgba(76, 175, 80, 0.3);
 }
 
 body.app-body .kpi-chip.is-negative{
-  background: rgba(255, 85, 85, 0.2);
-  color: rgba(255, 170, 170, 0.95);
+  background: rgba(244, 67, 54, 0.18);
+  color: var(--danger);
+  border-color: rgba(244, 67, 54, 0.3);
 }
 
 body.app-body .charts-grid{
@@ -361,7 +411,7 @@ body.app-body .chart-head p{
   margin: 4px 0 0;
   font-size: 12px;
   font-weight: 700;
-  color: rgba(255, 255, 255, 0.68);
+  color: var(--text-muted);
 }
 
 body.app-body .chart-head-actions{
@@ -377,9 +427,9 @@ body.app-body .chip-group{
 }
 
 body.app-body .chip{
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(0, 0, 0, 0.3);
-  color: rgba(255, 255, 255, 0.7);
+  border: 1px solid var(--chip-border);
+  background: var(--chip-bg);
+  color: var(--chip-text);
   font-size: 11px;
   font-weight: 800;
   padding: 6px 10px;
@@ -407,8 +457,8 @@ body.app-body .chart-canvas{
   position: relative;
   min-height: 240px;
   border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(0, 0, 0, 0.35));
+  border: 1px solid var(--card-border);
+  background: var(--chart-canvas-bg);
   overflow: hidden;
 }
 
@@ -416,8 +466,8 @@ body.app-body .chart-canvas::before{
   content: "";
   position: absolute;
   inset: 0;
-  background-image: linear-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px),
-                    linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-image: linear-gradient(var(--chart-grid-strong) 1px, transparent 1px),
+                    linear-gradient(90deg, var(--chart-grid-soft) 1px, transparent 1px);
   background-size: 100% 36px, 80px 100%;
   opacity: 0.5;
   pointer-events: none;
@@ -460,13 +510,13 @@ body.app-body .chart-line .line-balance{
 }
 
 body.app-body .chart-line .line-ref{
-  stroke: rgba(255, 255, 255, 0.25);
+  stroke: var(--chart-ref);
   stroke-width: 1.4;
   stroke-dasharray: 4 6;
 }
 
 body.app-body .chart-line .line-ref.line-goal{
-  stroke: rgba(76, 175, 80, 0.65);
+  stroke: var(--chart-ref-goal);
 }
 
 body.app-body .chart-line .area-income{
@@ -479,7 +529,7 @@ body.app-body .chart-line .area-expense{
 
 body.app-body .chart-line .line-point{
   fill: var(--chart-income);
-  stroke: rgba(11, 15, 20, 0.9);
+  stroke: var(--bg);
   stroke-width: 2;
 }
 
@@ -501,7 +551,7 @@ body.app-body .chart-line .chart-guide{
   top: 14px;
   bottom: 14px;
   width: 1px;
-  background: rgba(255, 255, 255, 0.18);
+  background: var(--chart-guide);
   opacity: 0;
   pointer-events: none;
   z-index: 2;
@@ -513,10 +563,10 @@ body.app-body .chart-line .chart-tooltip{
   min-width: 140px;
   padding: 8px 10px;
   border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(10, 14, 18, 0.92);
-  color: rgba(255, 255, 255, 0.86);
-  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.45);
+  border: 1px solid var(--chart-tooltip-border);
+  background: var(--chart-tooltip-bg);
+  color: var(--chart-tooltip-text);
+  box-shadow: var(--shadow);
   display: grid;
   gap: 4px;
   font-size: 11px;
@@ -545,7 +595,7 @@ body.app-body .chart-line .tooltip-type{
   font-weight: 900;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-muted);
 }
 
 body.app-body .chart-line .tooltip-value{
@@ -555,7 +605,7 @@ body.app-body .chart-line .tooltip-value{
 
 body.app-body .chart-line .tooltip-date{
   font-size: 10px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-muted);
 }
 
 body.app-body .chart-line .chart-tooltip.is-income .tooltip-type{
@@ -577,8 +627,8 @@ body.app-body .chart-empty{
   place-items: center;
   font-size: 12px;
   font-weight: 800;
-  color: rgba(255, 255, 255, 0.75);
-  background: rgba(8, 12, 16, 0.55);
+  color: var(--text-muted);
+  background: var(--chart-empty-bg);
   z-index: 2;
   opacity: 0;
   pointer-events: none;
@@ -597,8 +647,8 @@ body.app-body .chart-footer{
 
 body.app-body .chart-kpi{
   border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(0, 0, 0, 0.22);
+  border: 1px solid var(--chart-kpi-border);
+  background: var(--chart-kpi-bg);
   padding: 10px;
   display: grid;
   gap: 4px;
@@ -612,7 +662,7 @@ body.app-body .chart-kpi strong{
 body.app-body .kpi-meta{
   font-size: 11px;
   font-weight: 700;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-muted);
 }
 
 body.app-body .donut-wrap{
@@ -647,8 +697,8 @@ body.app-body .donut::after{
   position: absolute;
   inset: 26px;
   border-radius: 50%;
-  background: rgba(11, 15, 20, 0.96);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--donut-hole);
+  border: 1px solid var(--border);
 }
 
 body.app-body .donut-center{
@@ -668,7 +718,7 @@ body.app-body .donut-value{
 body.app-body .donut-label{
   font-size: 11px;
   font-weight: 700;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-muted);
 }
 
 body.app-body .donut-legend{
@@ -678,7 +728,7 @@ body.app-body .donut-legend{
   display: grid;
   gap: 8px;
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-muted);
   width: 100%;
 }
 
@@ -694,11 +744,11 @@ body.app-body .donut-legend li{
 }
 
 body.app-body .donut-legend li:hover{
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--surface-2);
 }
 
 body.app-body .donut-legend li.is-active{
-  color: rgba(255, 255, 255, 0.95);
+  color: var(--text);
   font-weight: 900;
 }
 
@@ -711,13 +761,13 @@ body.app-body .donut-dot{
   height: 8px;
   border-radius: 999px;
   background: var(--dot, rgba(255, 255, 255, 0.6));
-  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.05);
+  box-shadow: 0 0 0 4px var(--surface-2);
 }
 
 body.app-body .donut-hint{
   font-size: 11px;
   font-weight: 700;
-  color: rgba(255, 255, 255, 0.55);
+  color: var(--text-muted);
 }
 
 body.app-body .insights-panel{
@@ -749,7 +799,7 @@ body.app-body .insights-header p{
   margin: 4px 0 0;
   font-size: 12px;
   font-weight: 700;
-  color: rgba(255, 255, 255, 0.65);
+  color: var(--text-muted);
 }
 
 body.app-body .insights-grid{
@@ -783,13 +833,14 @@ body.app-body .insight-pill{
   font-weight: 900;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  background: rgba(255, 255, 255, 0.12);
-  color: rgba(255, 255, 255, 0.75);
+  background: var(--chip-bg);
+  color: var(--chip-text);
+  border: 1px solid var(--chip-border);
 }
 
 body.app-body .insight-pill.positive{
-  background: rgba(76, 175, 80, 0.2);
-  color: rgba(168, 255, 210, 0.95);
+  background: rgba(76, 175, 80, 0.18);
+  color: var(--success);
 }
 
 body.app-body .insight-list{
@@ -800,14 +851,14 @@ body.app-body .insight-list{
   gap: 8px;
   font-size: 12px;
   font-weight: 700;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-muted);
 }
 
 body.app-body .insight-list li{
   padding: 10px 12px;
   border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(0, 0, 0, 0.22);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
 }
 
 body.app-body .insight-cta{
@@ -834,14 +885,14 @@ body.app-body .lock-icon{
   letter-spacing: 0.12em;
   padding: 2px 6px;
   border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  color: rgba(255, 255, 255, 0.8);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
 }
 
 body.app-body .modal-overlay{
   position: fixed;
   inset: 0;
-  background: rgba(4, 8, 12, 0.65);
+  background: var(--overlay-backdrop);
   display: none;
   align-items: center;
   justify-content: center;
@@ -854,8 +905,8 @@ body.app-body .modal-overlay.is-open{
 }
 
 body.app-body .modal{
-  background: rgba(12, 18, 24, 0.98);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: var(--modal-bg);
+  border: 1px solid var(--modal-border);
   border-radius: 16px;
   width: min(680px, 96vw);
   max-height: 90vh;
@@ -869,7 +920,7 @@ body.app-body .modal-header{
   align-items: center;
   justify-content: space-between;
   padding: 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid var(--divider);
 }
 
 body.app-body .modal-header h3{
@@ -881,7 +932,7 @@ body.app-body .modal-header h3{
 body.app-body .modal-close{
   border: 0;
   background: transparent;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-muted);
   font-size: 22px;
   cursor: pointer;
 }
@@ -895,7 +946,7 @@ body.app-body .modal-body{
 
 body.app-body .modal-actions{
   padding: 16px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: 1px solid var(--divider);
   display: flex;
   justify-content: flex-end;
   gap: 8px;
@@ -907,14 +958,14 @@ body.app-body .drilldown-summary{
   gap: 10px;
   font-size: 12px;
   font-weight: 700;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-muted);
 }
 
 body.app-body .drilldown-summary strong{
   display: block;
   font-size: 14px;
   font-weight: 900;
-  color: rgba(255, 255, 255, 0.92);
+  color: var(--text);
 }
 
 body.app-body .drilldown-list{
@@ -928,8 +979,8 @@ body.app-body .drilldown-list{
 body.app-body .drilldown-list li{
   padding: 10px 12px;
   border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -941,14 +992,14 @@ body.app-body .drilldown-list li{
 body.app-body .drilldown-list .item-meta{
   font-size: 11px;
   font-weight: 700;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-muted);
 }
 
 body.app-body .drilldown-empty{
   display: none;
   font-size: 12px;
   font-weight: 700;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-muted);
 }
 
 body.app-body .drilldown-empty.is-visible{
@@ -967,9 +1018,9 @@ body.app-body .toast-stack{
 body.app-body .toast{
   padding: 10px 14px;
   border-radius: 12px;
-  background: rgba(12, 18, 24, 0.98);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  color: rgba(255, 255, 255, 0.85);
+  background: var(--overlay);
+  border: 1px solid var(--border);
+  color: var(--text);
   font-size: 12px;
   font-weight: 800;
   opacity: 0;
@@ -983,11 +1034,11 @@ body.app-body .toast.is-visible{
 }
 
 body.app-body .toast.success{
-  border-color: rgba(76, 175, 80, 0.4);
+  border-color: var(--accent-border);
 }
 
 body.app-body .toast.error{
-  border-color: rgba(255, 85, 85, 0.5);
+  border-color: var(--danger);
 }
 
 body.app-body .chart-skeleton,
@@ -1009,7 +1060,7 @@ body.app-body .drilldown-skeleton{
 body.app-body .skeleton-line{
   height: 10px;
   border-radius: 999px;
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.08));
+  background: linear-gradient(90deg, var(--skeleton-base), var(--skeleton-highlight), var(--skeleton-base));
   background-size: 200% 100%;
   animation: shimmer 1.6s infinite;
 }
@@ -1018,7 +1069,7 @@ body.app-body .skeleton-circle{
   width: 140px;
   height: 140px;
   border-radius: 50%;
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.08));
+  background: linear-gradient(90deg, var(--skeleton-base), var(--skeleton-highlight), var(--skeleton-base));
   background-size: 200% 100%;
   animation: shimmer 1.6s infinite;
 }
@@ -1100,47 +1151,3 @@ body.app-body .charts-page.is-loading [data-skeleton]{
   }
 }
 
-body.app-body.theme-light.page-charts .charts-topbar,
-body.app-body.theme-light.page-charts .kpi-card,
-body.app-body.theme-light.page-charts .chart-card,
-body.app-body.theme-light.page-charts .insight-card,
-body.app-body.theme-light.page-charts .insights-header{
-  background: #ffffff;
-  border-color: rgba(15, 23, 32, 0.2);
-  color: #0f1720;
-  box-shadow: 0 12px 26px rgba(15, 23, 32, 0.12);
-}
-
-body.app-body.theme-light.page-charts .chart-canvas{
-  background: #ffffff;
-}
-
-body.app-body.theme-light.page-charts .chart-canvas::before{
-  background-image: linear-gradient(rgba(15, 23, 32, 0.06) 1px, transparent 1px),
-                    linear-gradient(90deg, rgba(15, 23, 32, 0.06) 1px, transparent 1px);
-}
-
-body.app-body.theme-light.page-charts .chart-empty,
-body.app-body.theme-light.page-charts .chart-head p,
-body.app-body.theme-light.page-charts .kpi-delta,
-body.app-body.theme-light.page-charts .compare-meta,
-body.app-body.theme-light.page-charts .donut-label,
-body.app-body.theme-light.page-charts .donut-legend,
-body.app-body.theme-light.page-charts .insight-list{
-  color: #0f1720;
-}
-
-body.app-body.theme-light.page-charts .chart-line .chart-tooltip{
-  background: rgba(15, 23, 32, 0.12);
-  color: rgba(15, 23, 32, 0.9);
-}
-
-body.app-body.theme-light.page-charts .export-menu{
-  background: #ffffff;
-  border-color: rgba(15, 23, 32, 0.2);
-}
-
-body.app-body.theme-light.page-charts .toast{
-  background: #ffffff;
-  color: #0f1720;
-}

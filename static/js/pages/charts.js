@@ -159,6 +159,65 @@
     lineState: null
   };
 
+  function readThemeTokens() {
+    const styles = getComputedStyle(document.body);
+    const get = (name) => styles.getPropertyValue(name).trim();
+    return {
+      text: get("--text"),
+      muted: get("--text-muted"),
+      border: get("--border"),
+      divider: get("--divider"),
+      overlay: get("--overlay")
+    };
+  }
+
+  function applyThemeToCharts() {
+    const t = readThemeTokens();
+    if (page) {
+      page.style.setProperty("--ink", t.text);
+      page.style.setProperty("--ink-soft", t.muted);
+      page.style.setProperty("--card-border", t.border);
+      page.style.setProperty("--chart-tooltip-border", t.border);
+      page.style.setProperty("--chart-tooltip-bg", t.overlay);
+      page.style.setProperty("--chart-tooltip-text", t.text);
+      page.style.setProperty("--chart-guide", t.divider || t.border);
+      page.style.setProperty("--chart-grid-strong", t.divider || t.border);
+      page.style.setProperty("--chart-grid-soft", t.divider || t.border);
+      page.style.setProperty("--chart-kpi-border", t.border);
+    }
+
+    if (window.Chart) {
+      Chart.defaults.color = t.text;
+      Chart.defaults.borderColor = t.border;
+      Chart.defaults.plugins = Chart.defaults.plugins || {};
+      Chart.defaults.plugins.legend = Chart.defaults.plugins.legend || {};
+      Chart.defaults.plugins.legend.labels = Chart.defaults.plugins.legend.labels || {};
+      Chart.defaults.plugins.legend.labels.color = t.text;
+      Chart.defaults.plugins.tooltip = Chart.defaults.plugins.tooltip || {};
+      Chart.defaults.plugins.tooltip.backgroundColor = t.overlay;
+      Chart.defaults.plugins.tooltip.titleColor = t.text;
+      Chart.defaults.plugins.tooltip.bodyColor = t.text;
+      Chart.defaults.scales = Chart.defaults.scales || {};
+      ["x", "y", "r"].forEach((axis) => {
+        Chart.defaults.scales[axis] = Chart.defaults.scales[axis] || {};
+        Chart.defaults.scales[axis].ticks = Chart.defaults.scales[axis].ticks || {};
+        Chart.defaults.scales[axis].ticks.color = t.muted || t.text;
+        Chart.defaults.scales[axis].grid = Chart.defaults.scales[axis].grid || {};
+        Chart.defaults.scales[axis].grid.color = t.divider || t.border;
+      });
+
+      const instances = Chart.instances || Chart.instances === 0 ? Chart.instances : null;
+      if (instances) {
+        const list = instances instanceof Map
+          ? Array.from(instances.values())
+          : Array.isArray(instances)
+            ? instances
+            : Object.values(instances);
+        list.forEach((chart) => chart && typeof chart.update === "function" && chart.update());
+      }
+    }
+  }
+
   function fmtBRL(value) {
     const num = Number(value) || 0;
     return num.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -1150,10 +1209,19 @@
     drilldownOverlay?.addEventListener("click", (event) => {
       if (event.target === drilldownOverlay) closeDrilldown();
     });
+
+    document.addEventListener("theme:changed", () => {
+      applyThemeToCharts();
+      if (state.data) {
+        updateLineChart(state.data);
+        updateDonut(state.data);
+      }
+    });
   }
 
   initDefaults();
   updatePeriodUI("month");
+  applyThemeToCharts();
   bindEvents();
   loadData();
 })();

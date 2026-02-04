@@ -1,14 +1,41 @@
 :root{
+  --bg: #0b0f14;
+  --bg-0: var(--bg);
   --bg-1: #0f1620;
-  --card: rgba(255, 255, 255, 0.06);
-  --border: rgba(255, 255, 255, 0.10);
+  --surface: rgba(255, 255, 255, 0.06);
+  --surface-2: rgba(255, 255, 255, 0.04);
+  --surface-3: rgba(0, 0, 0, 0.18);
   --text: rgba(255, 255, 255, 0.92);
-  --muted: rgba(255, 255, 255, 0.70);
-  --brand: #4caf50;
-  --brand-2: #9ee49f;
-  --r: 18px;
+  --text-muted: rgba(255, 255, 255, 0.70);
+  --heading: rgba(255, 255, 255, 0.98);
+  --border: rgba(255, 255, 255, 0.10);
+  --divider: rgba(255, 255, 255, 0.08);
   --shadow: 0 18px 60px rgba(0, 0, 0, 0.55);
-  --bg-0: #0b0f14;
+  --shadow-up: 0 -10px 24px rgba(0, 0, 0, 0.18);
+  --accent: #4caf50;
+  --accent-2: #9ee49f;
+  --danger: #ff4d4f;
+  --warning: #f5a623;
+  --success: #4caf50;
+  --info: #6cb2ff;
+  --chip-bg: rgba(255, 255, 255, 0.06);
+  --chip-text: rgba(255, 255, 255, 0.82);
+  --chip-border: rgba(255, 255, 255, 0.10);
+  --input-bg: var(--surface-3);
+  --input-text: var(--text);
+  --input-border: rgba(255, 255, 255, 0.12);
+  --input-placeholder: rgba(255, 255, 255, 0.55);
+  --table-bg: rgba(255, 255, 255, 0.03);
+  --table-head-bg: rgba(255, 255, 255, 0.05);
+  --table-row-hover: rgba(255, 255, 255, 0.06);
+  --overlay: rgba(15, 20, 28, 0.96);
+  --overlay-backdrop: rgba(0, 0, 0, 0.55);
+  --focus: rgba(76, 175, 80, 0.55);
+  --card: var(--surface);
+  --muted: var(--text-muted);
+  --brand: var(--accent);
+  --brand-2: var(--accent-2);
+  --r: 18px;
   --topbar-h: 56px;
 }
 
@@ -30,14 +57,14 @@ body.app-body input, body.app-body select, body.app-body textarea{
 }
 
 body.app-body select{
-  color: rgba(255, 255, 255, 0.92);
-  border: 1px solid rgba(255, 255, 255, 0.10);
-  background-color: rgba(255, 255, 255, 0.06);
+  color: var(--input-text);
+  border: 1px solid var(--input-border);
+  background-color: var(--input-bg);
 }
 
 body.app-body option{
-  color: rgba(255, 255, 255, 0.92);
-  background-color: #0b0f14;
+  color: var(--text);
+  background-color: var(--bg);
 }
 
 body.app-body input[type="date"]{
@@ -1113,15 +1140,36 @@ body.app-body:not(.theme-light) .theme-sun{
 
 /* --- Theme light overrides (upgrade) --- */
 body.app-body.theme-light{
-  --bg-0: #f2f4f2;
-  --bg-1: #e5e8e6;
-  --card: #ffffff;
-  --border: rgba(15, 23, 32, 0.2);
-  --text: #0f1720;
-  --muted: #0f1720;
-  --shadow: 0 14px 28px rgba(15, 23, 32, 0.14);
+  --bg: #f2f4f6;
+  --bg-0: var(--bg);
+  --bg-1: #e7eaee;
+  --surface: #fbfcfd;
+  --surface-2: #f5f7f9;
+  --surface-3: #ffffff;
+  --text: #0f172a;
+  --text-muted: #475569;
+  --heading: #0b1320;
+  --border: rgba(15, 23, 42, 0.14);
+  --divider: rgba(15, 23, 42, 0.10);
+  --shadow: 0 12px 26px rgba(15, 23, 42, 0.12);
+  --shadow-up: 0 -10px 24px rgba(15, 23, 42, 0.08);
+  --chip-bg: rgba(15, 23, 42, 0.06);
+  --chip-text: #0f172a;
+  --chip-border: rgba(15, 23, 42, 0.18);
+  --input-bg: var(--surface-3);
+  --input-text: var(--text);
+  --input-border: rgba(15, 23, 42, 0.18);
+  --input-placeholder: #94a3b8;
+  --table-bg: var(--surface);
+  --table-head-bg: #f1f5f9;
+  --table-row-hover: rgba(15, 23, 42, 0.04);
+  --overlay: rgba(255, 255, 255, 0.98);
+  --overlay-backdrop: rgba(15, 23, 42, 0.35);
+  --focus: rgba(76, 175, 80, 0.45);
   color-scheme: light;
-  background: radial-gradient(1200px 650px at 20% 0%, rgba(76, 175, 80, 0.14), transparent 60%), radial-gradient(1000px 600px at 90% 10%, rgba(66, 165, 245, 0.10), transparent 55%), linear-gradient(180deg, var(--bg-0), var(--bg-1));
+  background: radial-gradient(1200px 650px at 20% 0%, rgba(76, 175, 80, 0.12), transparent 60%),
+              radial-gradient(1000px 600px at 90% 10%, rgba(66, 165, 245, 0.10), transparent 55%),
+              linear-gradient(180deg, var(--bg-0), var(--bg-1));
 }
 
 body.app-body.theme-light input,
@@ -1130,16 +1178,6 @@ body.app-body.theme-light textarea{
   color-scheme: light;
 }
 
-body.app-body.theme-light select{
-  background-color: #ffffff;
-  color: var(--text);
-  border-color: rgba(15, 23, 32, 0.2);
-}
-
-body.app-body.theme-light option{
-  background-color: #ffffff;
-  color: #0f1720;
-}
 
 body.app-body.theme-light .sidebar,
 body.app-body.theme-light .app-topbar,
@@ -1155,34 +1193,34 @@ body.app-body.theme-light .page-upgrade .upgrade-return-plan,
 body.app-body.theme-light .page-upgrade .upgrade-return-status-card,
 body.app-body.theme-light .page-upgrade .upgrade-return-steps,
 body.app-body.theme-light .page-upgrade .upgrade-return-step-list li{
-  background: #ffffff;
-  border-color: rgba(15, 23, 32, 0.2);
-  box-shadow: 0 12px 26px rgba(15, 23, 32, 0.12);
+  background: var(--surface);
+  border-color: var(--border);
+  box-shadow: var(--shadow);
 }
 
 body.app-body.theme-light .sidebar-brand{
-  border-bottom-color: rgba(15, 23, 32, 0.12);
+  border-bottom-color: var(--divider);
 }
 
 body.app-body.theme-light .sidebar-footer{
-  border-top-color: rgba(15, 23, 32, 0.12);
-  box-shadow: 0 -10px 24px rgba(15, 23, 32, 0.08);
+  border-top-color: var(--divider);
+  box-shadow: var(--shadow-up);
 }
 
 body.app-body.theme-light .sidebar-user-toggle:hover{
-  background: rgba(15, 23, 32, 0.05);
+  background: var(--surface-2);
 }
 
 body.app-body.theme-light .page-upgrade .upgrade-checkout{
-  background: #ffffff;
-  border-color: rgba(15, 23, 32, 0.2);
-  box-shadow: 0 12px 26px rgba(15, 23, 32, 0.12);
+  background: var(--surface);
+  border-color: var(--border);
+  box-shadow: var(--shadow);
 }
 
 body.app-body.theme-light .page-upgrade .upgrade-return{
-  background: #ffffff;
-  border-color: rgba(15, 23, 32, 0.2);
-  box-shadow: 0 12px 26px rgba(15, 23, 32, 0.12);
+  background: var(--surface);
+  border-color: var(--border);
+  box-shadow: var(--shadow);
 }
 
 body.app-body.theme-light .page-upgrade .upgrade-return::before{
@@ -1191,7 +1229,7 @@ body.app-body.theme-light .page-upgrade .upgrade-return::before{
 }
 
 body.app-body.theme-light .history-head{
-  background: rgba(15, 23, 32, 0.06);
+  background: var(--surface-2);
 }
 
 body.app-body.theme-light .page-upgrade,
@@ -1229,11 +1267,11 @@ body.app-body.theme-light .status-pill.status-paid{
 }
 
 body.app-body.theme-light .nav-item{
-  color: rgba(15, 23, 32, 0.78);
+  color: var(--text-muted);
 }
 
 body.app-body.theme-light .nav-item:hover{
-  background: rgba(15, 23, 32, 0.06);
+  background: var(--surface-2);
   color: var(--text);
 }
 
@@ -1245,20 +1283,20 @@ body.app-body.theme-light .nav-item.is-active{
 }
 
 body.app-body.theme-light .pill{
-  background: rgba(15, 23, 32, 0.06);
-  border-color: rgba(15, 23, 32, 0.2);
+  background: var(--surface-2);
+  border-color: var(--border);
   color: var(--text);
 }
 
 body.app-body.theme-light .topbar-search{
-  background: rgba(15, 23, 32, 0.05);
-  border-color: rgba(15, 23, 32, 0.2);
+  background: var(--surface-2);
+  border-color: var(--border);
 }
 
 body.app-body.theme-light .search-panel{
   background: rgba(255, 255, 255, 0.98);
-  border-color: rgba(15, 23, 32, 0.2);
-  box-shadow: 0 18px 45px rgba(15, 23, 32, 0.14);
+  border-color: var(--border);
+  box-shadow: var(--shadow);
 }
 
 body.app-body.theme-light .search-group-title{
@@ -1266,18 +1304,18 @@ body.app-body.theme-light .search-group-title{
 }
 
 body.app-body.theme-light .search-group + .search-group{
-  border-top-color: rgba(15, 23, 32, 0.08);
+  border-top-color: var(--divider);
 }
 
 body.app-body.theme-light .search-item{
-  color: rgba(15, 23, 32, 0.85);
+  color: var(--text);
 }
 
 body.app-body.theme-light .search-item:hover,
 body.app-body.theme-light .search-item.is-active{
-  background: rgba(15, 23, 32, 0.06);
-  border-color: rgba(15, 23, 32, 0.2);
-  color: rgba(15, 23, 32, 0.95);
+  background: var(--surface-2);
+  border-color: var(--border);
+  color: var(--heading);
 }
 
 body.app-body.theme-light .search-empty{
@@ -1320,13 +1358,14 @@ body.app-body .pricing-grid{
 }
 
 body.app-body .pricing-card{
-  background: rgba(0, 0, 0, 0.18);
-  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 4px;
   padding: 22px;
   display: flex;
   flex-direction: column;
   position: relative;
+  box-shadow: var(--shadow);
 }
 
 body.app-body .pricing-card.popular{
@@ -1343,6 +1382,7 @@ body.app-body .badge{
   border-radius: 999px;
   background: rgba(76, 175, 80, 0.18);
   border: 1px solid rgba(76, 175, 80, 0.30);
+  color: #fff;
   position: absolute;
 }
 
@@ -1361,7 +1401,7 @@ body.app-body .price .value{
 
 body.app-body .price .period{
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.70);
+  color: var(--text-muted);
 }
 
 body.app-body .plan-list{
@@ -1369,7 +1409,7 @@ body.app-body .plan-list{
   display: flex;
   flex-direction: column;
   gap: 10px;
-  color: rgba(255, 255, 255, 0.70);
+  color: var(--text-muted);
   font-size: 13px;
   line-height: 1.45;
   margin: 14px 0 18px;
@@ -1399,9 +1439,9 @@ body.app-body .pricing-card a.btn-primary:hover{
 }
 
 body.app-body .pricing-card button.btn-secondary{
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.12);
-  color: rgba(255,255,255,0.90);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--text);
 }
 
 @media (max-width: 980px){
@@ -1874,7 +1914,7 @@ body.app-body.theme-light .sidebar-user-info strong{
 }
 
 body.app-body.theme-light .sidebar-user-menu .user-menu-item:hover{
-  background: rgba(15, 23, 32, 0.06);
+  background: var(--surface-2);
   color: var(--text);
 }
 
@@ -1903,28 +1943,28 @@ body.app-body.theme-light .badge{
 }
 
 body.app-body.theme-light .page-upgrade .upgrade-checkout{
-  background: #ffffff;
-  border-color: rgba(15, 23, 32, 0.2);
-  box-shadow: 0 12px 26px rgba(15, 23, 32, 0.12);
+  background: var(--surface);
+  border-color: var(--border);
+  box-shadow: var(--shadow);
 }
 
 body.app-body.theme-light .page-upgrade .upgrade-checkout-card,
 body.app-body.theme-light .page-upgrade .upgrade-checkout-plan{
-  background: #ffffff;
-  border-color: rgba(15, 23, 32, 0.2);
-  box-shadow: 0 10px 22px rgba(15, 23, 32, 0.12);
+  background: var(--surface);
+  border-color: var(--border);
+  box-shadow: var(--shadow);
 }
 
 body.app-body.theme-light .page-upgrade .upgrade-checkout-plan-pill{
-  color: #0f1720;
+  color: var(--text);
   background: rgba(76, 175, 80, 0.18);
   border-color: rgba(76, 175, 80, 0.4);
 }
 
 body.app-body.theme-light .page-upgrade .upgrade-return{
-  background: #ffffff;
-  border-color: rgba(15, 23, 32, 0.2);
-  box-shadow: 0 12px 26px rgba(15, 23, 32, 0.12);
+  background: var(--surface);
+  border-color: var(--border);
+  box-shadow: var(--shadow);
 }
 
 body.app-body.theme-light .page-upgrade .upgrade-return::before{
@@ -1936,13 +1976,13 @@ body.app-body.theme-light .page-upgrade .upgrade-return-plan,
 body.app-body.theme-light .page-upgrade .upgrade-return-status-card,
 body.app-body.theme-light .page-upgrade .upgrade-return-steps,
 body.app-body.theme-light .page-upgrade .upgrade-return-step-list li{
-  background: #ffffff;
-  border-color: rgba(15, 23, 32, 0.2);
-  box-shadow: 0 10px 22px rgba(15, 23, 32, 0.12);
+  background: var(--surface);
+  border-color: var(--border);
+  box-shadow: var(--shadow);
 }
 
 body.app-body.theme-light .page-upgrade .upgrade-return-plan-pill{
-  color: #0f1720;
+  color: var(--text);
   background: rgba(76, 175, 80, 0.18);
   border-color: rgba(76, 175, 80, 0.4);
 }
