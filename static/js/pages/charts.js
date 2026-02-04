@@ -1042,7 +1042,7 @@
     const target = event.target.closest("[data-locked='true']");
     if (!target) return;
     event.preventDefault();
-    pushToast("Dispon\u00edvel apenas no plano PRO.", "error");
+    pushToast("Dispon\u00edvel apenas no plano Plus.", "error");
   }
 
   function initDefaults() {

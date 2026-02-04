@@ -1944,3 +1944,314 @@ body.app-body.theme-light .page-upgrade .upgrade-return-hint,
 body.app-body.theme-light .page-upgrade .upgrade-return-step-list span{
   color: var(--text);
 }
+
+/* --- Marketing-aligned upgrade (pricing) --- */
+.page-upgrade .upgrade-hero{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.page-upgrade .upgrade-hero-text{
+  flex: 1 1 360px;
+}
+
+.page-upgrade .upgrade-title{
+  margin: 0;
+  font-size: 24px;
+  letter-spacing: -0.02em;
+  font-weight: 950;
+}
+
+.page-upgrade .upgrade-subtitle{
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.page-upgrade .upgrade-hero-card{
+  flex: 0 0 260px;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: rgba(0, 0, 0, 0.18);
+  padding: 14px 16px;
+  display: grid;
+  gap: 8px;
+  box-shadow: var(--shadow);
+}
+
+.page-upgrade .upgrade-hero-label{
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: 800;
+}
+
+.page-upgrade .upgrade-hero-note{
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.page-upgrade .plan-grid{
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  margin-top: 8px;
+}
+
+.page-upgrade .plan-card{
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 22px;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.18);
+  box-shadow: var(--shadow);
+}
+
+.page-upgrade .plan-card.plan-popular{
+  border-color: rgba(76, 175, 80, 0.45);
+  box-shadow: 0 18px 50px rgba(76, 175, 80, 0.16);
+}
+
+.page-upgrade .plan-badge{
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 900;
+  background: rgba(76, 175, 80, 0.18);
+  border: 1px solid rgba(76, 175, 80, 0.35);
+}
+
+.page-upgrade .plan-badge-sub{
+  position: absolute;
+  top: 44px;
+  right: 14px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 800;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.page-upgrade .plan-head{
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.page-upgrade .plan-name{
+  margin: 0;
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.page-upgrade .plan-tagline{
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.page-upgrade .plan-price{
+  text-align: right;
+}
+
+.page-upgrade .plan-value{
+  font-size: 20px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+.page-upgrade .plan-period{
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.page-upgrade .plan-desc{
+  margin: 0;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.page-upgrade .plan-block{
+  display: grid;
+  gap: 8px;
+}
+
+.page-upgrade .plan-label{
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: 800;
+}
+
+.page-upgrade .plan-list,
+.page-upgrade .plan-audience{
+  padding-left: 18px;
+  margin: 0;
+  display: grid;
+  gap: 8px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.72);
+  line-height: 1.45;
+}
+
+.page-upgrade .plan-impact{
+  font-style: italic;
+  color: rgba(255, 255, 255, 0.75);
+  border-left: 2px solid rgba(255, 255, 255, 0.2);
+  padding-left: 10px;
+  margin-top: 2px;
+}
+
+.page-upgrade .plan-actions{
+  margin-top: auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.page-upgrade .plan-actions .btn-primary,
+.page-upgrade .plan-actions .btn-secondary,
+.page-upgrade .plan-actions .btn-ghost{
+  height: 42px;
+  padding: 0 16px;
+  border-radius: 14px;
+  font-weight: 900;
+}
+
+.page-upgrade .compare-section{
+  margin-top: 28px;
+}
+
+.page-upgrade .section-title{
+  margin: 0 0 6px;
+  font-size: 20px;
+  font-weight: 900;
+  letter-spacing: -0.01em;
+}
+
+.page-upgrade .section-subtitle{
+  margin: 0 0 14px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.page-upgrade .compare{
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.18);
+  overflow: auto;
+  box-shadow: var(--shadow);
+}
+
+.page-upgrade .compare table{
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 640px;
+}
+
+.page-upgrade .compare th,
+.page-upgrade .compare td{
+  padding: 12px 14px;
+  text-align: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 13px;
+}
+
+.page-upgrade .compare th:first-child,
+.page-upgrade .compare td:first-child{
+  text-align: left;
+}
+
+.page-upgrade .compare th{
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.75);
+  font-weight: 900;
+}
+
+.page-upgrade .plan-pill{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.08);
+  font-weight: 900;
+  font-size: 10px;
+}
+
+.page-upgrade .pill-col{
+  display: inline-flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.page-upgrade .plan-pill.popular{
+  border-color: rgba(76, 175, 80, 0.35);
+  background: rgba(76, 175, 80, 0.18);
+}
+
+.page-upgrade .compare .feat{
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.86);
+}
+
+.page-upgrade .compare .yes{
+  color: #9ee49f;
+  font-weight: 900;
+}
+
+.page-upgrade .compare .no{
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.page-upgrade .compare-note{
+  margin-top: 12px;
+  display: grid;
+  gap: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 14px;
+  padding: 12px 14px;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 12px;
+}
+
+@media (max-width: 980px){
+  .page-upgrade .plan-grid{
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px){
+  .page-upgrade .upgrade-hero{
+    flex-direction: column;
+  }
+
+  .page-upgrade .upgrade-hero-card{
+    width: 100%;
+  }
+}

@@ -11,7 +11,7 @@
   {% set p = (selected_plan or 'basic') %}
   {% set plan = PLANS.get(p, PLANS['basic']) %}
   <p class="public-subtitle">
-    Você está criando uma conta no plano
+    Você está criando uma conta no
     <strong id="selected-plan-badge" class="plan-badge plan-{{ p }}">{{ plan['name'] }}</strong>.
     Você poderá alterar depois.
   </p>
@@ -38,7 +38,9 @@
                   {% if (selected_plan or 'basic') == key %}checked{% endif %}>
                 <div class="plan-card-body">
                   {% if plan.get('popular') %}
-                    <span class="plan-badge">Mais vendido</span>
+                    <span class="plan-badge">
+                      {{ plan.get('badge', 'Destaque Pro') }}{% if plan.get('badge_sub') %} / {{ plan['badge_sub'] }}{% endif %}
+                    </span>
                   {% endif %}
                   <h3>{{ plan['name'] }}</h3>
                   <div class="price">

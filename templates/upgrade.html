@@ -6,32 +6,150 @@
 {% block page_title %}Gerenciar plano{% endblock %}
 
 {% block content %}
-  <div class="app-card">
-    <h2>Seu plano atual: <span class="pill">{{ PLANS.get(current_user.plan, PLANS['basic'])['name'] }}</span></h2>
-    <p class="muted">A troca de plano é feita via checkout (pagamento). Ao selecionar um plano, você será direcionado para a etapa de upgrade.</p>
-  </div>
+  {% set current_plan = (current_user.plan or 'basic')|lower %}
 
-  <div class="pricing-grid app-pricing">
+  <section class="upgrade-hero">
+    <div class="upgrade-hero-text">
+      <h2 class="upgrade-title">Planos para o essencial, a análise e o planejamento completo</h2>
+      <p class="upgrade-subtitle">
+        Comece com o controle do dia a dia e avance para insights, automações e relatórios profissionais.
+      </p>
+    </div>
+    <div class="upgrade-hero-card">
+      <span class="upgrade-hero-label">Seu plano atual</span>
+      <span class="pill">{{ PLANS.get(current_plan, PLANS['basic'])['name'] }}</span>
+      <p class="upgrade-hero-note">
+        A troca de plano é feita via checkout (pagamento). Ao selecionar um plano, você será direcionado para a etapa de upgrade.
+      </p>
+    </div>
+  </section>
+
+  <section class="plan-grid" id="planos">
     {% for key, plan in PLANS.items() %}
-      <div class="pricing-card {% if plan.get('popular') %}popular{% endif %}">
-        {% if plan.get('popular') %}<div class="badge">Mais vendido</div>{% endif %}
-        <h3>{{ plan['name'] }}</h3>
-        <div class="price">
-          <span class="value">R$ {{ '%.2f'|format(plan['price_month']) }}</span>
-          <span class="period">/ mês</span>
-        </div>
-        <ul class="plan-list">
-          {% for item in plan['highlights'] %}
-            <li>{{ item }}</li>
-          {% endfor %}
-        </ul>
-
-        {% if current_user.plan == key %}
-          <button class="btn-secondary" type="button" disabled>Plano atual</button>
-        {% else %}
-          <a class="btn-primary" href="{{ url_for('analytics.upgrade_checkout_page', plan=key) }}">Fazer upgrade para {{ plan['name'] }}</a>
+      {% set is_current = current_plan == key %}
+      <article class="plan-card {% if plan.get('popular') %}plan-popular{% endif %}">
+        {% if plan.get('badge') %}
+          <div class="plan-badge">{{ plan['badge'] }}</div>
+          {% if plan.get('badge_sub') %}<div class="plan-badge-sub">{{ plan['badge_sub'] }}</div>{% endif %}
         {% endif %}
-      </div>
+
+        <div class="plan-head">
+          <div>
+            <h3 class="plan-name">{{ plan['name'] }}</h3>
+            <p class="plan-tagline">{{ plan['tagline'] }}</p>
+          </div>
+          <div class="plan-price">
+            <div class="plan-value">R$ {{ '%.2f'|format(plan['price_month']) }}</div>
+            <div class="plan-period">por mês</div>
+          </div>
+        </div>
+
+        <p class="plan-desc">{{ plan['description'] }}</p>
+
+        <div class="plan-block">
+          <span class="plan-label">{{ plan['benefits_title'] }}</span>
+          <ul class="plan-list">
+            {% for item in plan['highlights'] %}
+              <li>{{ item }}</li>
+            {% endfor %}
+          </ul>
+        </div>
+
+        {% if plan.get('audience') %}
+          <div class="plan-block">
+            <span class="plan-label">{{ plan.get('audience_title', 'Para quem é') }}</span>
+            <ul class="plan-audience">
+              {% for item in plan['audience'] %}
+                <li>{{ item }}</li>
+              {% endfor %}
+            </ul>
+          </div>
+        {% endif %}
+
+        {% if plan.get('impact') %}
+          <div class="plan-impact">"{{ plan['impact'] }}"</div>
+        {% endif %}
+
+        <div class="plan-actions">
+          {% if is_current %}
+            <button class="btn-secondary" type="button" disabled>Plano atual</button>
+          {% else %}
+            {% if current_plan == 'basic' and key != 'basic' %}
+              {% set cta_label = 'Assinar ' ~ plan['name'] %}
+            {% else %}
+              {% set cta_label = 'Trocar para ' ~ plan['name'] %}
+            {% endif %}
+            <a class="btn-primary" href="{{ url_for('analytics.upgrade_checkout_page', plan=key) }}">{{ cta_label }}</a>
+          {% endif %}
+          <a class="btn-ghost" href="#comparativo">Ver comparação</a>
+        </div>
+      </article>
     {% endfor %}
-  </div>
+  </section>
+
+  <section class="compare-section" id="comparativo">
+    <h2 class="section-title">Comparativo completo</h2>
+    <p class="section-subtitle">
+      Transparência total: o que cada plano libera hoje. (Os recursos seguem a configuração do seu sistema.)
+    </p>
+
+    <div class="compare" role="region" aria-label="Tabela comparativa de planos">
+      <table>
+        <thead>
+          <tr>
+            <th>Funcionalidade</th>
+            <th><span class="pill-col"><span class="plan-pill">Básico</span></span></th>
+            <th><span class="pill-col"><span class="plan-pill">Plus</span></span></th>
+            <th><span class="pill-col"><span class="plan-pill popular">Pro</span></span></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="feat">Dashboard (visão do mês)</td>
+            <td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td>
+          </tr>
+          <tr>
+            <td class="feat">Lançamentos (receitas e despesas)</td>
+            <td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td>
+          </tr>
+          <tr>
+            <td class="feat">Resumo mensal</td>
+            <td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td>
+          </tr>
+          <tr>
+            <td class="feat">Gráficos mensais e anuais</td>
+            <td class="no">—</td><td class="yes">✓</td><td class="yes">✓</td>
+          </tr>
+          <tr>
+            <td class="feat">Insights do período</td>
+            <td class="no">—</td><td class="yes">✓</td><td class="yes">✓</td>
+          </tr>
+          <tr>
+            <td class="feat">Filtros avançados no histórico</td>
+            <td class="no">—</td><td class="yes">✓</td><td class="yes">✓</td>
+          </tr>
+          <tr>
+            <td class="feat">Regras &amp; automações</td>
+            <td class="no">—</td><td class="yes">✓</td><td class="yes">✓</td>
+          </tr>
+          <tr>
+            <td class="feat">Projeção de saldo</td>
+            <td class="no">—</td><td class="no">—</td><td class="yes">✓</td>
+          </tr>
+          <tr>
+            <td class="feat">Relatórios simples</td>
+            <td class="no">—</td><td class="no">—</td><td class="yes">✓</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="compare-note">
+      <strong>Observação:</strong>
+      <span>
+        Para iniciar o checkout é necessário ter <b>conta verificada</b> e dados completos (nome, CPF/CNPJ e telefone).
+        Isso garante ativação automática no seu usuário.
+      </span>
+    </div>
+  </section>
 {% endblock %}

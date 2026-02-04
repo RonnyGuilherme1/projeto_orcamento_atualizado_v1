@@ -20,8 +20,6 @@
         </div>
       </div>
 
-      {% set is_pro = has_feature('reports') %}
-
       <div class="widgets-grid">
         {# Gr?ficos (Plus/Pro) #}
         {% if has_feature('charts') %}
@@ -89,22 +87,22 @@
               <div class="insight-line" data-insight-label="Top categoria">
                 <div class="insight-main"><span>Top categoria</span><strong id="dash-insights-top-cat">-</strong></div>
                 <div class="insight-actions">
-                  <button type="button" class="chip-btn {% if not is_pro %}is-locked{% endif %}" data-insight-action="alert" {% if not is_pro %}data-locked="1" data-tooltip="Dispon&iacute;vel no Pro" aria-disabled="true"{% endif %}>Criar alerta</button>
-                  <button type="button" class="chip-btn {% if not is_pro %}is-locked{% endif %}" data-insight-action="simulate" {% if not is_pro %}data-locked="1" data-tooltip="Dispon&iacute;vel no Pro" aria-disabled="true"{% endif %}>Simular redu&ccedil;&atilde;o</button>
+                  <button type="button" class="chip-btn" data-insight-action="alert">Criar alerta</button>
+                  <button type="button" class="chip-btn" data-insight-action="simulate">Simular redu&ccedil;&atilde;o</button>
                 </div>
               </div>
               <div class="insight-line" data-insight-label="Maior sa&iacute;da">
                 <div class="insight-main"><span>Maior sa&iacute;da</span><strong id="dash-insights-top-exp">R$ 0,00</strong></div>
                 <div class="insight-actions">
-                  <button type="button" class="chip-btn {% if not is_pro %}is-locked{% endif %}" data-insight-action="alert" {% if not is_pro %}data-locked="1" data-tooltip="Dispon&iacute;vel no Pro" aria-disabled="true"{% endif %}>Criar alerta</button>
-                  <button type="button" class="chip-btn {% if not is_pro %}is-locked{% endif %}" data-insight-action="simulate" {% if not is_pro %}data-locked="1" data-tooltip="Dispon&iacute;vel no Pro" aria-disabled="true"{% endif %}>Simular redu&ccedil;&atilde;o</button>
+                  <button type="button" class="chip-btn" data-insight-action="alert">Criar alerta</button>
+                  <button type="button" class="chip-btn" data-insight-action="simulate">Simular redu&ccedil;&atilde;o</button>
                 </div>
               </div>
               <div class="insight-line" data-insight-label="Varia&ccedil;&atilde;o (despesas)">
                 <div class="insight-main"><span>Varia&ccedil;&atilde;o (despesas)</span><strong id="dash-insights-var">-</strong></div>
                 <div class="insight-actions">
-                  <button type="button" class="chip-btn {% if not is_pro %}is-locked{% endif %}" data-insight-action="alert" {% if not is_pro %}data-locked="1" data-tooltip="Dispon&iacute;vel no Pro" aria-disabled="true"{% endif %}>Criar alerta</button>
-                  <button type="button" class="chip-btn {% if not is_pro %}is-locked{% endif %}" data-insight-action="simulate" {% if not is_pro %}data-locked="1" data-tooltip="Dispon&iacute;vel no Pro" aria-disabled="true"{% endif %}>Simular redu&ccedil;&atilde;o</button>
+                  <button type="button" class="chip-btn" data-insight-action="alert">Criar alerta</button>
+                  <button type="button" class="chip-btn" data-insight-action="simulate">Simular redu&ccedil;&atilde;o</button>
                 </div>
               </div>
             </div>

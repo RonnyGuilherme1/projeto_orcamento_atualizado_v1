@@ -331,7 +331,7 @@
       const button = event.target.closest("[data-insight-action]");
       if (!button) return;
       if (button.dataset.locked) {
-        setInsightsFeedback("Disponivel no Pro.");
+        setInsightsFeedback("Disponível no Plus.");
         return;
       }
       const line = button.closest(".insight-line");
