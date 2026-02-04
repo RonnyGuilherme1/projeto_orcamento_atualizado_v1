@@ -25,6 +25,12 @@ from routes.rules_routes import rules_bp
 
 from services.plans import PLANS, is_valid_plan
 from services.feature_gate import user_has_feature
+from services.document_validation import (
+    normalize_cpf,
+    normalize_phone,
+    validate_cpf,
+    validate_phone,
+)
 from services.permissions import (
     CSRF_EXEMPT_ENDPOINTS,
     get_csrf_token,
@@ -373,11 +379,14 @@ def buy():
     # Exige perfil completo
     profile = UserProfile.query.filter_by(user_id=current_user.id).first()
     full_name = (current_user.full_name or "").strip() or (getattr(profile, "full_name", "") or "").strip()
-    tax_id = _only_digits(getattr(current_user, "tax_id", None)) or _only_digits(getattr(profile, "cpf", None))
-    phone = _only_digits(getattr(current_user, "cellphone", None)) or _only_digits(getattr(profile, "phone", None))
+    tax_id = normalize_cpf(getattr(current_user, "tax_id", None)) or normalize_cpf(getattr(profile, "cpf", None))
+    phone = normalize_phone(getattr(current_user, "cellphone", None)) or normalize_phone(getattr(profile, "phone", None))
 
-    if not full_name or not tax_id or not phone:
-        flash("Para iniciar o pagamento, complete seus dados pessoais (Nome completo, CPF e Telefone).", "error")
+    if not full_name:
+        flash("Informe seu nome completo para liberar o pagamento.", "error")
+        return redirect(url_for("account_page", section="profile"))
+    if not validate_cpf(tax_id) or not validate_phone(phone):
+        flash("Informe um CPF e telefone válidos para liberar o pagamento.", "error")
         return redirect(url_for("account_page", section="profile"))
 
     # Cria pedido local vinculado ao usuario logado
@@ -561,15 +570,15 @@ def account_profile_save():
     tax_id_raw = (request.form.get("tax_id") or "").strip()
     cellphone_raw = (request.form.get("cellphone") or "").strip()
 
-    tax_id = re.sub(r"\D+", "", tax_id_raw)
-    cellphone = re.sub(r"\D+", "", cellphone_raw)
+    tax_id = normalize_cpf(tax_id_raw)
+    cellphone = normalize_phone(cellphone_raw)
 
     errors = []
     if len(full_name) < 3:
         errors.append("Informe seu nome completo.")
-    if len(tax_id) not in {11, 14}:
-        errors.append("Informe um CPF/CNPJ válido.")
-    if len(cellphone) < 10:
+    if not validate_cpf(tax_id):
+        errors.append("Informe um CPF válido.")
+    if not validate_phone(cellphone):
         errors.append("Informe um telefone válido.")
 
     if errors:
@@ -666,15 +675,14 @@ def billing_renew():
     if not is_valid_plan(plan):
         plan = "basic"
 
-    if not (
-        getattr(current_user, "full_name", None)
-        and getattr(current_user, "tax_id", None)
-        and getattr(current_user, "cellphone", None)
-    ):
-        flash(
-            "Para iniciar o pagamento, preencha seus dados pessoais (nome, CPF e telefone).",
-            "info",
-        )
+    full_name = (current_user.full_name or "").strip()
+    tax_id = normalize_cpf(getattr(current_user, "tax_id", None))
+    phone = normalize_phone(getattr(current_user, "cellphone", None))
+    if not full_name:
+        flash("Informe seu nome completo para liberar o pagamento.", "info")
+        return redirect(url_for("account_page", section="profile"))
+    if not validate_cpf(tax_id) or not validate_phone(phone):
+        flash("Informe um CPF e telefone válidos para liberar o pagamento.", "info")
         return redirect(url_for("account_page", section="profile"))
 
     order = create_order(plan, user_id=current_user.id)
@@ -683,10 +691,10 @@ def billing_renew():
     return_url = url_for("account_page", section="billing", _external=True)
 
     customer = {
-        "name": current_user.full_name,
+        "name": full_name,
         "email": current_user.email,
-        "cellphone": current_user.cellphone,
-        "taxId": current_user.tax_id,
+        "cellphone": phone,
+        "taxId": tax_id,
     }
 
     try:

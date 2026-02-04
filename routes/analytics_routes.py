@@ -32,6 +32,12 @@ from services.abacatepay import create_plan_billing, get_billing_status, Abacate
 from services.date_utils import last_day_of_month
 from services.subscription import apply_paid_order
 from services.reports_pdf import render_reports_pdf
+from services.document_validation import (
+    normalize_cpf,
+    normalize_phone,
+    validate_cpf,
+    validate_phone,
+)
 
 
 analytics_bp = Blueprint("analytics", __name__)
@@ -391,16 +397,15 @@ def upgrade_checkout_start():
 
     # Cria cobrança no provedor (PIX)
     try:
-        # Para iniciar o pagamento, precisamos de dados pessoais.
-        if not (
-            getattr(current_user, "full_name", None)
-            and getattr(current_user, "tax_id", None)
-            and getattr(current_user, "cellphone", None)
-        ):
-            flash(
-                "Para iniciar o pagamento, preencha seus dados pessoais (nome, CPF e telefone) em Minha conta > Dados pessoais.",
-                "info",
-            )
+        # Para iniciar o pagamento, precisamos de dados pessoais válidos.
+        full_name = (current_user.full_name or "").strip()
+        tax_id = normalize_cpf(getattr(current_user, "tax_id", None))
+        phone = normalize_phone(getattr(current_user, "cellphone", None))
+        if not full_name:
+            flash("Informe seu nome completo para liberar o pagamento.", "info")
+            return redirect(url_for("account_page", section="profile"))
+        if not validate_cpf(tax_id) or not validate_phone(phone):
+            flash("Informe um CPF e telefone válidos para liberar o pagamento.", "info")
             return redirect(url_for("account_page", section="profile"))
 
         # Mantemos o mesmo padrão do checkout público:
@@ -410,10 +415,10 @@ def upgrade_checkout_start():
         return_url = url_for("analytics.upgrade", _external=True)
 
         customer = {
-            "name": current_user.full_name,
+            "name": full_name,
             "email": current_user.email,
-            "cellphone": current_user.cellphone,
-            "taxId": current_user.tax_id,
+            "cellphone": phone,
+            "taxId": tax_id,
         }
 
         billing = create_plan_billing(

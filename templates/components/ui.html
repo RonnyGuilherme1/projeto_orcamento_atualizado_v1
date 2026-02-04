@@ -35,7 +35,7 @@
   </section>
 {%- endmacro %}
 
-{% macro input_text(id, name, label, type='text', value='', required=false, autocomplete='', placeholder='', extra_class='') -%}
+{% macro input_text(id, name, label, type='text', value='', required=false, autocomplete='', placeholder='', extra_class='', attrs={}) -%}
   <div class="form-row {{ extra_class }}">
     <label for="{{ id }}">{{ label }}</label>
     <input
@@ -45,6 +45,7 @@
       value="{{ value }}"
       {% if placeholder %}placeholder="{{ placeholder }}"{% endif %}
       {% if autocomplete %}autocomplete="{{ autocomplete }}"{% endif %}
-      {% if required %}required{% endif %} />
+      {% if required %}required{% endif %}
+      {%- for k,v in attrs.items() %} {{ k }}="{{ v }}"{%- endfor %} />
   </div>
 {%- endmacro %}

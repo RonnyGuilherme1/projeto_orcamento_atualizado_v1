@@ -1,5 +1,3 @@
-import re
-
 from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, jsonify, session
 from flask_login import login_user, logout_user, login_required, current_user
 from sqlalchemy.exc import IntegrityError
@@ -11,6 +9,12 @@ from services.email_service import send_verification_email
 from services.plans import is_valid_plan
 from services.password_policy import validate_password, PasswordValidationError
 from services.permissions import is_json_request, json_error
+from services.document_validation import (
+    normalize_cpf,
+    normalize_phone,
+    validate_cpf,
+    validate_phone,
+)
 
 auth_bp = Blueprint("auth", __name__)
 
@@ -111,14 +115,14 @@ def register():
     if not is_valid_plan(plan):
         return _reject("Plano invalido. Escolha outro plano.")
 
-    tax_id = re.sub(r"\D+", "", tax_id_raw)
-    cellphone = re.sub(r"\D+", "", cellphone_raw)
+    tax_id = normalize_cpf(tax_id_raw)
+    cellphone = normalize_phone(cellphone_raw)
     errors = []
     if len(full_name) < 3:
         errors.append("Informe seu nome completo.")
-    if len(tax_id) not in {11, 14}:
-        errors.append("Informe um CPF/CNPJ valido.")
-    if len(cellphone) < 10:
+    if not validate_cpf(tax_id):
+        errors.append("Informe um CPF valido.")
+    if not validate_phone(cellphone):
         errors.append("Informe um telefone valido.")
     if errors:
         if wants_json:

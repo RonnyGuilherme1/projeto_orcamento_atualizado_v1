@@ -287,12 +287,12 @@
 
                 <div class="account-field">
                   <label class="account-label">CPF</label>
-                  <input class="account-input" name="tax_id" type="text" placeholder="000.000.000-00" value="{{ current_user.tax_id or '' }}" required>
+                  <input class="account-input" name="tax_id" type="text" placeholder="000.000.000-00" value="{{ current_user.tax_id or '' }}" required data-mask="cpf" inputmode="numeric" maxlength="14">
                 </div>
 
                 <div class="account-field">
                   <label class="account-label">Telefone</label>
-                  <input class="account-input" name="cellphone" type="text" placeholder="(00) 00000-0000" value="{{ current_user.cellphone or '' }}" required>
+                  <input class="account-input" name="cellphone" type="text" placeholder="(00) 00000-0000" value="{{ current_user.cellphone or '' }}" required data-mask="phone" inputmode="numeric" maxlength="15">
                 </div>
               </div>
 
@@ -325,4 +325,9 @@
       </div>
     </div>
   </section>
+{% endblock %}
+
+{% block scripts %}
+  {{ super() }}
+  <script src="/static/js/document_masks.js"></script>
 {% endblock %}
