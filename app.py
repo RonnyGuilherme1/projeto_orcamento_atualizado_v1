@@ -207,7 +207,7 @@ def enforce_csrf():
 @app.after_request
 def apply_security_headers(response):
     response.headers.setdefault("X-Content-Type-Options", "nosniff")
-    response.headers.setdefault("X-Frame-Options", "DENY")
+    response.headers.setdefault("X-Frame-Options", "SAMEORIGIN")
     response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
     response.headers.setdefault(
         "Permissions-Policy",
@@ -221,10 +221,11 @@ def apply_security_headers(response):
             "style-src 'self' 'unsafe-inline'; "
             "img-src 'self' data:; "
             "font-src 'self' data:; "
+            "frame-src 'self' blob:; "
             "connect-src 'self'; "
             "object-src 'none'; "
             "base-uri 'self'; "
-            "frame-ancestors 'none'; "
+            "frame-ancestors 'self'; "
             "form-action 'self'"
         )
         response.headers["Content-Security-Policy"] = csp
