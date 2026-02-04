@@ -176,6 +176,7 @@ def init_db(app):
         from models.automation_rule_model import AutomationRule, RuleExecution  # noqa: F401
         from models.recurrence_model import Recurrence, RecurrenceExecution  # noqa: F401
         from models.reminder_model import Reminder  # noqa: F401
+        from models.notification_model import Notification  # noqa: F401
         from models.projection_scenario_model import ProjectionScenario  # noqa: F401
 
 

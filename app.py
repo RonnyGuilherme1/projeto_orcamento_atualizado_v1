@@ -22,6 +22,7 @@ from routes.entradas_routes import entradas_bp
 from routes.auth_routes import auth_bp
 from routes.analytics_routes import analytics_bp
 from routes.rules_routes import rules_bp
+from routes.notifications_routes import notifications_bp
 
 from services.plans import PLANS, is_valid_plan
 from services.feature_gate import user_has_feature
@@ -97,6 +98,7 @@ app.register_blueprint(entradas_bp)
 app.register_blueprint(auth_bp)
 app.register_blueprint(analytics_bp)
 app.register_blueprint(rules_bp)
+app.register_blueprint(notifications_bp)
 
 
 @app.context_processor

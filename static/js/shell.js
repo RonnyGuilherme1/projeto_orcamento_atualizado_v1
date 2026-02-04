@@ -8,11 +8,22 @@
   const searchInput = document.querySelector('[data-menu-search]');
   const notificationToggle = document.querySelector('[data-notifications-toggle]');
   const notificationPanel = document.querySelector('[data-notifications-panel]');
+  const notificationsBadge = document.querySelector('[data-notifications-badge]');
+  const notificationsList = document.querySelector('[data-notifications-list]');
+  const notificationsEmpty = document.querySelector('[data-notifications-empty]');
+  const notificationsLoading = document.querySelector('[data-notifications-loading]');
+  const notificationsClear = document.querySelector('[data-notifications-clear]');
   const themeToggle = document.querySelector('[data-theme-toggle]');
 
   const DESKTOP_MIN = 1025;
   const SIDEBAR_STATE_KEY = 'sidebar_state';
   const THEME_KEY = 'app_theme';
+  const NOTIFICATIONS_TTL = 30000;
+
+  let notificationsState = null;
+  let notificationsLoadingState = false;
+  let notificationsLastFetch = 0;
+  const notificationsEmptyDefault = notificationsEmpty ? notificationsEmpty.textContent : '';
 
   function isDesktop() {
     return window.innerWidth >= DESKTOP_MIN;
@@ -118,6 +129,189 @@
     if (notificationPanel) notificationPanel.classList.remove('is-open');
   }
 
+  function escapeHtml(value) {
+    const text = String(value ?? '');
+    return text.replace(/[&<>"']/g, (char) => {
+      switch (char) {
+        case '&':
+          return '&amp;';
+        case '<':
+          return '&lt;';
+        case '>':
+          return '&gt;';
+        case '"':
+          return '&quot;';
+        case "'":
+          return '&#39;';
+        default:
+          return char;
+      }
+    });
+  }
+
+  function setNotificationsBadge(count) {
+    if (!notificationsBadge) return;
+    const safeCount = Number.isFinite(count) ? Math.max(0, count) : 0;
+    if (safeCount > 0) {
+      notificationsBadge.textContent = safeCount > 99 ? '99+' : String(safeCount);
+      notificationsBadge.style.display = 'inline-flex';
+    } else {
+      notificationsBadge.textContent = '';
+      notificationsBadge.style.display = 'none';
+    }
+  }
+
+  function setNotificationsLoading(isLoading) {
+    if (notificationsLoading) {
+      notificationsLoading.style.display = isLoading ? 'block' : 'none';
+    }
+    if (notificationsList) {
+      notificationsList.style.display = isLoading ? 'none' : notificationsList.style.display;
+    }
+    if (notificationsEmpty) {
+      notificationsEmpty.style.display = isLoading ? 'none' : notificationsEmpty.style.display;
+    }
+  }
+
+  function renderNotifications(data) {
+    notificationsState = data || { items: [], unread_count: 0 };
+    const items = Array.isArray(notificationsState.items) ? notificationsState.items : [];
+    const unreadCount = Number.isFinite(notificationsState.unread_count)
+      ? notificationsState.unread_count
+      : items.filter((item) => !item.read_at).length;
+
+    if (notificationsEmpty) {
+      notificationsEmpty.textContent = notificationsEmptyDefault || 'Sem notificações no momento.';
+    }
+
+    if (notificationsList) {
+      if (items.length) {
+        notificationsList.innerHTML = items.map((item) => {
+          const href = item.href || '#';
+          const title = escapeHtml(item.title || 'Notificação');
+          const message = item.message ? `<span class="notification-message">${escapeHtml(item.message)}</span>` : '';
+          const readClass = item.read_at ? 'is-read' : 'is-unread';
+          return `
+            <a class="notification-item ${readClass}" href="${escapeHtml(href)}" data-id="${escapeHtml(item.id)}">
+              <strong>${title}</strong>
+              ${message}
+            </a>
+          `;
+        }).join('');
+        notificationsList.style.display = 'grid';
+      } else {
+        notificationsList.innerHTML = '';
+        notificationsList.style.display = 'none';
+      }
+    }
+
+    if (notificationsEmpty) {
+      notificationsEmpty.style.display = items.length ? 'none' : 'block';
+    }
+    if (notificationsClear) {
+      notificationsClear.style.display = items.length ? 'inline-flex' : 'none';
+    }
+
+    setNotificationsBadge(unreadCount);
+    setNotificationsLoading(false);
+  }
+
+  async function loadNotifications(force = false) {
+    if (!notificationPanel) return;
+    if (notificationsLoadingState) return;
+    const now = Date.now();
+    if (!force && notificationsState && (now - notificationsLastFetch) < NOTIFICATIONS_TTL) {
+      renderNotifications(notificationsState);
+      return;
+    }
+
+    notificationsLoadingState = true;
+    setNotificationsLoading(true);
+    try {
+      const resp = await fetch('/app/notifications/data', {
+        headers: { 'Accept': 'application/json' },
+      });
+      if (!resp.ok) {
+        throw new Error('request_failed');
+      }
+      const data = await resp.json();
+      notificationsLastFetch = Date.now();
+      notificationsLoadingState = false;
+      renderNotifications(data || {});
+    } catch (err) {
+      notificationsLoadingState = false;
+      if (notificationsEmpty) {
+        notificationsEmpty.textContent = 'Não foi possível carregar notificações.';
+        notificationsEmpty.style.display = 'block';
+      }
+      if (notificationsList) {
+        notificationsList.innerHTML = '';
+        notificationsList.style.display = 'none';
+      }
+      if (notificationsClear) {
+        notificationsClear.style.display = 'none';
+      }
+      setNotificationsBadge(0);
+      setNotificationsLoading(false);
+    }
+  }
+
+  function updateLocalNotificationRead(id) {
+    if (!notificationsState || !Array.isArray(notificationsState.items)) return;
+    const item = notificationsState.items.find((entry) => String(entry.id) === String(id));
+    if (item && !item.read_at) {
+      item.read_at = new Date().toISOString();
+      if (Number.isFinite(notificationsState.unread_count)) {
+        notificationsState.unread_count = Math.max(0, notificationsState.unread_count - 1);
+      }
+    }
+  }
+
+  async function markNotificationRead(id, itemEl) {
+    if (!id) return;
+    updateLocalNotificationRead(id);
+    if (itemEl) {
+      itemEl.classList.remove('is-unread');
+      itemEl.classList.add('is-read');
+    }
+    if (notificationsState) {
+      const unreadCount = Number.isFinite(notificationsState.unread_count)
+        ? notificationsState.unread_count
+        : 0;
+      setNotificationsBadge(unreadCount);
+    }
+
+    try {
+      await fetch('/app/notifications/mark-read', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+        keepalive: true,
+      });
+    } catch (err) {
+      // Falha silenciosa: a próxima recarga corrige o estado.
+    }
+  }
+
+  async function markAllNotificationsRead() {
+    if (!notificationsState || !Array.isArray(notificationsState.items)) return;
+    notificationsState.items = notificationsState.items.map((item) => ({
+      ...item,
+      read_at: item.read_at || new Date().toISOString(),
+    }));
+    notificationsState.unread_count = 0;
+    renderNotifications(notificationsState);
+
+    try {
+      await fetch('/app/notifications/mark-all-read', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+    } catch (err) {
+      // Falha silenciosa: a próxima recarga corrige o estado.
+    }
+  }
+
   if (userMenuToggle && userMenu) {
     userMenuToggle.addEventListener('click', (event) => {
       event.stopPropagation();
@@ -132,11 +326,32 @@
   if (notificationToggle && notificationPanel) {
     notificationToggle.addEventListener('click', (event) => {
       event.stopPropagation();
-      notificationPanel.classList.toggle('is-open');
+      const isOpen = notificationPanel.classList.toggle('is-open');
       closeUserMenu();
+      if (isOpen) {
+        loadNotifications();
+      }
     });
     notificationPanel.addEventListener('click', (event) => {
       event.stopPropagation();
+    });
+  }
+
+  if (notificationsList) {
+    notificationsList.addEventListener('click', (event) => {
+      const item = event.target.closest('.notification-item');
+      if (!item) return;
+      const id = item.dataset.id;
+      if (id) {
+        markNotificationRead(id, item);
+      }
+    });
+  }
+
+  if (notificationsClear) {
+    notificationsClear.addEventListener('click', (event) => {
+      event.preventDefault();
+      markAllNotificationsRead();
     });
   }
 
@@ -340,5 +555,8 @@
     openSidebar();
   }
   syncSidebarStateOnResize();
+  if (notificationsBadge) {
+    loadNotifications();
+  }
   highlightActiveNav();
 })();

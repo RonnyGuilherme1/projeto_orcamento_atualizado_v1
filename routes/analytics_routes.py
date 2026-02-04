@@ -730,6 +730,75 @@ def _delta_payload(current: float, previous: float) -> dict:
     }
 
 
+def build_period_alerts(
+    *,
+    user_id: int,
+    start: date,
+    end: date,
+    entries: list[Entrada] | None = None,
+    summary: dict | None = None,
+    expense_categories: list[dict] | None = None,
+) -> list[str]:
+    """Monta alertas do periodo (mesma base usada nos graficos/insights)."""
+
+    if entries is None:
+        entries = (
+            Entrada.query
+            .filter(
+                Entrada.user_id == user_id,
+                Entrada.data >= start,
+                Entrada.data <= end,
+            )
+            .all()
+        )
+
+    if summary is None:
+        summary = _summarize_entries(entries)
+
+    if expense_categories is None:
+        expense_categories = _build_category_breakdown(entries, "despesa")
+
+    alerts: list[str] = []
+    if (summary.get("entradas") or 0) <= 0:
+        alerts.append("Sem lançamentos no período.")
+    else:
+        hoje = date.today()
+        ref_date = hoje if (start <= hoje <= end) else start
+        limite = min(ref_date + timedelta(days=7), end)
+        proximas = (
+            Entrada.query
+            .filter(
+                Entrada.user_id == user_id,
+                Entrada.tipo == "despesa",
+                (Entrada.status.is_(None)) | (Entrada.status != "pago"),
+                Entrada.data >= ref_date,
+                Entrada.data <= limite,
+            )
+            .count()
+        )
+        if proximas:
+            alerts.append(f"{proximas} despesas vencem nos próximos 7 dias.")
+        else:
+            alerts.append("Nenhuma despesa vencendo nos próximos 7 dias.")
+
+    top_expense_category = (expense_categories or [])[:1]
+    if top_expense_category:
+        top_item = top_expense_category[0]
+        if top_item["percent"] >= 35:
+            alerts.append(
+                f"Categoria {top_item['label']} concentra {top_item['percent']}% das despesas."
+            )
+
+    receitas = float(summary.get("receitas") or 0)
+    saldo = float(summary.get("saldo_projetado") or 0)
+    if saldo < 0:
+        alerts.append("Saldo projetado negativo. Ajuste despesas variáveis.")
+    elif receitas and saldo < (receitas * 0.1):
+        alerts.append("Saldo projetado abaixo de 10% das receitas.")
+
+    return alerts
+
+
 def _build_charts_insights(summary: dict, categories: dict, highlights: dict, alerts: list[str], statuses: dict) -> dict:
     opportunities = []
     patterns = []
@@ -751,8 +820,6 @@ def _build_charts_insights(summary: dict, categories: dict, highlights: dict, al
     top_expense_category = (categories.get("expense") or [])[:1]
     if top_expense_category:
         top_item = top_expense_category[0]
-        if top_item["percent"] >= 35:
-            alerts.append(f"Categoria {top_item['label']} concentra {top_item['percent']}% das despesas.")
         patterns.append(f"Maior categoria: {top_item['label']} ({top_item['percent']}% das despesas).")
 
     pending_total = float(statuses.get("em_andamento") or 0) + float(statuses.get("nao_pago") or 0)
@@ -763,11 +830,6 @@ def _build_charts_insights(summary: dict, categories: dict, highlights: dict, al
     best_value = highlights.get("best_bucket_total")
     if best_label:
         patterns.append(f"{best_label} foi o melhor período (saldo {best_value:.2f}).")
-
-    if saldo < 0:
-        alerts.append("Saldo projetado negativo. Ajuste despesas variáveis.")
-    elif receitas and saldo < (receitas * 0.1):
-        alerts.append("Saldo projetado abaixo de 10% das receitas.")
 
     return {
         "alerts": alerts[:6],
@@ -879,28 +941,14 @@ def charts_data():
 
     equilibrio = round((summary["despesas"] / summary["receitas"]) * 100, 1) if summary["receitas"] else 0.0
 
-    alerts = []
-    if summary["entradas"] <= 0:
-        alerts.append("Sem lançamentos no período.")
-    else:
-        hoje = date.today()
-        ref_date = hoje if (start <= hoje <= end) else start
-        limite = min(ref_date + timedelta(days=7), end)
-        proximas = (
-            Entrada.query
-            .filter(
-                Entrada.user_id == current_user.id,
-                Entrada.tipo == "despesa",
-                (Entrada.status.is_(None)) | (Entrada.status != "pago"),
-                Entrada.data >= ref_date,
-                Entrada.data <= limite,
-            )
-            .count()
-        )
-        if proximas:
-            alerts.append(f"{proximas} despesas vencem nos próximos 7 dias.")
-        else:
-            alerts.append("Nenhuma despesa vencendo nos próximos 7 dias.")
+    alerts = build_period_alerts(
+        user_id=current_user.id,
+        start=start,
+        end=end,
+        entries=entries,
+        summary=summary,
+        expense_categories=expense_categories,
+    )
 
     comparison = {"enabled": False}
     if str(request.args.get("compare") or "").lower() in {"1", "true", "yes", "on"}:

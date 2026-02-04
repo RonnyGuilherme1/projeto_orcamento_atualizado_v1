@@ -28,21 +28,16 @@
           <path d="M18 8a6 6 0 1 0-12 0c0 7-3 7-3 7h18s-3 0-3-7"></path>
           <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
         </svg>
-        {% if subscription_notice %}
-          <span class="badge">{{ subscription_notice.days_left }}</span>
-        {% endif %}
+        <span class="badge" data-notifications-badge style="display:none;"></span>
       </button>
       <div class="notifications-panel" data-notifications-panel>
-        <div class="notifications-head">Notificações</div>
-        {% if subscription_notice %}
-          <div class="notification-item">
-            <strong>Plano vence em {{ subscription_notice.days_left }} dias</strong>
-            <span>Válido até {{ subscription_notice.expires_at }} · {{ subscription_notice.plan_name }}</span>
-            <a class="notification-link" href="/app/account?section=billing">Ver assinatura</a>
-          </div>
-        {% else %}
-          <div class="notification-empty">Sem notificações no momento.</div>
-        {% endif %}
+        <div class="notifications-head">
+          <span>Notificações</span>
+          <button class="notification-clear" type="button" data-notifications-clear style="display:none;" aria-label="Limpar todas as notificações">Limpar tudo</button>
+        </div>
+        <div class="notification-loading" data-notifications-loading style="display:none;">Carregando...</div>
+        <div class="notification-empty" data-notifications-empty>Sem notificações no momento.</div>
+        <div class="notifications-list" data-notifications-list></div>
       </div>
     </div>
 
