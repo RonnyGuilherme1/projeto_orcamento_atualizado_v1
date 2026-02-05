@@ -2040,11 +2040,14 @@ def reports_export_excel():
             writer.writerow(sanitize_row(["Fluxo de caixa"]))
             writer.writerow(sanitize_row(["Data", "Descricao", "Categoria", "Metodo", "Entrada", "Saida", "Saldo"]))
             for row in payload["flow"]["rows"]:
+                description = row.get("description", "")
+                category = row.get("category", "")
+                method = row.get("method", "")
                 writer.writerow(sanitize_row([
                     fmt_date(row["date"]),
-                    row["description"],
-                    row["category"],
-                    row["method"],
+                    description,
+                    category,
+                    method,
                     fmt_brl(row["income"]) if row["income"] else "",
                     fmt_brl(row["expense"]) if row["expense"] else "",
                     fmt_brl(row["balance"]),
@@ -2180,11 +2183,14 @@ def reports_export_excel():
                 cell.fill = header_fill
             row_idx = 2
             for row in payload["flow"]["rows"]:
+                description = row.get("description", "")
+                category = row.get("category", "")
+                method = row.get("method", "")
                 write_row(ws, row_idx, [
                     fmt_date(row["date"]),
-                    row["description"],
-                    row["category"],
-                    row["method"],
+                    description,
+                    category,
+                    method,
                     row["income"] or None,
                     row["expense"] or None,
                     row["balance"],
