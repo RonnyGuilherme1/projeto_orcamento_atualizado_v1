@@ -32,6 +32,14 @@ def send_verification_email(user: User) -> bool:
     app_base_url = (current_app.config.get("APP_BASE_URL") or "").rstrip("/")
     token = user.generate_verify_token()
     verify_link = f"{app_base_url}/verify/{token}"
+    # Mantém o plano escolhido no fluxo marketing → cadastro → verificação
+    try:
+        from flask import session
+        plan = (session.get("selected_plan") or "").strip().lower()
+        if plan in {"plus", "pro"}:
+            verify_link = f"{verify_link}?plan={plan}"
+    except Exception:
+        pass
     _store_dev_verify_link(user, verify_link)
 
     api_key = (current_app.config.get("RESEND_API_KEY") or "").strip()

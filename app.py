@@ -133,6 +133,11 @@ def inject_plan_helpers():
 
     return {
         "MARKETING_BASE_URL": app.config.get("MARKETING_BASE_URL", "https://controledeorcamento.onrender.com").rstrip("/"),
+        "APP_NAME": app.config.get("APP_NAME", "Controle Financeiro"),
+        "APP_TAGLINE": app.config.get("APP_TAGLINE", ""),
+        "APP_COMPANY": app.config.get("APP_COMPANY", "LinkGestor"),
+        "CURRENT_YEAR": datetime.utcnow().year,
+
         "PLANS": PLANS,
         "has_feature": has_feature,
         "abacatepay_card_enabled": card_enabled,
@@ -688,7 +693,7 @@ def account_access_save():
     if new_email:
         if new_email == (current_user.email or "").lower():
             new_email = ""
-        elif not re.match(r"^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$", new_email):
+        elif not re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", new_email):
             errors.append("Informe um e-mail valido.")
         elif User.query.filter(User.email == new_email, User.id != current_user.id).first():
             errors.append("Esse e-mail ja esta em uso.")

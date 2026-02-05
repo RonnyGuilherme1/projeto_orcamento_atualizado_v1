@@ -1,5 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, jsonify, session
 from flask_login import login_user, logout_user, login_required, current_user
+
+from services.security import safe_redirect_path
 from sqlalchemy.exc import IntegrityError
 
 from models.extensions import db
@@ -40,9 +42,13 @@ def _rate_limit_or_reject(action: str, *, limit: int, window: int, identifier: s
 @auth_bp.get("/login")
 def login_page():
     if current_user.is_authenticated:
+        if not current_user.is_verified:
+            return redirect(url_for("auth.verify_pending"))
         return redirect(url_for("index"))
+
     token = (request.args.get("token") or "").strip()
-    return render_template("login.html", checkout_token=token)
+    next_path = safe_redirect_path(request.args.get("next"), allowed_prefixes=("/app/", "/app"))
+    return render_template("login.html", checkout_token=token, next_path=next_path)
 
 
 @auth_bp.post("/login")
@@ -80,6 +86,9 @@ def login():
         flash("Sua conta ainda não foi verificada. Verifique seu e-mail.", "warning")
         return redirect(url_for("auth.verify_pending"))
 
+    next_path = safe_redirect_path(request.form.get("next"), allowed_prefixes=("/app/", "/app"))
+    if next_path:
+        return redirect(next_path)
     return redirect(url_for("index"))
 
 
@@ -88,11 +97,19 @@ def register_page():
     if current_user.is_authenticated:
         if not current_user.is_verified:
             return redirect(url_for("auth.verify_pending"))
+        next_path = safe_redirect_path(request.form.get("next"), allowed_prefixes=("/app/", "/app"))
+        if next_path:
+            return redirect(next_path)
         return redirect(url_for("index"))
     selected_plan = (request.args.get("plan") or "basic").strip().lower()
     token = (request.args.get("token") or "").strip()
     if selected_plan not in {"basic", "plus", "pro"}:
         selected_plan = "basic"
+    # Guarda o plano escolhido (para manter o fluxo marketing → cadastro → verificação → pagamento)
+    if selected_plan in {"plus", "pro"}:
+        session["selected_plan"] = selected_plan
+    else:
+        session.pop("selected_plan", None)
     return render_template("register.html", selected_plan=selected_plan, checkout_token=token)
 
 
@@ -153,6 +170,12 @@ def register():
     if not is_valid_plan(plan):
         return _reject("Plano invalido. Escolha outro plano.")
 
+    # Guarda o plano desejado para completar o fluxo de compra após verificação
+    if plan in {"plus", "pro"}:
+        session["selected_plan"] = plan
+    else:
+        session.pop("selected_plan", None)
+
     tax_id = normalize_cpf(tax_id_raw)
     cellphone = normalize_phone(cellphone_raw)
     errors = []
@@ -203,6 +226,9 @@ def register():
 @login_required
 def verify_pending():
     if current_user.is_verified:
+        next_path = safe_redirect_path(request.form.get("next"), allowed_prefixes=("/app/", "/app"))
+        if next_path:
+            return redirect(next_path)
         return redirect(url_for("index"))
     dev_verify_link = None
     if current_app.config.get("EMAIL_VERIFICATION_DEV_MODE"):
@@ -215,6 +241,9 @@ def verify_pending():
 @login_required
 def resend_verification():
     if current_user.is_verified:
+        next_path = safe_redirect_path(request.form.get("next"), allowed_prefixes=("/app/", "/app"))
+        if next_path:
+            return redirect(next_path)
         return redirect(url_for("index"))
 
     rate_block = _rate_limit_or_reject(
@@ -256,6 +285,12 @@ def verify(token):
 
     flash("Conta verificada com sucesso. Você já pode usar o sistema.", "success")
     login_user(user)
+
+    # Se o usuário veio do marketing com plano escolhido, direciona para o checkout
+    selected_plan = (request.args.get("plan") or "").strip().lower()
+    if selected_plan in {"plus", "pro"}:
+        return redirect(url_for("analytics.upgrade_checkout_page", plan=selected_plan))
+
     return redirect(url_for("index"))
 
 

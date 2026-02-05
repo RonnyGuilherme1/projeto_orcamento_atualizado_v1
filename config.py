@@ -21,6 +21,14 @@ class Config:
     ).lower()
     IS_PRODUCTION = APP_ENV in {"prod", "production"} or os.getenv("RENDER") == "true" or bool(os.getenv("RENDER_EXTERNAL_URL"))
 
+    # Branding (produto vs empresa)
+    # - APP_NAME: nome do sistema exibido na UI (ex.: "Controle Financeiro")
+    # - APP_TAGLINE: subtítulo opcional (pode ficar vazio)
+    # - APP_COMPANY: nome da empresa/gestora (exibido no © do rodapé)
+    APP_NAME = (os.getenv("APP_NAME", "Controle Financeiro") or "").strip() or "Controle Financeiro"
+    APP_TAGLINE = (os.getenv("APP_TAGLINE", "") or "").strip()
+    APP_COMPANY = (os.getenv("APP_COMPANY", os.getenv("APP_LEGAL_NAME", "LinkGestor")) or "").strip() or "LinkGestor"
+
     def _is_weak_secret(value: str) -> bool:
         if not value:
             return True
