@@ -1930,6 +1930,232 @@ def reports_export_pdf():
     )
 
 
+EXCEL_DATE_FORMAT = "dd/mm/yyyy"
+EXCEL_CURRENCY_FORMAT = "R$ #,##0.00"
+EXCEL_PERCENT_FORMAT = "0.0%"
+
+
+def _reports_to_float(value, default=None):
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return default
+
+
+def _reports_fmt_brl(value: float) -> str:
+    num = _reports_to_float(value, 0.0)
+    return f"R$ {num:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+
+
+def _reports_fmt_date(value: str | None) -> str:
+    if not value:
+        return ""
+    try:
+        return date.fromisoformat(value).strftime("%d/%m/%Y")
+    except Exception:
+        return str(value)
+
+
+def _reports_excel_date(value) -> date | datetime | None:
+    if isinstance(value, (date, datetime)):
+        return value
+    if not value:
+        return None
+    try:
+        raw = str(value)
+        if "T" in raw:
+            return datetime.fromisoformat(raw)
+        return date.fromisoformat(raw)
+    except Exception:
+        return None
+
+
+def _sanitize_export_cell(value):
+    if value is None:
+        return ""
+    if isinstance(value, (int, float, date, datetime)):
+        return value
+    text = str(value)
+    if text and text[0] in {"=", "+", "-", "@"}:
+        return "'" + text
+    return text
+
+
+def _sanitize_export_row(values):
+    return [_sanitize_export_cell(v) for v in values]
+
+
+def _build_reports_excel_workbook(
+    payload: dict,
+    sections: set[str],
+    mode: str,
+    user_label: str,
+    period_label: str,
+):
+    from openpyxl import Workbook
+    from openpyxl.styles import Alignment, Font, PatternFill
+    from openpyxl.utils import get_column_letter
+
+    def pct_value(value):
+        num = _reports_to_float(value)
+        if num is None:
+            return None
+        return num / 100
+
+    wb = Workbook()
+    wb.remove(wb.active)
+    header_font = Font(bold=True, color="FFFFFF")
+    header_fill = PatternFill("solid", fgColor="1B7F4A")
+    title_font = Font(bold=True, size=13)
+
+    def add_sheet(title: str):
+        ws = wb.create_sheet(title)
+        ws.page_setup.fitToWidth = 1
+        return ws
+
+    def style_header(ws, headers: list[str]):
+        for col_idx, label in enumerate(headers, start=1):
+            cell = ws.cell(row=1, column=col_idx, value=label)
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.alignment = Alignment(horizontal="left")
+        ws.freeze_panes = "A2"
+        ws.auto_filter.ref = f"A1:{get_column_letter(len(headers))}1"
+
+    def write_row(ws, row_idx: int, values, formats=None, bold=False):
+        for col_idx, value in enumerate(values, start=1):
+            cell_value = _sanitize_export_cell(value)
+            cell = ws.cell(row=row_idx, column=col_idx, value=cell_value)
+            if formats and col_idx - 1 < len(formats) and formats[col_idx - 1]:
+                cell.number_format = formats[col_idx - 1]
+            if bold:
+                cell.font = Font(bold=True)
+
+    def set_col_widths(ws, widths: dict[str, float]):
+        for col, width in widths.items():
+            ws.column_dimensions[col].width = width
+
+    summary_pct = pct_value(payload.get("summary", {}).get("economy_pct"))
+
+    if "summary" in sections:
+        ws = add_sheet("Resumo")
+        ws["A1"] = "Relatorio financeiro"
+        ws["A1"].font = title_font
+        ws.append(_sanitize_export_row(["Usuario", user_label]))
+        ws.append(_sanitize_export_row(["Periodo", period_label]))
+        ws.append(_sanitize_export_row(["Regime", MODE_LABELS.get(mode, mode.title())]))
+        ws.append([])
+        write_row(ws, 6, ["Resumo executivo"], bold=True)
+        ws.append(_sanitize_export_row(["Total receitas", payload["summary"]["income"]]))
+        ws.append(_sanitize_export_row(["Total despesas", payload["summary"]["expense"]]))
+        ws.append(_sanitize_export_row(["Resultado liquido", payload["summary"]["net"]]))
+        ws.append(_sanitize_export_row(["% economia", summary_pct]))
+        ws["B7"].number_format = EXCEL_CURRENCY_FORMAT
+        ws["B8"].number_format = EXCEL_CURRENCY_FORMAT
+        ws["B9"].number_format = EXCEL_CURRENCY_FORMAT
+        ws["B10"].number_format = EXCEL_PERCENT_FORMAT
+        set_col_widths(ws, {"A": 22, "B": 26})
+
+    if "dre" in sections:
+        ws = add_sheet("DRE")
+        headers = ["Categoria", "Receitas", "Despesas", "Resultado"]
+        style_header(ws, headers)
+        row_idx = 2
+        for row in payload["dre"]["rows"]:
+            write_row(ws, row_idx, [row["label"], row["income"], row["expense"], row["net"]])
+            for col in (2, 3, 4):
+                ws.cell(row=row_idx, column=col).number_format = EXCEL_CURRENCY_FORMAT
+            row_idx += 1
+        write_row(
+            ws,
+            row_idx,
+            ["Resultado total", payload["dre"]["total"]["income"], payload["dre"]["total"]["expense"], payload["dre"]["total"]["net"]],
+            bold=True,
+        )
+        for col in (2, 3, 4):
+            ws.cell(row=row_idx, column=col).number_format = EXCEL_CURRENCY_FORMAT
+        set_col_widths(ws, {"A": 32, "B": 16, "C": 16, "D": 16})
+
+    if "flow" in sections:
+        ws = add_sheet("Fluxo")
+        headers = ["Data", "Descricao", "Categoria", "Metodo", "Entrada", "Saida", "Saldo"]
+        style_header(ws, headers)
+        row_idx = 2
+        for row in payload["flow"]["rows"]:
+            write_row(
+                ws,
+                row_idx,
+                [
+                    _reports_excel_date(row.get("date")),
+                    row.get("description", ""),
+                    row.get("category", ""),
+                    row.get("method", ""),
+                    row.get("income") or None,
+                    row.get("expense") or None,
+                    row.get("balance"),
+                ],
+            )
+            ws.cell(row=row_idx, column=1).number_format = EXCEL_DATE_FORMAT
+            for col in (5, 6, 7):
+                ws.cell(row=row_idx, column=col).number_format = EXCEL_CURRENCY_FORMAT
+            row_idx += 1
+        write_row(ws, row_idx, ["Saldo final", "", "", "", "", "", payload["flow"]["final_balance"]], bold=True)
+        ws.cell(row=row_idx, column=7).number_format = EXCEL_CURRENCY_FORMAT
+        set_col_widths(ws, {"A": 12, "B": 40, "C": 20, "D": 16, "E": 14, "F": 14, "G": 14})
+
+    if "categories" in sections:
+        ws = add_sheet("Categorias")
+        headers = ["Categoria", "Total", "%", "Variacao"]
+        style_header(ws, headers)
+        row_idx = 2
+        for row in payload["categories"]["rows"]:
+            percent_value = pct_value(row.get("percent"))
+            delta_value = pct_value(row.get("delta"))
+            write_row(ws, row_idx, [row["label"], row["total"], percent_value, delta_value])
+            ws.cell(row=row_idx, column=2).number_format = EXCEL_CURRENCY_FORMAT
+            ws.cell(row=row_idx, column=3).number_format = EXCEL_PERCENT_FORMAT
+            ws.cell(row=row_idx, column=4).number_format = EXCEL_PERCENT_FORMAT
+            row_idx += 1
+        set_col_widths(ws, {"A": 32, "B": 16, "C": 10, "D": 12})
+
+    if "recurring" in sections:
+        ws = add_sheet("Recorrencias")
+        headers = ["Nome", "Frequencia", "Valor medio", "Confiabilidade"]
+        style_header(ws, headers)
+        row_idx = 2
+        for item in payload["recurring"]["items"]:
+            reliability_value = pct_value(item.get("reliability"))
+            write_row(ws, row_idx, [item["name"], item["frequency"], item["value"], reliability_value])
+            ws.cell(row=row_idx, column=3).number_format = EXCEL_CURRENCY_FORMAT
+            ws.cell(row=row_idx, column=4).number_format = EXCEL_PERCENT_FORMAT
+            row_idx += 1
+        set_col_widths(ws, {"A": 28, "B": 16, "C": 16, "D": 16})
+
+    if "pending" in sections:
+        ws = add_sheet("Pendencias")
+        headers = ["Vencimento", "Descricao", "Categoria", "Valor", "Dias atraso"]
+        style_header(ws, headers)
+        row_idx = 2
+        for item in payload["pending"]["items"]:
+            write_row(
+                ws,
+                row_idx,
+                [
+                    _reports_excel_date(item.get("date")),
+                    item.get("description", ""),
+                    item.get("category", ""),
+                    item.get("value"),
+                    item.get("days_overdue"),
+                ],
+            )
+            ws.cell(row=row_idx, column=1).number_format = EXCEL_DATE_FORMAT
+            ws.cell(row=row_idx, column=4).number_format = EXCEL_CURRENCY_FORMAT
+            row_idx += 1
+        set_col_widths(ws, {"A": 12, "B": 40, "C": 20, "D": 14, "E": 12})
+
+    return wb
+
+
 @analytics_bp.get("/app/reports/export/excel")
 @require_api_access(feature="reports")
 def reports_export_excel():
@@ -1960,302 +2186,132 @@ def reports_export_excel():
         flow_limit=flow_limit,
         detail=detail,
     )
-
-    def to_float(value, default=None):
-        try:
-            return float(value)
-        except (TypeError, ValueError):
-            return default
-
-    def fmt_brl(valor: float) -> str:
-        num = to_float(valor, 0.0)
-        return f"R$ {num:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-
-    def fmt_date(value: str | None) -> str:
-        if not value:
-            return ""
-        try:
-            return date.fromisoformat(value).strftime("%d/%m/%Y")
-        except Exception:
-            return value
-
-    def sanitize_cell(value):
-        if value is None:
-            return ""
-        if isinstance(value, (int, float)):
-            return value
-        text = str(value)
-        if text and text[0] in {"=", "+", "-", "@"}:
-            return "'" + text
-        return text
-
-    def sanitize_row(values):
-        return [sanitize_cell(v) for v in values]
+    period_label = _format_period_label(
+        date.fromisoformat(payload["period"]["start"]),
+        date.fromisoformat(payload["period"]["end"]),
+    )
+    user_label = getattr(current_user, "full_name", None) or current_user.email
 
     try:
-        from openpyxl import Workbook
-        from openpyxl.styles import Font, Alignment, PatternFill
-    except Exception:
+        wb = _build_reports_excel_workbook(
+            payload=payload,
+            sections=sections,
+            mode=mode,
+            user_label=user_label,
+            period_label=period_label,
+        )
+    except ImportError:
         output = io.StringIO()
         writer = csv.writer(output, delimiter=";")
 
-        period_label = _format_period_label(
-            date.fromisoformat(payload["period"]["start"]),
-            date.fromisoformat(payload["period"]["end"]),
-        )
-        economy_pct = to_float(payload.get("summary", {}).get("economy_pct"), 0.0)
-        writer.writerow(sanitize_row(["Relatorio financeiro"]))
-        writer.writerow(sanitize_row(["Usuario", getattr(current_user, "full_name", None) or current_user.email]))
-        writer.writerow(sanitize_row(["Periodo", period_label]))
-        writer.writerow(sanitize_row(["Regime", MODE_LABELS.get(mode, mode.title())]))
+        economy_pct = _reports_to_float(payload.get("summary", {}).get("economy_pct"), 0.0)
+        writer.writerow(_sanitize_export_row(["Relatorio financeiro"]))
+        writer.writerow(_sanitize_export_row(["Usuario", user_label]))
+        writer.writerow(_sanitize_export_row(["Periodo", period_label]))
+        writer.writerow(_sanitize_export_row(["Regime", MODE_LABELS.get(mode, mode.title())]))
         writer.writerow([])
 
         if "summary" in sections:
-            writer.writerow(sanitize_row(["Resumo executivo"]))
-            writer.writerow(sanitize_row(["Total receitas", fmt_brl(payload["summary"]["income"])]))
-            writer.writerow(sanitize_row(["Total despesas", fmt_brl(payload["summary"]["expense"])]))
-            writer.writerow(sanitize_row(["Resultado liquido", fmt_brl(payload["summary"]["net"])]))
-            writer.writerow(sanitize_row(["% economia", f"{economy_pct}%"]))
+            writer.writerow(_sanitize_export_row(["Resumo executivo"]))
+            writer.writerow(_sanitize_export_row(["Total receitas", _reports_fmt_brl(payload["summary"]["income"])]))
+            writer.writerow(_sanitize_export_row(["Total despesas", _reports_fmt_brl(payload["summary"]["expense"])]))
+            writer.writerow(_sanitize_export_row(["Resultado liquido", _reports_fmt_brl(payload["summary"]["net"])]))
+            writer.writerow(_sanitize_export_row(["% economia", f"{economy_pct}%"]))
             writer.writerow([])
 
         if "dre" in sections:
-            writer.writerow(sanitize_row(["DRE"]))
-            writer.writerow(sanitize_row(["Categoria", "Receitas", "Despesas", "Resultado"]))
+            writer.writerow(_sanitize_export_row(["DRE"]))
+            writer.writerow(_sanitize_export_row(["Categoria", "Receitas", "Despesas", "Resultado"]))
             for row in payload["dre"]["rows"]:
-                writer.writerow(sanitize_row([
+                writer.writerow(_sanitize_export_row([
                     row["label"],
-                    fmt_brl(row["income"]),
-                    fmt_brl(row["expense"]),
-                    fmt_brl(row["net"]),
+                    _reports_fmt_brl(row["income"]),
+                    _reports_fmt_brl(row["expense"]),
+                    _reports_fmt_brl(row["net"]),
                 ]))
-            writer.writerow(sanitize_row([
+            writer.writerow(_sanitize_export_row([
                 "Resultado total",
-                fmt_brl(payload["dre"]["total"]["income"]),
-                fmt_brl(payload["dre"]["total"]["expense"]),
-                fmt_brl(payload["dre"]["total"]["net"]),
+                _reports_fmt_brl(payload["dre"]["total"]["income"]),
+                _reports_fmt_brl(payload["dre"]["total"]["expense"]),
+                _reports_fmt_brl(payload["dre"]["total"]["net"]),
             ]))
             writer.writerow([])
 
         if "flow" in sections:
-            writer.writerow(sanitize_row(["Fluxo de caixa"]))
-            writer.writerow(sanitize_row(["Data", "Descricao", "Categoria", "Metodo", "Entrada", "Saida", "Saldo"]))
+            writer.writerow(_sanitize_export_row(["Fluxo de caixa"]))
+            writer.writerow(_sanitize_export_row(["Data", "Descricao", "Categoria", "Metodo", "Entrada", "Saida", "Saldo"]))
             for row in payload["flow"]["rows"]:
-                description = row.get("description", "")
-                category = row.get("category", "")
-                method = row.get("method", "")
-                writer.writerow(sanitize_row([
-                    fmt_date(row["date"]),
-                    description,
-                    category,
-                    method,
-                    fmt_brl(row["income"]) if row["income"] else "",
-                    fmt_brl(row["expense"]) if row["expense"] else "",
-                    fmt_brl(row["balance"]),
+                writer.writerow(_sanitize_export_row([
+                    _reports_fmt_date(row.get("date")),
+                    row.get("description", ""),
+                    row.get("category", ""),
+                    row.get("method", ""),
+                    _reports_fmt_brl(row["income"]) if row.get("income") else "",
+                    _reports_fmt_brl(row["expense"]) if row.get("expense") else "",
+                    _reports_fmt_brl(row.get("balance")),
                 ]))
-            writer.writerow(sanitize_row(["Saldo final", "", "", "", "", "", fmt_brl(payload["flow"]["final_balance"])]))
+            writer.writerow(_sanitize_export_row([
+                "Saldo final",
+                "",
+                "",
+                "",
+                "",
+                "",
+                _reports_fmt_brl(payload["flow"]["final_balance"]),
+            ]))
             writer.writerow([])
 
         if "categories" in sections:
-            writer.writerow(sanitize_row(["Categorias"]))
-            writer.writerow(sanitize_row(["Categoria", "Total", "%", "Variacao"]))
+            writer.writerow(_sanitize_export_row(["Categorias"]))
+            writer.writerow(_sanitize_export_row(["Categoria", "Total", "%", "Variacao"]))
             for row in payload["categories"]["rows"]:
-                percent_val = to_float(row.get("percent"), 0.0)
-                delta_val = to_float(row.get("delta"))
-                writer.writerow(sanitize_row([
+                percent_val = _reports_to_float(row.get("percent"), 0.0)
+                delta_val = _reports_to_float(row.get("delta"))
+                writer.writerow(_sanitize_export_row([
                     row["label"],
-                    fmt_brl(row["total"]),
+                    _reports_fmt_brl(row["total"]),
                     f"{percent_val}%",
                     f"{delta_val}%" if delta_val is not None else "",
                 ]))
             writer.writerow([])
 
         if "recurring" in sections:
-            writer.writerow(sanitize_row(["Recorrencias (receitas)"]))
-            writer.writerow(sanitize_row(["Nome", "Frequencia", "Valor medio", "Confiabilidade"]))
+            writer.writerow(_sanitize_export_row(["Recorrencias (receitas)"]))
+            writer.writerow(_sanitize_export_row(["Nome", "Frequencia", "Valor medio", "Confiabilidade"]))
             for item in payload["recurring"]["items"]:
-                reliability = to_float(item.get("reliability"), 0.0)
-                writer.writerow(sanitize_row([
+                reliability = _reports_to_float(item.get("reliability"), 0.0)
+                writer.writerow(_sanitize_export_row([
                     item["name"],
                     item["frequency"],
-                    fmt_brl(item["value"]),
+                    _reports_fmt_brl(item["value"]),
                     f"{reliability}%",
                 ]))
             writer.writerow([])
 
         if "pending" in sections:
-            writer.writerow(sanitize_row(["Pendencias"]))
-            writer.writerow(sanitize_row(["Vencimento", "Descricao", "Categoria", "Valor", "Dias atraso"]))
+            writer.writerow(_sanitize_export_row(["Pendencias"]))
+            writer.writerow(_sanitize_export_row(["Vencimento", "Descricao", "Categoria", "Valor", "Dias atraso"]))
             for item in payload["pending"]["items"]:
-                writer.writerow(sanitize_row([
-                    fmt_date(item["date"]),
-                    item["description"],
-                    item["category"],
-                    fmt_brl(item["value"]),
-                    item["days_overdue"],
+                writer.writerow(_sanitize_export_row([
+                    _reports_fmt_date(item.get("date")),
+                    item.get("description", ""),
+                    item.get("category", ""),
+                    _reports_fmt_brl(item.get("value")),
+                    item.get("days_overdue"),
                 ]))
 
         response = make_response(output.getvalue())
         response.headers["Content-Disposition"] = "attachment; filename=relatorio.csv"
         response.headers["Content-Type"] = "text/csv; charset=utf-8"
         return response
-
-    def pct_value(value):
-        num = to_float(value)
-        if num is None:
-            return None
-        return num / 100
-
-    try:
-        wb = Workbook()
-        wb.remove(wb.active)
-        header_font = Font(bold=True, color="FFFFFF")
-        header_fill = PatternFill("solid", fgColor="1B7F4A")
-        title_font = Font(bold=True, size=13)
-
-        def add_sheet(title: str):
-            ws = wb.create_sheet(title)
-            ws.page_setup.fitToWidth = 1
-            return ws
-
-        def write_row(ws, row_idx: int, values, formats=None, bold=False):
-            for col_idx, value in enumerate(values, start=1):
-                cell_value = sanitize_cell(value)
-                cell = ws.cell(row=row_idx, column=col_idx, value=cell_value)
-                if formats and col_idx - 1 < len(formats) and formats[col_idx - 1]:
-                    cell.number_format = formats[col_idx - 1]
-                if bold:
-                    cell.font = Font(bold=True)
-
-        currency_fmt = 'R$ #,##0.00'
-        percent_fmt = '0.0%'
-
-        period_label = _format_period_label(
-            date.fromisoformat(payload["period"]["start"]),
-            date.fromisoformat(payload["period"]["end"]),
-        )
-        user_label = getattr(current_user, "full_name", None) or current_user.email
-        summary_pct = pct_value(payload.get("summary", {}).get("economy_pct"))
-
-        if "summary" in sections:
-            ws = add_sheet("Resumo")
-            ws["A1"] = "Relatorio financeiro"
-            ws["A1"].font = title_font
-            ws.append(sanitize_row(["Usuario", user_label]))
-            ws.append(sanitize_row(["Periodo", period_label]))
-            ws.append(sanitize_row(["Regime", MODE_LABELS.get(mode, mode.title())]))
-            ws.append([])
-            write_row(ws, 6, ["Resumo executivo"], bold=True)
-            ws.append(sanitize_row(["Total receitas", payload["summary"]["income"]]))
-            ws.append(sanitize_row(["Total despesas", payload["summary"]["expense"]]))
-            ws.append(sanitize_row(["Resultado liquido", payload["summary"]["net"]]))
-            ws.append(sanitize_row(["% economia", summary_pct]))
-            ws["B7"].number_format = currency_fmt
-            ws["B8"].number_format = currency_fmt
-            ws["B9"].number_format = currency_fmt
-            ws["B10"].number_format = percent_fmt
-
-        if "dre" in sections:
-            ws = add_sheet("DRE")
-            headers = ["Categoria", "Receitas", "Despesas", "Resultado"]
-            write_row(ws, 1, headers, bold=True)
-            for col in range(1, 5):
-                cell = ws.cell(row=1, column=col)
-                cell.font = header_font
-                cell.fill = header_fill
-                cell.alignment = Alignment(horizontal="left")
-            row_idx = 2
-            for row in payload["dre"]["rows"]:
-                write_row(ws, row_idx, [row["label"], row["income"], row["expense"], row["net"]])
-                for col in (2, 3, 4):
-                    ws.cell(row=row_idx, column=col).number_format = currency_fmt
-                row_idx += 1
-            write_row(ws, row_idx, ["Resultado total", payload["dre"]["total"]["income"], payload["dre"]["total"]["expense"], payload["dre"]["total"]["net"]], bold=True)
-            for col in (2, 3, 4):
-                ws.cell(row=row_idx, column=col).number_format = currency_fmt
-
-        if "flow" in sections:
-            ws = add_sheet("Fluxo")
-            headers = ["Data", "Descricao", "Categoria", "Metodo", "Entrada", "Saida", "Saldo"]
-            write_row(ws, 1, headers, bold=True)
-            for col in range(1, 8):
-                cell = ws.cell(row=1, column=col)
-                cell.font = header_font
-                cell.fill = header_fill
-            row_idx = 2
-            for row in payload["flow"]["rows"]:
-                description = row.get("description", "")
-                category = row.get("category", "")
-                method = row.get("method", "")
-                write_row(ws, row_idx, [
-                    fmt_date(row["date"]),
-                    description,
-                    category,
-                    method,
-                    row["income"] or None,
-                    row["expense"] or None,
-                    row["balance"],
-                ])
-                for col in (5, 6, 7):
-                    ws.cell(row=row_idx, column=col).number_format = currency_fmt
-                row_idx += 1
-            write_row(ws, row_idx, ["Saldo final", "", "", "", "", "", payload["flow"]["final_balance"]], bold=True)
-            ws.cell(row=row_idx, column=7).number_format = currency_fmt
-
-        if "categories" in sections:
-            ws = add_sheet("Categorias")
-            headers = ["Categoria", "Total", "%", "Variacao"]
-            write_row(ws, 1, headers, bold=True)
-            for col in range(1, 5):
-                cell = ws.cell(row=1, column=col)
-                cell.font = header_font
-                cell.fill = header_fill
-            row_idx = 2
-            for row in payload["categories"]["rows"]:
-                percent_value = pct_value(row.get("percent"))
-                delta_value = pct_value(row.get("delta"))
-                write_row(ws, row_idx, [row["label"], row["total"], percent_value, delta_value])
-                ws.cell(row=row_idx, column=2).number_format = currency_fmt
-                ws.cell(row=row_idx, column=3).number_format = percent_fmt
-                ws.cell(row=row_idx, column=4).number_format = percent_fmt
-                row_idx += 1
-
-        if "recurring" in sections:
-            ws = add_sheet("Recorrencias")
-            headers = ["Nome", "Frequencia", "Valor medio", "Confiabilidade"]
-            write_row(ws, 1, headers, bold=True)
-            for col in range(1, 5):
-                cell = ws.cell(row=1, column=col)
-                cell.font = header_font
-                cell.fill = header_fill
-            row_idx = 2
-            for item in payload["recurring"]["items"]:
-                reliability_value = pct_value(item.get("reliability"))
-                write_row(ws, row_idx, [item["name"], item["frequency"], item["value"], reliability_value])
-                ws.cell(row=row_idx, column=3).number_format = currency_fmt
-                ws.cell(row=row_idx, column=4).number_format = percent_fmt
-                row_idx += 1
-
-        if "pending" in sections:
-            ws = add_sheet("Pendencias")
-            headers = ["Vencimento", "Descricao", "Categoria", "Valor", "Dias atraso"]
-            write_row(ws, 1, headers, bold=True)
-            for col in range(1, 6):
-                cell = ws.cell(row=1, column=col)
-                cell.font = header_font
-                cell.fill = header_fill
-            row_idx = 2
-            for item in payload["pending"]["items"]:
-                write_row(ws, row_idx, [fmt_date(item["date"]), item["description"], item["category"], item["value"], item["days_overdue"]])
-                ws.cell(row=row_idx, column=4).number_format = currency_fmt
-                row_idx += 1
-
-        output = io.BytesIO()
-        wb.save(output)
-        output.seek(0)
-        response = make_response(output.getvalue())
-        response.headers["Content-Disposition"] = "attachment; filename=relatorio.xlsx"
-        response.headers["Content-Type"] = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        return response
     except Exception:
         current_app.logger.exception("reports_export_excel failed")
         return jsonify({"error": "export_failed"}), 500
+
+    output = io.BytesIO()
+    wb.save(output)
+    output.seek(0)
+    response = make_response(output.getvalue())
+    response.headers["Content-Disposition"] = "attachment; filename=relatorio.xlsx"
+    response.headers["Content-Type"] = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    return response

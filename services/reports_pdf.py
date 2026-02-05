@@ -10,6 +10,10 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import mm
 from reportlab.lib.utils import ImageReader
+from reportlab.graphics.charts.barcharts import VerticalBarChart
+from reportlab.graphics.charts.lineplots import LinePlot
+from reportlab.graphics.shapes import Drawing, String
+from reportlab.graphics.widgets.markers import makeMarker
 from reportlab.pdfgen import canvas
 from reportlab.platypus import (
     BaseDocTemplate,
@@ -37,7 +41,9 @@ LIGHT_GRAY = colors.HexColor("#F2F4F6")
 CARD_BG = colors.HexColor("#F8FAFC")
 GREEN = colors.HexColor("#1F8A4C")
 RED = colors.HexColor("#C0392B")
+YELLOW = colors.HexColor("#D97706")
 NEUTRAL = colors.HexColor("#94A3B8")
+NBSP = "\u00A0"
 
 FLOW_DESC_LIMIT_RESUMIDO = 50
 FLOW_DESC_LIMIT_DETALHADO = 120
@@ -49,8 +55,8 @@ def _fmt_brl(value: float | int | None) -> str:
     try:
         num = float(value)
     except (TypeError, ValueError):
-        return "R$ -"
-    return f"R$ {num:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+        return f"R${NBSP}-"
+    return f"R${NBSP}{num:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
 
 def _fmt_percent(value: float | int | None, decimals: int = 1) -> str:
@@ -215,7 +221,8 @@ def _build_styles() -> dict:
     normal_style.fontSize = 10.5
     normal_style.leading = 14
     normal_style.textColor = TEXT_COLOR
-    normal_style.wordWrap = "CJK"
+    normal_style.wordWrap = "normal"
+    normal_style.splitLongWords = 0
     styles.add(
         ParagraphStyle(
             name="RptTitle",
@@ -242,7 +249,8 @@ def _build_styles() -> dict:
             fontSize=10.5,
             leading=14,
             textColor=TEXT_COLOR,
-            wordWrap="CJK",
+            wordWrap="normal",
+            splitLongWords=0,
         )
     )
     styles.add(
@@ -288,7 +296,8 @@ def _build_styles() -> dict:
             fontSize=9.5,
             leading=12,
             textColor=TEXT_COLOR,
-            wordWrap="CJK",
+            wordWrap="normal",
+            splitLongWords=0,
         )
     )
     styles.add(
@@ -299,7 +308,8 @@ def _build_styles() -> dict:
             leading=12,
             textColor=TEXT_COLOR,
             alignment=2,
-            wordWrap="CJK",
+            wordWrap="normal",
+            splitLongWords=0,
         )
     )
     styles.add(
@@ -310,6 +320,72 @@ def _build_styles() -> dict:
             leading=12,
             textColor=TEXT_COLOR,
             wordWrap="CJK",
+            splitLongWords=1,
+        )
+    )
+    styles.add(
+        ParagraphStyle(
+            name="CardTitle",
+            fontName="Helvetica-Bold",
+            fontSize=10,
+            leading=12,
+            textColor=TEXT_MUTED,
+            spaceAfter=2,
+        )
+    )
+    styles.add(
+        ParagraphStyle(
+            name="CardValue",
+            fontName="Helvetica-Bold",
+            fontSize=12.5,
+            leading=15,
+            textColor=TEXT_COLOR,
+        )
+    )
+    styles.add(
+        ParagraphStyle(
+            name="CardMeta",
+            fontName="Helvetica",
+            fontSize=9,
+            leading=12,
+            textColor=TEXT_COLOR,
+        )
+    )
+    styles.add(
+        ParagraphStyle(
+            name="CardMetaMuted",
+            fontName="Helvetica",
+            fontSize=8.5,
+            leading=11,
+            textColor=TEXT_MUTED,
+        )
+    )
+    styles.add(
+        ParagraphStyle(
+            name="ChartTitle",
+            fontName="Helvetica-Bold",
+            fontSize=10,
+            leading=12,
+            textColor=TEXT_COLOR,
+        )
+    )
+    styles.add(
+        ParagraphStyle(
+            name="ChartMeta",
+            fontName="Helvetica",
+            fontSize=8.5,
+            leading=11,
+            textColor=TEXT_MUTED,
+        )
+    )
+    styles.add(
+        ParagraphStyle(
+            name="ChartEmpty",
+            fontName="Helvetica",
+            fontSize=9,
+            leading=11,
+            textColor=TEXT_MUTED,
+            alignment=1,
         )
     )
     styles.add(
@@ -428,6 +504,252 @@ def _build_observations(payload: dict, max_items: int = 6) -> list[str]:
     return deduped
 
 
+def _fmt_signed_pct(value: float | int | None) -> str:
+    try:
+        num = float(value)
+    except (TypeError, ValueError):
+        return "Sem base"
+    sign = "+" if num > 0 else ""
+    return f"{sign}{num:.1f}%"
+
+
+def _health_score(ratio: float | int | None) -> int | None:
+    try:
+        num = float(ratio)
+    except (TypeError, ValueError):
+        return None
+    if num <= 60:
+        return 92
+    if num <= 70:
+        return 85
+    if num <= 80:
+        return 75
+    if num <= 90:
+        return 60
+    if num <= 100:
+        return 45
+    return 30
+
+
+def _health_status_color(status: str | None) -> colors.Color:
+    status_key = (status or "").strip().lower()
+    if status_key in {"equilibrio", "equilíbrio"}:
+        return GREEN
+    if status_key in {"atencao", "atenção"}:
+        return YELLOW
+    if status_key in {"critico", "crítico"}:
+        return RED
+    return NEUTRAL
+
+
+def _health_insights(alerts: list | None, max_items: int = 2) -> list[str]:
+    items: list[str] = []
+    for alert in alerts or []:
+        text = str(alert).strip()
+        if not text:
+            continue
+        items.append(_truncate(text, 78))
+        if len(items) >= max_items:
+            break
+    while len(items) < max_items:
+        items.append("Sem alertas relevantes." if not items else "Sem outros alertas.")
+    return items
+
+
+def _badge(text: str, text_color: colors.Color, bg_color: colors.Color, styles: dict) -> Table:
+    badge_style = ParagraphStyle(None, parent=styles["Badge"], textColor=text_color)
+    badge = Table([[Paragraph(safe_text(text), badge_style)]], repeatRows=1, splitByRow=1, hAlign="LEFT")
+    badge.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, -1), bg_color),
+                ("BOX", (0, 0), (-1, -1), 0.6, LINE_COLOR),
+                ("LEFTPADDING", (0, 0), (-1, -1), 6),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 6),
+                ("TOPPADDING", (0, 0), (-1, -1), 2),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
+            ]
+        )
+    )
+    return badge
+
+
+def _report_card(
+    doc: BaseDocTemplate,
+    styles: dict,
+    title: str,
+    body: list,
+    accent: colors.Color = NEUTRAL,
+) -> Table:
+    card_width = (doc.width / 2) - 8
+    content = [Paragraph(safe_text(title), styles["CardTitle"])]
+    content.extend(body)
+    card = Table([["", content]], colWidths=[4, card_width - 4], repeatRows=1, splitByRow=1, hAlign="LEFT")
+    card.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, -1), CARD_BG),
+                ("BACKGROUND", (0, 0), (0, 0), accent),
+                ("BOX", (0, 0), (-1, -1), 0.6, LINE_COLOR),
+                ("LEFTPADDING", (0, 0), (0, 0), 0),
+                ("RIGHTPADDING", (0, 0), (0, 0), 0),
+                ("LEFTPADDING", (1, 0), (1, 0), 8),
+                ("RIGHTPADDING", (1, 0), (1, 0), 8),
+                ("TOPPADDING", (1, 0), (1, 0), 6),
+                ("BOTTOMPADDING", (1, 0), (1, 0), 6),
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+            ]
+        )
+    )
+    return card
+
+
+def _chart_panel(doc: BaseDocTemplate, styles: dict, title: str, subtitle: str | None, drawing: Drawing) -> Table:
+    header = [Paragraph(safe_text(title), styles["ChartTitle"])]
+    if subtitle:
+        header.append(Paragraph(safe_text(subtitle), styles["ChartMeta"]))
+    panel = Table([[header], [drawing]], colWidths=[doc.width], repeatRows=1, splitByRow=1, hAlign="LEFT")
+    panel.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, -1), colors.white),
+                ("BOX", (0, 0), (-1, -1), 0.6, LINE_COLOR),
+                ("LEFTPADDING", (0, 0), (-1, -1), 8),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 8),
+                ("TOPPADDING", (0, 0), (-1, -1), 6),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+            ]
+        )
+    )
+    return panel
+
+
+def _chart_placeholder(width: float, height: float, message: str) -> Drawing:
+    drawing = Drawing(width, height)
+    drawing.add(
+        String(
+            width / 2,
+            height / 2,
+            message,
+            fontName="Helvetica",
+            fontSize=9,
+            fillColor=TEXT_MUTED,
+            textAnchor="middle",
+        )
+    )
+    return drawing
+
+
+def _short_label(text: str, limit: int = 12) -> str:
+    raw = str(text or "")
+    if len(raw) <= limit:
+        return raw
+    return f"{raw[: max(0, limit - 3)]}..."
+
+
+def _build_categories_chart(payload: dict, width: float, height: float, limit: int) -> Drawing:
+    rows = payload.get("categories", {}).get("rows") or []
+    if not rows:
+        return _chart_placeholder(width, height, "Sem dados de categorias.")
+
+    top_rows = rows[:limit]
+    values = [float(row.get("total") or 0.0) for row in top_rows]
+    if not any(values):
+        return _chart_placeholder(width, height, "Sem dados de categorias.")
+
+    labels = [_short_label(row.get("label") or "-") for row in top_rows]
+    max_val = max(values) if values else 1
+    value_max = max(1, max_val * 1.15)
+    value_step = max(1, value_max / 4)
+
+    drawing = Drawing(width, height)
+    chart = VerticalBarChart()
+    chart.x = 30
+    chart.y = 18
+    chart.width = width - 38
+    chart.height = height - 26
+    chart.data = [values]
+    chart.categoryAxis.categoryNames = labels
+    chart.bars[0].fillColor = GREEN
+    chart.valueAxis.valueMin = 0
+    chart.valueAxis.valueMax = value_max
+    chart.valueAxis.valueStep = value_step
+    chart.valueAxis.labels.fontName = "Helvetica"
+    chart.valueAxis.labels.fontSize = 7
+    chart.categoryAxis.labels.fontName = "Helvetica"
+    chart.categoryAxis.labels.fontSize = 7
+    chart.categoryAxis.labels.boxAnchor = "n"
+    drawing.add(chart)
+    return drawing
+
+
+def _extract_balance_series(flow_rows: list[dict]) -> list[tuple[str, float]]:
+    by_date: dict[str, float] = {}
+    for row in flow_rows or []:
+        date_str = row.get("date")
+        balance = row.get("balance")
+        if not date_str or balance is None:
+            continue
+        try:
+            by_date[str(date_str)] = float(balance)
+        except (TypeError, ValueError):
+            continue
+    series = [(date_str, by_date[date_str]) for date_str in sorted(by_date.keys())]
+    return series
+
+
+def _build_balance_chart(payload: dict, width: float, height: float) -> Drawing:
+    flow_rows = payload.get("flow", {}).get("rows") or []
+    series = _extract_balance_series(flow_rows)
+    if not series:
+        return _chart_placeholder(width, height, "Sem dados de saldo.")
+
+    points = [(idx, value) for idx, (_, value) in enumerate(series)]
+    max_idx = max(1, len(points) - 1)
+    min_val = min(value for _, value in series)
+    max_val = max(value for _, value in series)
+    y_min = min(0, min_val)
+    y_max = max_val if max_val != y_min else y_min + 1
+    y_step = (y_max - y_min) / 4 if y_max != y_min else 1
+
+    drawing = Drawing(width, height)
+    chart = LinePlot()
+    chart.x = 30
+    chart.y = 18
+    chart.width = width - 38
+    chart.height = height - 26
+    chart.data = [points]
+    chart.lines[0].strokeColor = GREEN
+    chart.lines[0].strokeWidth = 1.6
+    chart.lines[0].symbol = makeMarker("Circle")
+    chart.lines[0].symbol.size = 3
+    chart.xValueAxis.valueMin = 0
+    chart.xValueAxis.valueMax = max_idx
+    chart.yValueAxis.valueMin = y_min
+    chart.yValueAxis.valueMax = y_max
+    chart.yValueAxis.valueStep = y_step
+    chart.yValueAxis.labels.fontName = "Helvetica"
+    chart.yValueAxis.labels.fontSize = 7
+    drawing.add(chart)
+
+    label_indices = {0, len(series) // 2, len(series) - 1}
+    for idx in sorted(label_indices):
+        date_label = _fmt_date(series[idx][0])
+        x_pos = chart.x + (idx / max_idx) * chart.width if max_idx else chart.x
+        drawing.add(
+            String(
+                x_pos,
+                4,
+                date_label,
+                fontName="Helvetica",
+                fontSize=7,
+                fillColor=TEXT_MUTED,
+                textAnchor="middle",
+            )
+        )
+    return drawing
+
+
 def render_reports_pdf(payload: dict, sections: set[str], detail: str, meta: dict) -> bytes:
     return _render_reports_pdf_v2(payload, sections, detail, meta)
 
@@ -452,7 +774,6 @@ def _render_reports_pdf_v2(payload: dict, sections: set[str], detail: str, meta:
         detail = "resumido"
     is_resumido = detail == "resumido"
     desc_limit = FLOW_DESC_LIMIT_RESUMIDO if is_resumido else FLOW_DESC_LIMIT_DETALHADO
-    obs_limit = OBS_MAX_RESUMIDO if is_resumido else OBS_MAX_DETALHADO
 
     def add_section_gap(story: list):
         if story:
@@ -476,52 +797,88 @@ def _render_reports_pdf_v2(payload: dict, sections: set[str], detail: str, meta:
         story.append(section_header("Resumo executivo", "Indicadores gerenciais do periodo selecionado."))
 
         summary = payload.get("summary", {})
+        comparison = payload.get("comparison", {})
+        health = payload.get("health", {})
+        pending = payload.get("pending", {})
+
         net_value = float(summary.get("net") or 0.0)
-        economy_pct = float(summary.get("economy_pct") or 0.0)
-        economy_label = "% economia" if net_value >= 0 else "% deficit"
-        economy_value = economy_pct if net_value >= 0 else abs(economy_pct)
-
+        net_color = GREEN if net_value >= 0 else RED
         badge_text = "Resultado positivo" if net_value >= 0 else "Resultado negativo"
-        badge_color = GREEN if net_value >= 0 else RED
         badge_bg = colors.HexColor("#EAF6EF") if net_value >= 0 else colors.HexColor("#FDECEA")
-        badge_style = ParagraphStyle(None, parent=styles["Badge"], textColor=badge_color)
-        badge = Table(
-            [[Paragraph(safe_text(badge_text), badge_style)]],
-            repeatRows=1,
-            splitByRow=1,
-            hAlign="LEFT",
-        )
-        badge.setStyle(
-            TableStyle(
-                [
-                    ("BACKGROUND", (0, 0), (-1, -1), badge_bg),
-                    ("BOX", (0, 0), (-1, -1), 0.6, LINE_COLOR),
-                    ("LEFTPADDING", (0, 0), (-1, -1), 8),
-                    ("RIGHTPADDING", (0, 0), (-1, -1), 8),
-                    ("TOPPADDING", (0, 0), (-1, -1), 3),
-                    ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
-                ]
-            )
-        )
-        story.append(Spacer(1, 6))
-        story.append(badge)
-        story.append(Spacer(1, 8))
+        badge = _badge(badge_text, net_color, badge_bg, styles)
 
-        card_income = _kpi_card(doc, styles, "Total receitas", _fmt_brl(summary.get("income")), GREEN)
-        card_expense = _kpi_card(doc, styles, "Total despesas", _fmt_brl(summary.get("expense")), RED)
-        net_color = GREEN if net_value >= 0 else RED if net_value < 0 else TEXT_COLOR
-        card_net = _kpi_card(doc, styles, "Resultado liquido", _fmt_brl(net_value), net_color, net_color)
-        economy_color = GREEN if net_value >= 0 else RED
-        card_economy = _kpi_card(doc, styles, economy_label, _fmt_percent(economy_value), economy_color, economy_color)
+        card_1_body = [
+            Paragraph(safe_text(f"Receitas: {_fmt_brl(summary.get('income'))}"), styles["CardMeta"]),
+            Paragraph(safe_text(f"Despesas: {_fmt_brl(summary.get('expense'))}"), styles["CardMeta"]),
+            Paragraph(
+                safe_text(f"Resultado liquido: {_fmt_brl(net_value)}"),
+                ParagraphStyle(None, parent=styles["CardValue"], textColor=net_color),
+            ),
+            badge,
+        ]
+        card_1 = _report_card(doc, styles, "Resultado do periodo", card_1_body, accent=net_color)
 
-        kpi_grid = Table(
-            [[card_income, card_expense], [card_net, card_economy]],
+        prev_text = _fmt_signed_pct(comparison.get("prev_pct"))
+        avg_text = _fmt_signed_pct(comparison.get("avg_pct"))
+        comparison_note = (comparison.get("note") or "").strip()
+        card_2_body = [
+            Paragraph(safe_text(f"Vs periodo anterior: {prev_text}"), styles["CardMeta"]),
+            Paragraph(safe_text(f"Vs media 3 periodos: {avg_text}"), styles["CardMeta"]),
+        ]
+        if comparison_note:
+            card_2_body.append(Paragraph(safe_text(comparison_note), styles["CardMetaMuted"]))
+        card_2 = _report_card(doc, styles, "Comparativo", card_2_body, accent=NEUTRAL)
+
+        ratio = health.get("ratio")
+        status_label = str(health.get("status") or "-")
+        status_color = _health_status_color(status_label)
+        score = _health_score(ratio)
+        ratio_text = f"Despesas/Receitas: {ratio:.1f}%" if ratio is not None else "Despesas/Receitas: -"
+        score_text = f"Indice: {score}/100" if score is not None else "Indice: -"
+        insights = _health_insights(health.get("alerts"))
+
+        card_3_body = [
+            Paragraph(
+                safe_text(score_text),
+                ParagraphStyle(None, parent=styles["CardValue"], textColor=status_color),
+            ),
+            Paragraph(
+                safe_text(f"Status: {status_label}"),
+                ParagraphStyle(None, parent=styles["CardMeta"], textColor=status_color),
+            ),
+            Paragraph(safe_text(ratio_text), styles["CardMetaMuted"]),
+            Paragraph(safe_text(insights[0]), styles["CardMetaMuted"]),
+            Paragraph(safe_text(insights[1]), styles["CardMetaMuted"]),
+        ]
+        card_3 = _report_card(doc, styles, "Saude financeira", card_3_body, accent=status_color)
+
+        pending_count = int(pending.get("count") or 0)
+        pending_total = pending.get("total") or 0.0
+        pending_impact = pending.get("impact") or 0.0
+        overdue = int(pending.get("overdue") or 0)
+        due_7 = int(pending.get("due_7") or 0)
+        card_4_body = [
+            Paragraph(safe_text(f"Contas pendentes: {pending_count}"), styles["CardMeta"]),
+            Paragraph(safe_text(f"Total pendente: {_fmt_brl(pending_total)}"), styles["CardMeta"]),
+            Paragraph(
+                safe_text(f"Saldo se pagar tudo hoje: {_fmt_brl(pending_impact)}"),
+                styles["CardValue"],
+            ),
+            Paragraph(
+                safe_text(f"Vencidas: {overdue} | Prox. 7 dias: {due_7}"),
+                styles["CardMetaMuted"],
+            ),
+        ]
+        card_4 = _report_card(doc, styles, "Pendencias e impacto", card_4_body, accent=NEUTRAL)
+
+        card_grid = Table(
+            [[card_1, card_2], [card_3, card_4]],
             colWidths=[doc.width / 2, doc.width / 2],
             repeatRows=1,
             splitByRow=1,
             hAlign="LEFT",
         )
-        kpi_grid.setStyle(
+        card_grid.setStyle(
             TableStyle(
                 [
                     ("LEFTPADDING", (0, 0), (-1, -1), 4),
@@ -532,13 +889,44 @@ def _render_reports_pdf_v2(payload: dict, sections: set[str], detail: str, meta:
                 ]
             )
         )
-        story.append(kpi_grid)
-        story.append(Spacer(1, 10))
+        story.append(card_grid)
 
-        observations = _build_observations(payload, max_items=obs_limit)
-        story.append(Paragraph(safe_text("Observacoes do periodo"), styles["RptBody"]))
-        for item in observations:
-            story.append(Paragraph(f"\u2022 {safe_text(item)}", styles["Normal"]))
+        story.append(Spacer(1, 10))
+        chart_width = doc.width - 16
+        chart_height = 145
+        if is_resumido:
+            categories_chart = _build_categories_chart(payload, chart_width, chart_height, limit=5)
+            story.append(
+                _chart_panel(
+                    doc,
+                    styles,
+                    "Top categorias de despesas",
+                    "Resumo das principais categorias do periodo.",
+                    categories_chart,
+                )
+            )
+        else:
+            categories_chart = _build_categories_chart(payload, chart_width, chart_height, limit=8)
+            story.append(
+                _chart_panel(
+                    doc,
+                    styles,
+                    "Top categorias de despesas",
+                    "Distribuicao das categorias mais relevantes.",
+                    categories_chart,
+                )
+            )
+            story.append(Spacer(1, 8))
+            balance_chart = _build_balance_chart(payload, chart_width, chart_height)
+            story.append(
+                _chart_panel(
+                    doc,
+                    styles,
+                    "Saldo acumulado diario",
+                    "Evolucao do saldo ao longo do periodo.",
+                    balance_chart,
+                )
+            )
 
     def cell(text: str, right: bool = False, wrap: bool = False, small: bool = False) -> Paragraph:
         if wrap:
@@ -736,13 +1124,13 @@ def _render_reports_pdf_v2(payload: dict, sections: set[str], detail: str, meta:
                 table = make_table(
                     rows,
                     [
-                        doc.width * 0.1,
-                        doc.width * 0.27,
+                        doc.width * 0.12,
+                        doc.width * 0.26,
                         doc.width * 0.13,
                         doc.width * 0.1,
                         doc.width * 0.1,
-                        doc.width * 0.1,
-                        doc.width * 0.1,
+                        doc.width * 0.095,
+                        doc.width * 0.095,
                         doc.width * 0.1,
                     ],
                     right_cols={5, 6, 7},

@@ -13,7 +13,7 @@ from __future__ import annotations
 PLANS: dict[str, dict] = {
     "basic": {
         "name": "Plano Básico",
-        "price_month": 14.90,
+        "price_month": 11.90,
         "tagline": "Organize suas finanças sem complicação.",
         "description": (
             "Ideal para quem quer registrar receitas e despesas, acompanhar o mês atual "
@@ -23,6 +23,7 @@ PLANS: dict[str, dict] = {
         "highlights": [
             "Dashboard mensal com visão rápida de receitas, despesas e saldo do mês",
             "Lançamento de receitas e despesas para controlar o que entra e sai",
+            "Filtros simples nas entradas por periodo, categoria e valor (status em despesas quando aplicavel)",
             "Resumo mensal com totais do período sem análises avançadas",
             "Categorias básicas para organização simples por tipo de gasto",
         ],
