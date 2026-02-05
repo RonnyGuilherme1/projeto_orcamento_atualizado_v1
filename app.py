@@ -135,17 +135,10 @@ def inject_plan_helpers():
 
     return {
         "MARKETING_BASE_URL": app.config.get("MARKETING_BASE_URL", "https://controledeorcamento.onrender.com").rstrip("/"),
-<<<<<<< HEAD
         "APP_NAME": app.config.get("APP_NAME", "Controle Financeiro"),
         "APP_TAGLINE": app.config.get("APP_TAGLINE", ""),
         "APP_COMPANY": app.config.get("APP_COMPANY", "LinkGestor"),
         "CURRENT_YEAR": datetime.utcnow().year,
-=======
-        "APP_BRAND": app.config.get("APP_BRAND", "LinkGestor"),
-        "APP_TAGLINE": app.config.get("APP_TAGLINE", "Controle Financeiro"),
-        "APP_LEGAL_NAME": app.config.get("APP_LEGAL_NAME", app.config.get("APP_BRAND", "LinkGestor")),
-        "current_year": datetime.utcnow().year,
->>>>>>> f940c12ebce8111dcb6b3780c40480679630fa30
 
         "PLANS": PLANS,
         "has_feature": has_feature,
@@ -703,11 +696,7 @@ def account_access_save():
         if new_email == (current_user.email or "").lower():
             new_email = ""
         elif not re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", new_email):
-<<<<<<< HEAD
             errors.append("Informe um e-mail valido.")
-=======
-            errors.append("Informe um e-mail válido.")
->>>>>>> f940c12ebce8111dcb6b3780c40480679630fa30
         elif User.query.filter(User.email == new_email, User.id != current_user.id).first():
             errors.append("Esse e-mail já está em uso.")
         else:
