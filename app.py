@@ -1,3 +1,4 @@
+import os
 import re
 import hmac
 from datetime import datetime
@@ -8,8 +9,9 @@ from flask_login import LoginManager, login_required, current_user
 from dotenv import load_dotenv
 from sqlalchemy.exc import OperationalError
 
-# Carrega variaveis de ambiente de .env (desenvolvimento local)
-load_dotenv()
+# Carrega variáveis de ambiente de .env (somente desenvolvimento local)
+if os.getenv("APP_ENV", "development").lower() not in {"production", "prod"} and os.getenv("FLASK_ENV", "development").lower() != "production":
+    load_dotenv()
 
 from config import Config
 from models.entrada_model import init_db
@@ -133,6 +135,11 @@ def inject_plan_helpers():
 
     return {
         "MARKETING_BASE_URL": app.config.get("MARKETING_BASE_URL", "https://controledeorcamento.onrender.com").rstrip("/"),
+        "APP_BRAND": app.config.get("APP_BRAND", "LinkGestor"),
+        "APP_TAGLINE": app.config.get("APP_TAGLINE", "Controle Financeiro"),
+        "APP_LEGAL_NAME": app.config.get("APP_LEGAL_NAME", app.config.get("APP_BRAND", "LinkGestor")),
+        "current_year": datetime.utcnow().year,
+
         "PLANS": PLANS,
         "has_feature": has_feature,
         "abacatepay_card_enabled": card_enabled,
@@ -668,7 +675,7 @@ def account_profile_save():
 @app.post("/app/account/access")
 @login_required
 def account_access_save():
-    """Atualiza e-mail e/ou senha do usuario."""
+    """Atualiza e-mail e/ou senha do usuário."""
     if not current_user.is_verified:
         return redirect(url_for("auth.verify_pending"))
 
@@ -678,7 +685,7 @@ def account_access_save():
     confirm_password = request.form.get("confirm_password") or ""
 
     if not current_password or not current_user.check_password(current_password):
-        flash("Senha atual invalida.", "error")
+        flash("Senha atual inválida.", "error")
         return redirect(url_for("account_page", section="access"))
 
     errors = []
@@ -688,10 +695,10 @@ def account_access_save():
     if new_email:
         if new_email == (current_user.email or "").lower():
             new_email = ""
-        elif not re.match(r"^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$", new_email):
-            errors.append("Informe um e-mail valido.")
+        elif not re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", new_email):
+            errors.append("Informe um e-mail válido.")
         elif User.query.filter(User.email == new_email, User.id != current_user.id).first():
-            errors.append("Esse e-mail ja esta em uso.")
+            errors.append("Esse e-mail já está em uso.")
         else:
             current_user.email = new_email
             current_user.is_verified = False
@@ -700,7 +707,7 @@ def account_access_save():
 
     if new_password or confirm_password:
         if new_password != confirm_password:
-            errors.append("As senhas nao conferem.")
+            errors.append("As senhas não conferem.")
         else:
             try:
                 validate_password(new_password)
@@ -716,7 +723,7 @@ def account_access_save():
         return redirect(url_for("account_page", section="access"))
 
     if not changes:
-        flash("Nenhuma alteracao para salvar.", "info")
+        flash("Nenhuma alteração para salvar.", "info")
         return redirect(url_for("account_page", section="access"))
 
     db.session.commit()

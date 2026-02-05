@@ -1,380 +1,154 @@
-# Orçamento Pessoal (Flask + Neon/Postgres + Render)
+# LinkGestor — Controle Financeiro
 
-Aplicação web para controle de orçamento pessoal com:
+Aplicação web (Flask) para **controle financeiro pessoal** com autenticação, planos por recursos (Basic/Plus/Pro) e relatórios premium (PDF/Excel).
 
-* Cadastro de **receitas** e **despesas**
-* Listagem separada de receitas e despesas
-* Cards por mês com totais (receita, despesa e saldo)
-* Autenticação (login/registro) com **verificação de e-mail**
-* Banco de dados:
+## Principais recursos
 
-  * **Produção**: Postgres (ex.: Neon) via `DATABASE_URL`
-  * **Local**: SQLite (`database.db`) por padrão
-* Endpoint novo de **Resumo de Ciclo** com **saldo carregado** usando `paid_at`
-
----
-
-## Sumário
-
-* [Stack](#stack)
-* [Funcionalidades](#funcionalidades)
-* [Como rodar localmente](#como-rodar-localmente)
-* [Variáveis de ambiente](#variáveis-de-ambiente)
-* [Banco de dados e “migração leve”](#banco-de-dados-e-migração-leve)
-* [Resumo de ciclo](#resumo-de-ciclo)
-* [Deploy no Render com Neon](#deploy-no-render-com-neon)
-* [Rotas principais](#rotas-principais)
-* [Estrutura do projeto](#estrutura-do-projeto)
-* [Troubleshooting](#troubleshooting)
-
----
-
-## Stack
-
-* Python 3.x
-* Flask
-* Flask-Login
-* Flask-SQLAlchemy
-* Postgres (Neon) em produção
-* Render (deploy)
-* Resend (envio de e-mail de verificação, opcional)
-
----
-
-## Funcionalidades
-
-### 1) Lançamentos
-
-* **Receita**: entrada no caixa na data informada.
-* **Despesa**: possui vencimento/data planejada (`data`) e status:
-
-  * `em_andamento`
-  * `nao_pago`
-  * `pago`
-
-### 2) Verificação de e-mail
-
-* Ao registrar, o usuário recebe um link de verificação.
-* Usuários **não verificados** não acessam a tela principal (são redirecionados para a tela de “pendente”).
-
-### 3) Saldo carregado com `paid_at` (pagamento real)
-
-* Quando uma despesa é marcada como **paga**, o sistema grava `paid_at` (data do pagamento).
-* Isso permite o cenário:
-
-  * Recebe em um dia
-  * Paga contas em outro dia
-  * Sobra saldo
-  * Esse saldo aparece corretamente no próximo ciclo de recebimento
+- **Autenticação completa**: cadastro, login, logout e sessão segura
+- **Verificação de e-mail** (com modo DEV para testes)
+- **Entradas** (receitas/despesas): criar, editar, listar por mês, status (pago/não pago), categorias e método (quando liberado no plano)
+- **Regras & Automação** (Plus/Pro): motor de regras com condições + ações, aplicação automática ao criar/editar entradas e logs de execução
+- **Análises**:
+  - **Gráficos** (Plus/Pro)
+  - **Insights/Variações** (Plus/Pro)
+  - **Projeção** (Pro)
+- **Relatórios** (Pro):
+  - PDF com visual “premium”
+  - Excel (XLSX) para exportação e auditoria
+- **Notificações** no topo (ex.: vencimento, avisos do plano, verificação pendente)
+- **Checkout/Upgrade de plano** via AbacatePay (cartão opcional via flag)
 
 ---
 
 ## Como rodar localmente
 
-### 1) Clonar / entrar na pasta do projeto
-
+### 1) Criar ambiente e instalar dependências
 ```bash
-cd site_de_orcamento
-```
+python -m venv .venv
+# Windows:
+.venv\Scripts\activate
+# Linux/Mac:
+source .venv/bin/activate
 
-### 2) Criar e ativar venv (recomendado)
-
-Linux:
-
-```bash
-python3 -m venv venv
-source venv/bin/activate
-```
-
-Windows (PowerShell):
-
-```powershell
-python -m venv venv
-.\venv\Scripts\Activate.ps1
-```
-
-### 3) Instalar dependências
-
-```bash
 pip install -r requirements.txt
 ```
 
-### 3.1) Build do Front-end (Vite + Tailwind)
-
-O projeto continua com Flask SSR, mas agora os assets (CSS/JS) são buildados via Vite.
-
-Entre na pasta do front-end:
-
+### 2) Configurar variáveis de ambiente
+Copie o arquivo de exemplo e ajuste:
 ```bash
-cd frontend
+cp .env.example .env
 ```
 
-Instale as dependências:
+Variáveis mais importantes:
 
-```bash
-npm install
-```
+- `APP_ENV=development`
+- `APP_BASE_URL=http://127.0.0.1:5000`
+- `SECRET_KEY=...`
+- `DATABASE_URL=` (opcional; se vazio usa SQLite `database.db`)
+- `MARKETING_BASE_URL=...` (site estático/marketing)
+- Branding:
+  - `APP_BRAND=LinkGestor`
+  - `APP_TAGLINE=Controle Financeiro`
+  - `APP_LEGAL_NAME=LinkGestor` (opcional, para o © do rodapé)
 
-Gere o build (saída em `static/dist/`):
-
-```bash
-npm run build
-```
-
-Volte para a raiz do projeto e rode o Flask normalmente.
-
----
-
-## Organização de templates (Front-end SSR)
-
-Para reduzir repetição e padronizar UI, os templates foram organizados em:
-
-- `templates/layouts/base.html`: documento HTML base (head/body + bundles do Vite)
-- `templates/base_public.html`: casca das páginas públicas (header/footer + flash)
-- `templates/base_app.html`: casca do sistema (sidebar/topbar + flash)
-- `templates/partials/`: pedaços reutilizáveis (header, sidebar, topbar, flash)
-- `templates/components/ui.html`: macros de componentes (botão, inputs, etc.)
-
-Exemplo de uso de macros:
-
-```jinja2
-{% from 'components/ui.html' import btn, input_text %}
-{{ input_text('email', 'email', 'E-mail', type='email', required=true) }}
-{{ btn('Salvar', 'primary', type='submit') }}
-```
-
-### 4) Configurar variáveis de ambiente (opcional)
-
-Você pode criar um arquivo `.env` na raiz do projeto (mesma pasta do `app.py`).
-
-Exemplo mínimo para dev:
-
-```env
-SECRET_KEY=dev-secret-change-me
-APP_BASE_URL=http://127.0.0.1:5000
-```
-
-Se quiser enviar e-mail real:
-
-```env
-RESEND_API_KEY=coloque_sua_chave
-EMAIL_FROM=Orcamento <seu-email@seudominio.com>
-```
-
-### 5) Rodar a aplicação
-
+### 3) Rodar o servidor
 ```bash
 python app.py
 ```
-
-Acesse:
-
-* [http://127.0.0.1:5000](http://127.0.0.1:5000)
-
-Healthcheck:
-
-* [http://127.0.0.1:5000/healthz](http://127.0.0.1:5000/healthz)
-
----
-
-## Variáveis de ambiente
-
-| Variável               | Obrigatória | Exemplo                       | Para que serve               |
-| ---------------------- | ----------: | ----------------------------- | ---------------------------- |
-| `SECRET_KEY`           | Recomendado | `uma-chave-forte`             | Sessões, login e tokens      |
-| `DATABASE_URL`         | Em produção | `postgresql://...`            | Conexão com Postgres (Neon)  |
-| `APP_BASE_URL`         | Recomendado | `https://seuapp.onrender.com` | Montar link de verificação   |
-| `RESEND_API_KEY`       |    Opcional | `re_...`                      | Envio de e-mail (Resend)     |
-| `EMAIL_FROM`           |    Opcional | `Orcamento <...>`             | Remetente do e-mail          |
-| `VERIFY_TOKEN_MAX_AGE` |    Opcional | `86400`                       | Validade do token (segundos) |
-
-Observação: se `RESEND_API_KEY` ou `EMAIL_FROM` não estiverem configurados, o sistema **não quebra**. Ele apenas registra no log um aviso e não envia e-mail (o link de verificação aparece no log do servidor).
-
----
-
-## Banco de dados e “migração leve”
-
-Este projeto **não usa Alembic**, mas possui uma migração leve automática ao subir a aplicação:
-
-* Ao iniciar, o `init_db(app)` roda:
-
-  * `db.create_all()`
-  * Migração leve para garantir colunas necessárias, sem derrubar o banco.
-
-### Colunas relevantes para o saldo carregado
-
-* `status` (despesa)
-* `paid_at` (despesa): data real em que foi paga
-* `updated_at`: atualizado automaticamente quando a linha é alterada
-
-### Compatibilidade
-
-* Local: SQLite (`database.db`)
-* Produção: Postgres (Neon) via `DATABASE_URL`
-
----
-
-## Resumo de ciclo
-
-### Objetivo
-
-Gerar um resumo que não olha apenas “o dia”, mas sim:
-
-* Carrega saldo anterior (histórico)
-* Soma receitas do dia selecionado
-* Lista e soma despesas pendentes no período
-* Projeta o saldo final do período
-
-### Endpoint
-
-`GET /resumo-ciclo?data=YYYY-MM-DD`
-
-Comportamento padrão:
-
-* `data`: data selecionada (ex.: dia do recebimento)
-* `ate`: opcional. Se não vier, calcula automaticamente o **último dia do mês** de `data`.
-
-Exemplo (até fim do mês automaticamente):
-
-```bash
-GET /resumo-ciclo?data=2026-01-15
-```
-
-Exemplo (até uma data específica):
-
-```bash
-GET /resumo-ciclo?data=2026-01-15&ate=2026-01-30
-```
-
-### Regra de cálculo (implementada)
-
-* `saldo_anterior` = receitas com `data <= (D-1)` − despesas pagas com `paid_at <= (D-1)`
-* `receitas_no_dia` = receitas com `data == D`
-* `despesas_pendentes` = despesas com vencimento (`data`) entre `D` e `ATE` **que não estejam pagas**
-* `saldo_projetado` = `saldo_anterior + receitas_no_dia − total_despesas_pendentes`
-
----
-
-## Deploy no Render com Neon
-
-### Render (Web Service)
-
-**Start command**:
-
-```bash
-gunicorn app:app
-```
-
-**Environment Variables no Render (mínimo recomendado)**:
-
-* `SECRET_KEY` = uma chave forte
-* `DATABASE_URL` = URL do Neon (Postgres)
-* `APP_BASE_URL` = URL pública do Render (ex.: `https://seuapp.onrender.com`)
-
-**Opcional para e-mail de verificação**:
-
-* `RESEND_API_KEY`
-* `EMAIL_FROM`
-
-### Neon (Postgres)
-
-* Crie o banco/projeto no Neon.
-* Copie a connection string e coloque em `DATABASE_URL`.
-
-Observação: o código já converte `postgres://` para `postgresql://` e adiciona `sslmode=require` quando necessário.
-
----
-
-## Rotas principais
-
-### Páginas (HTML)
-
-* `GET /` (requer login e e-mail verificado)
-* `GET /login`
-* `POST /login`
-* `GET /register`
-* `POST /register`
-* `GET /verify-pending`
-* `POST /resend-verification`
-* `GET /verify/<token>`
-* `GET /logout`
-
-### API (JSON)
-
-* `GET /dados` (lista entradas do usuário autenticado/verificado)
-* `POST /add` (cria entrada)
-* `PUT /edit/<id>` (edita entrada; se despesa virar `pago`, grava `paid_at`)
-* `DELETE /delete/<id>` (remove entrada)
-* `GET /resumo-ciclo` (resumo com saldo carregado)
-
-### Healthcheck
-
-* `GET /healthz`
+Abra: `http://127.0.0.1:5000`
 
 ---
 
 ## Estrutura do projeto
 
-```
-site_de_orcamento/
-  app.py
-  config.py
-  requirements.txt
-  database.db                (dev/local)
-  models/
-    extensions.py
-    user_model.py
-    entrada_model.py
-  routes/
-    auth_routes.py
-    entradas_routes.py
-  services/
-    email_service.py
-  static/
-    js/
-      script.js
-    css/
-      (removido: estilos agora são por tela)
-      (removido: estilos agora são por tela)
-      dashboard.css
-      entries.css
-      account.css
-      upgrade.css
-      (removido: estilos agora são por tela)
-      marketing.css
-  templates/
-    index.html
-    login.html
-    register.html
-    verify_pending.html
-```
+### Pastas principais
+- `app.py` — **entrypoint** Flask, registros de blueprints, context processor, headers de segurança, rotas auxiliares (conta, etc.)
+- `config.py` — configurações por ambiente (cookies, banco, chaves, AbacatePay, rate limits, branding)
+- `models/` — modelos SQLAlchemy + extensões do banco
+- `routes/` — blueprints (auth, entradas, analytics, regras, notificações)
+- `services/` — regras, relatórios (PDF/Excel), verificação de e-mail, etc.
+- `templates/` — páginas HTML (SSR) e parciais
+- `static/` — CSS/JS por página (evita “global bagunçado”)
 
 ---
 
-## Troubleshooting
+## Branding consistente (evita divergência entre páginas)
 
-### 1) “Conta pendente / não consigo acessar”
+A marca é centralizada via config e injetada nos templates:
 
-Você precisa verificar o e-mail:
+- `APP_BRAND` → **LinkGestor**
+- `APP_TAGLINE` → **Controle Financeiro**
+- `APP_LEGAL_NAME` → usado no rodapé (©)
 
-* Em produção, configure `RESEND_API_KEY` e `EMAIL_FROM`.
-* Em dev/sem Resend, observe os logs do servidor (o link de verificação é logado quando o envio falha).
+O `<title>` das páginas é montado automaticamente como:
 
-### 2) Banco não atualizou com colunas novas
+`{Página} — LinkGestor — Controle Financeiro`
 
-O projeto roda migração leve automaticamente no startup.
-Se você já tinha uma base antiga em produção e subiu o patch:
+E o rodapé público usa:
 
-* Reinicie o serviço no Render (para forçar startup e aplicar a migração leve).
-* Verifique logs.
+`© 2026 LinkGestor — Controle Financeiro`
 
-### 3) `paid_at` ficou “hoje” ao marcar como pago
+---
 
-Por padrão, ao mudar despesa para `pago`, o backend define `paid_at = hoje` quando o front não envia `paid_at`.
-Melhoria possível (próximo passo): adicionar no modal um campo “Data do pagamento” e enviar `paid_at` no `PUT /edit/<id>`.
+## Planos e bloqueio por recurso (feature gating)
+
+A liberação de recursos é feita em **duas camadas**:
+
+1) **Backend (obrigatório)**: decorators que bloqueiam rotas/ações por plano  
+2) **Frontend**: templates escondem/mostram botões e componentes, usando `has_feature(...)`
+
+Isso impede “burlar” via DevTools.
+
+### Onde mexer
+- Definição de planos/recursos: onde o `PLANS` é definido (injetado em templates via context processor)
+- Checagem: `user_has_feature(...)` + decorators em `services/permissions.py` / `routes/*`
+
+---
+
+## Fluxos importantes
+
+### 1) Cadastro e verificação de e-mail
+- Usuário registra → recebe token/link
+- Ao confirmar, `is_verified` fica `true`
+- Rotas do sistema (`/app/...`) podem exigir `is_verified`
+
+### 2) Entradas (CRUD + automação)
+- Ao criar/editar entradas:
+  - salva no banco
+  - chama motor de regras (se habilitado no plano)
+  - registra logs de execução
+
+### 3) Upgrade e checkout
+- Página de upgrade guia o usuário conforme o plano atual
+- Checkout AbacatePay retorna status e redireciona com **proteção contra open redirect**
+
+### 4) Relatórios (Pro)
+- PDF: `services/reports_pdf.py`
+- Excel: `services/reports_excel.py`
+- Rotas em `routes/analytics_routes.py`
+
+---
+
+## Segurança (o essencial)
+
+- **CSRF obrigatório** em POST/PUT/DELETE
+- Cookies com `HttpOnly` e `SameSite`
+- Validação de plano e verificação em rotas sensíveis
+- Sanitização de `redirect` (anti open-redirect)
+- Rate limit para login/registro e reenvio de verificação (memória; produção multi-instância pede Redis)
+
+Ver checklist: `SECURITY_CHECKLIST.md`
+
+---
+
+## Dicas de manutenção rápida
+
+- “Quero mudar textos/nomes do sistema”: ajuste `APP_BRAND` e `APP_TAGLINE`
+- “Quero adicionar um recurso e bloquear por plano”: crie feature + aplique decorator no backend + `has_feature()` no template
+- “PDF está feio”: mexa no `services/reports_pdf.py` e no template `templates/reports_print.html`
+- “Notificações não aparecem”: ver `routes/notifications_routes.py` + `static/js/shell.js`
 
 ---
 
 ## Licença
-
-Projeto de uso pessoal/privado, conforme sua necessidade.
+Uso interno / projeto em evolução.

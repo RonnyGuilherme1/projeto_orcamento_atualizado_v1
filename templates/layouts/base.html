@@ -6,7 +6,9 @@
   <meta name="csrf-token" content="{{ csrf_token }}" />
   <link rel="icon" type="image/png" href="/static/img/logo-recorte2.png">
 
-  <title>{% block title %}Controle Financeiro{% endblock %}</title>
+  {% set __page_title %}{% block title %}{{ APP_BRAND }}{% endblock %}{% endset %}
+  {% set __page_title = __page_title|striptags|trim %}
+  <title>{% if __page_title and __page_title != APP_BRAND %}{{ __page_title }} — {{ APP_BRAND }}{% else %}{{ APP_BRAND }}{% endif %}{% if APP_TAGLINE %} — {{ APP_TAGLINE }}{% endif %}</title>
 
   {#
     Base layout reutilizado por base_public.html e base_app.html.

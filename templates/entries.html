@@ -2,7 +2,7 @@
 {% set page_class = 'page-entries' %}
 {% set page_css = ['/static/css/entries.css'] %}
 
-{% block title %}Entradas | Controle Financeiro{% endblock %}
+{% block title %}Entradas{% endblock %}
 
 {% block page_title %}Entradas{% endblock %}
 
@@ -48,11 +48,11 @@
 
             {% if has_feature('filters') %}
             <label class="field field-metodo field-expanded">
-              <span class="field-label">Metodo</span>
+              <span class="field-label">Método</span>
               <select id="metodo" class="control">
-                <option value="">Nao informado</option>
+                <option value="">Não informado</option>
                 <option value="dinheiro">Dinheiro</option>
-                <option value="cartao">Cartao</option>
+                <option value="cartao">Cartão</option>
                 <option value="pix">Pix</option>
               </select>
             </label>
@@ -141,7 +141,7 @@
             <span class="field-label">Categoria</span>
             <select id="receita-filter-category" class="control">
               <option value="all">Todas</option>
-              <option value="salario">Salario</option>
+              <option value="salario">Salário</option>
               <option value="extras">Extras</option>
               <option value="outros">Outros</option>
             </select>
@@ -223,7 +223,7 @@
               <option value="all">Todos</option>
               <option value="pago">Pago</option>
               <option value="em_andamento">Em andamento</option>
-              <option value="nao_pago">Nao pago</option>
+              <option value="nao_pago">Não pago</option>
             </select>
           </label>
           <label class="field filter-extra" data-filter-key="categoria">
@@ -233,7 +233,7 @@
               <option value="moradia">Moradia</option>
               <option value="mercado">Mercado</option>
               <option value="transporte">Transporte</option>
-              <option value="servicos">Servicos</option>
+              <option value="servicos">Serviços</option>
               <option value="outros">Outros</option>
             </select>
           </label>
@@ -296,11 +296,11 @@
 
           {% if has_feature('filters') %}
           <label class="field">
-            <span class="field-label">Metodo</span>
+            <span class="field-label">Método</span>
             <select id="edit-metodo" class="control">
-              <option value="">Nao informado</option>
+              <option value="">Não informado</option>
               <option value="dinheiro">Dinheiro</option>
-              <option value="cartao">Cartao</option>
+              <option value="cartao">Cartão</option>
               <option value="pix">Pix</option>
             </select>
           </label>

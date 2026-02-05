@@ -2,7 +2,7 @@
 {% set page_class = 'page-filters' %}
 {% set page_css = ['/static/css/app_shell.css', '/static/css/app_base.css', '/static/css/filters.css'] %}
 
-{% block title %}Regras & Automação | Controle Financeiro{% endblock %}
+{% block title %}Regras & Automação{% endblock %}
 {% block page_title %}Regras & Automação{% endblock %}
 
 {% block content %}
@@ -119,12 +119,12 @@
             <span class="field-label">Categoria</span>
             <select id="rules-filter-category" class="control">
               <option value="all">Todas</option>
-              <option value="salario">Salario</option>
+              <option value="salario">Salário</option>
               <option value="extras">Extras</option>
               <option value="moradia">Moradia</option>
               <option value="mercado">Mercado</option>
               <option value="transporte">Transporte</option>
-              <option value="servicos">Servicos</option>
+              <option value="servicos">Serviços</option>
               <option value="outros">Outros</option>
             </select>
           </label>
@@ -134,7 +134,7 @@
               <option value="all">Todos</option>
               <option value="pago">Pago</option>
               <option value="em_andamento">Em andamento</option>
-              <option value="nao_pago">Nao pago</option>
+              <option value="nao_pago">Não pago</option>
               <option value="recebido">Recebido</option>
             </select>
           </label>
@@ -219,19 +219,19 @@
           </label>
 
           <label class="field">
-            <span class="field-label">Dia do mes</span>
+            <span class="field-label">Dia do mês</span>
             <input type="number" id="recurrence-day" class="control" value="5" min="1" max="31">
           </label>
 
           <label class="field">
             <span class="field-label">Categoria</span>
             <select id="recurrence-category" class="control">
-              <option value="salario">Salario</option>
+              <option value="salario">Salário</option>
               <option value="extras">Extras</option>
               <option value="moradia">Moradia</option>
               <option value="mercado">Mercado</option>
               <option value="transporte">Transporte</option>
-              <option value="servicos">Servicos</option>
+              <option value="servicos">Serviços</option>
               <option value="outros">Outros</option>
             </select>
           </label>
@@ -247,22 +247,22 @@
               <option value="">Sem status</option>
               <option value="em_andamento">Em andamento</option>
               <option value="pago">Pago</option>
-              <option value="nao_pago">Nao pago</option>
+              <option value="nao_pago">Não pago</option>
             </select>
           </label>
 
           <label class="field">
-            <span class="field-label">Metodo</span>
+            <span class="field-label">Método</span>
             <select id="recurrence-method" class="control">
-              <option value="">Nao informado</option>
+              <option value="">Não informado</option>
               <option value="dinheiro">Dinheiro</option>
-              <option value="cartao">Cartao</option>
+              <option value="cartao">Cartão</option>
               <option value="pix">Pix</option>
             </select>
           </label>
 
           <label class="field span-all">
-            <span class="field-label">Descricao</span>
+            <span class="field-label">Descrição</span>
             <input type="text" id="recurrence-description" class="control" placeholder="Ex: Aluguel mensal">
           </label>
 
@@ -318,12 +318,12 @@
             <span class="field-label">Categoria</span>
             <select id="reminder-category" class="control">
               <option value="">Todas</option>
-              <option value="salario">Salario</option>
+              <option value="salario">Salário</option>
               <option value="extras">Extras</option>
               <option value="moradia">Moradia</option>
               <option value="mercado">Mercado</option>
               <option value="transporte">Transporte</option>
-              <option value="servicos">Servicos</option>
+              <option value="servicos">Serviços</option>
               <option value="outros">Outros</option>
             </select>
           </label>
@@ -334,16 +334,16 @@
               <option value="">Todos</option>
               <option value="em_andamento">Em andamento</option>
               <option value="pago">Pago</option>
-              <option value="nao_pago">Nao pago</option>
+              <option value="nao_pago">Não pago</option>
             </select>
           </label>
 
           <label class="field">
-            <span class="field-label">Metodo</span>
+            <span class="field-label">Método</span>
             <select id="reminder-method" class="control">
               <option value="">Todos</option>
               <option value="dinheiro">Dinheiro</option>
-              <option value="cartao">Cartao</option>
+              <option value="cartao">Cartão</option>
               <option value="pix">Pix</option>
             </select>
           </label>
@@ -383,7 +383,7 @@
 
           <label class="field span-all">
             <span class="field-label">Nome</span>
-            <input type="text" id="rule-name" class="control" placeholder="Ex: Salario recebido">
+            <input type="text" id="rule-name" class="control" placeholder="Ex: Salário recebido">
           </label>
 
           <label class="field">
@@ -415,13 +415,13 @@
             </label>
             <label class="check-pill">
               <input type="checkbox" id="rule-stop">
-              <span>Parar apos aplicar</span>
+              <span>Parar após aplicar</span>
             </label>
           </div>
 
-          <div class="rule-group-title span-all">Condicoes</div>
+          <div class="rule-group-title span-all">Condições</div>
           <label class="field span-all">
-            <span class="field-label">Descricao contem</span>
+            <span class="field-label">Descrição contem</span>
             <input type="text" id="cond-description" class="control" placeholder="Ex: salario">
           </label>
           <label class="field">
@@ -436,12 +436,12 @@
             <span class="field-label">Categoria</span>
             <select id="cond-category" class="control">
               <option value="all">Todas</option>
-              <option value="salario">Salario</option>
+              <option value="salario">Salário</option>
               <option value="extras">Extras</option>
               <option value="moradia">Moradia</option>
               <option value="mercado">Mercado</option>
               <option value="transporte">Transporte</option>
-              <option value="servicos">Servicos</option>
+              <option value="servicos">Serviços</option>
               <option value="outros">Outros</option>
             </select>
           </label>
@@ -451,7 +451,7 @@
               <option value="all">Todos</option>
               <option value="pago">Pago</option>
               <option value="em_andamento">Em andamento</option>
-              <option value="nao_pago">Nao pago</option>
+              <option value="nao_pago">Não pago</option>
               <option value="recebido">Recebido</option>
             </select>
           </label>
@@ -464,26 +464,26 @@
             <input type="number" step="0.01" id="cond-max" class="control" placeholder="0.00">
           </label>
           <label class="field">
-            <span class="field-label">Metodo</span>
+            <span class="field-label">Método</span>
             <select id="cond-method" class="control">
               <option value="all">Todos</option>
               <option value="dinheiro">Dinheiro</option>
-              <option value="cartao">Cartao</option>
+              <option value="cartao">Cartão</option>
               <option value="pix">Pix</option>
             </select>
           </label>
 
-          <div class="rule-group-title span-all">Acoes</div>
+          <div class="rule-group-title span-all">Ações</div>
           <label class="field">
             <span class="field-label">Categoria</span>
             <select id="action-category" class="control">
               <option value="">Sem acao</option>
-              <option value="salario">Salario</option>
+              <option value="salario">Salário</option>
               <option value="extras">Extras</option>
               <option value="moradia">Moradia</option>
               <option value="mercado">Mercado</option>
               <option value="transporte">Transporte</option>
-              <option value="servicos">Servicos</option>
+              <option value="servicos">Serviços</option>
               <option value="outros">Outros</option>
             </select>
           </label>
@@ -493,7 +493,7 @@
               <option value="">Sem acao</option>
               <option value="pago">Pago</option>
               <option value="em_andamento">Em andamento</option>
-              <option value="nao_pago">Nao pago</option>
+              <option value="nao_pago">Não pago</option>
               <option value="recebido">Recebido</option>
             </select>
           </label>
@@ -503,14 +503,14 @@
           </label>
           <label class="field span-all">
             <span class="field-label">Prefixo da descricao</span>
-            <input type="text" id="action-prefix" class="control" placeholder="Ex: Cartao: ">
+            <input type="text" id="action-prefix" class="control" placeholder="Ex: Cartão: ">
           </label>
           <label class="field">
-            <span class="field-label">Metodo</span>
+            <span class="field-label">Método</span>
             <select id="action-method" class="control">
               <option value="">Sem acao</option>
               <option value="dinheiro">Dinheiro</option>
-              <option value="cartao">Cartao</option>
+              <option value="cartao">Cartão</option>
               <option value="pix">Pix</option>
             </select>
           </label>
