@@ -91,25 +91,25 @@
   let reminders = [];
 
   const CATEGORY_LABELS = {
-    salario: "Salario",
+    salario: "Salário",
     extras: "Extras",
     moradia: "Moradia",
     mercado: "Mercado",
     transporte: "Transporte",
-    servicos: "Servicos",
+    servicos: "Serviços",
     outros: "Outros"
   };
 
   const STATUS_LABELS = {
     pago: "Pago",
     em_andamento: "Em andamento",
-    nao_pago: "Nao pago",
+    nao_pago: "Não pago",
     recebido: "Recebido"
   };
 
   const METHOD_LABELS = {
     dinheiro: "Dinheiro",
-    cartao: "Cartao",
+    cartao: "Cartão",
     pix: "Pix"
   };
 
@@ -204,7 +204,7 @@
 
   const RULE_TEMPLATES = {
     salary: {
-      name: "Salario recebido",
+      name: "Salário recebido",
       priority: 50,
       apply_on_create: true,
       apply_on_edit: false,
@@ -703,7 +703,7 @@
     });
     const data = await res.json();
     if (!res.ok) {
-      alert("Nao foi possivel salvar a regra.");
+      alert("Não foi possível salvar a regra.");
       return;
     }
 
@@ -734,7 +734,7 @@
       body: JSON.stringify(payload)
     });
     if (!res.ok) {
-      alert("Nao foi possivel salvar a recorrencia.");
+      alert("Não foi possível salvar a recorrencia.");
       return;
     }
     closeRecurrenceModal();
@@ -763,7 +763,7 @@
       body: JSON.stringify(payload)
     });
     if (!res.ok) {
-      alert("Nao foi possivel salvar o lembrete.");
+      alert("Não foi possível salvar o lembrete.");
       return;
     }
     closeReminderModal();
@@ -869,7 +869,7 @@
     const res = await fetch(`/api/recurrences/${item.id}/run`, { method: "POST" });
     const data = await res.json();
     if (!res.ok) {
-      alert("Nao foi possivel gerar a recorrencia.");
+      alert("Não foi possível gerar a recorrencia.");
       return;
     }
     if (data.created) {

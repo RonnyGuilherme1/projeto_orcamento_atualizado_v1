@@ -127,6 +127,12 @@ class Config:
     # URL do site de marketing (estático). Ex: https://controledeorcamento.onrender.com
     MARKETING_BASE_URL = os.getenv("MARKETING_BASE_URL", "https://controledeorcamento.onrender.com").rstrip("/")
 
+    # Branding / identidade (padrão: LinkGestor — Controle Financeiro)
+    APP_BRAND = os.getenv("APP_BRAND", "LinkGestor").strip() or "LinkGestor"
+    APP_TAGLINE = os.getenv("APP_TAGLINE", "Controle Financeiro").strip() or "Controle Financeiro"
+    # Nome legal exibido em copyright/rodapé (pode ser diferente da marca)
+    APP_LEGAL_NAME = os.getenv("APP_LEGAL_NAME", APP_BRAND).strip() or APP_BRAND
+
     # Resend (envio de e-mail)
     RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
     EMAIL_FROM = os.getenv("EMAIL_FROM", "Acme <onboarding@resend.dev>")
